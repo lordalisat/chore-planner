@@ -35,7 +35,7 @@ _Avoid_: Check-off, log entry
 ### Scheduling
 
 **Interval**:
-The roughly-desired number of days between two completions of a Recurring Chore.
+How often a Recurring Chore should roughly be done: a whole number of days, weeks, months or years, such as "every 2 weeks" or "every 3 months".
 _Avoid_: Frequency, recurrence
 
 **Preferred Day**:

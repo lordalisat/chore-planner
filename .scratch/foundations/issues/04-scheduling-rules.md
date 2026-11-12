@@ -7,6 +7,7 @@ Model Chore (Recurring and One-off), Completion, Importance, Effort, Area and Se
 
 ## Rules
 
+- **Interval** is a whole number ≥ 1 with a unit: day, week, month or year. A week is 7 days. Months and years are calendar arithmetic, clamped to the last day of the month (31 Jan + 1 month = 28/29 Feb), and a year is 12 months.
 - **Last Done** is the date of the latest Completion; never stored separately. Removing a Completion falls back to the previous one.
 - **Due Date of a Recurring Chore**:
   - Postponed: the Postpone date, until the next Completion.
@@ -29,4 +30,7 @@ Each rule above has at least one test. These scenarios are tests verbatim:
 - Same Chore done on a Monday → due the Tuesday 8 days later.
 - 7-day Interval, Normal, last done 10 days ago → Overdue, Urgency ≈ 1.43.
 - Low, 14-day Interval, 2 days Overdue → Urgency ≈ 0.86; High, due today → 1.5.
+- "Every month", done 31 January (non-leap year) → due 28 February; "every year", done 29 February 2028 → due 28 February 2029.
+- "Every month, Saturday", done 15 March 2027 (a Monday) → 15 April 2027 is a Thursday → due Saturday 17 April.
+- "Every 2 weeks" behaves exactly like "every 14 days".
 - A Season of November–February, checked in January → not Dormant; in June → Dormant.
