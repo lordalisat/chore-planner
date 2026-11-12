@@ -1,0 +1,25 @@
+# .NET
+bin/
+obj/
+*.user
+
+# Node
+node_modules/
+web/dist/
+
+# IDE (.vscode/ is shared on purpose)
+.vs/
+.idea/
+
+# Local SQLite data
+*.db
+*.db-shm
+*.db-wal
+# Anchored: unanchored data/ also matches EF Core's Data/ folders on case-insensitive filesystems
+/data/
+
+# Secrets
+.env
+
+# Claude Code
+.claude/worktrees/
