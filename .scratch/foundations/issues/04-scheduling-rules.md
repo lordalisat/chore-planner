@@ -1,7 +1,7 @@
 # Scheduling rules in the Domain
 
 Status: ready-for-agent
-Blocked by: 01
+Blocked by: 03
 
 Model Chore (Recurring and One-off), Completion, Importance, Effort, Area and Season in `Chores.Domain` and implement the scheduling rules test-first. "Today" always comes from an injected clock.
 

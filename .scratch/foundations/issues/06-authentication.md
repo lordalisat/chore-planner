@@ -1,7 +1,7 @@
 # Authentication: household password and API key
 
 Status: ready-for-agent
-Blocked by: 01
+Blocked by: 03
 
 Implement ADR 0001.
 

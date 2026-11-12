@@ -15,8 +15,11 @@ A running, deployable, password-protected app on the home server whose Domain al
   src/Chores.Api             minimal API, EF Core + SQLite, auth, serves the built front end
   tests/Chores.Domain.Tests  xUnit
   web/                       React + Vite + TypeScript PWA
+  .devcontainer/             .NET 10 + Node LTS development environment
   Dockerfile                 one image: API + static front end
+  README.md, .gitignore, .gitattributes, .editorconfig, global.json, Directory.Build.props
   ```
+- **Development happens in a devcontainer**, so the only host requirements are Docker and an editor (VS Code or Rider).
 - **Dates only**, no times. "Today" is the current date in Europe/Amsterdam, obtained through an injectable clock (`TimeProvider`) so tests can fix it.
 - **Storage**: SQLite file in a Docker volume, EF Core migrations applied on startup.
 - **Auth**: one household password (hash in configuration) issuing a cookie valid for a year; one API key in an `X-Api-Key` header for AI tooling. Every `/api` endpoint except login requires one of the two.
@@ -29,8 +32,10 @@ Chore screens, overview, history, planner, calendar, nested-Area filtering, MCP,
 
 ## Issues
 
-1. `01-solution-skeleton.md`
-2. `02-scheduling-rules.md`
-3. `03-persistence.md`
-4. `04-authentication.md`
-5. `05-docker-image.md`
+1. `01-repository-setup.md`
+2. `02-devcontainer.md` (after 01)
+3. `03-solution-skeleton.md` (after 02)
+4. `04-scheduling-rules.md` (after 03)
+5. `05-persistence.md` (after 04)
+6. `06-authentication.md` (after 03)
+7. `07-docker-image.md` (after 03)
