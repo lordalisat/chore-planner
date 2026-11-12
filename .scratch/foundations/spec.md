@@ -19,7 +19,7 @@ A running, deployable, password-protected app on the home server whose Domain al
   Dockerfile                 one image: API + static front end
   README.md, .gitignore, .gitattributes, .editorconfig, global.json, Directory.Build.props
   ```
-- **Development happens in a devcontainer**, so the only host requirements are Docker and an editor (VS Code or Rider).
+- **Development happens in a devcontainer**, driven from the terminal with the `devcontainer` CLI and Neovim running inside the container. The only host requirements are Docker, the CLI and a Neovim config.
 - **Dates only**, no times. "Today" is the current date in Europe/Amsterdam, obtained through an injectable clock (`TimeProvider`) so tests can fix it.
 - **Storage**: SQLite file in a Docker volume, EF Core migrations applied on startup.
 - **Auth**: one household password (hash in configuration) issuing a cookie valid for a year; one API key in an `X-Api-Key` header for AI tooling. Every `/api` endpoint except login requires one of the two.
