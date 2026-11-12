@@ -15,7 +15,8 @@ web/dist/
 *.db
 *.db-shm
 *.db-wal
-data/
+# Anchored: unanchored data/ also matches EF Core's Data/ folders on case-insensitive filesystems
+/data/
 
 # Secrets
 .env
