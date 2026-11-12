@@ -1,0 +1,24 @@
+# .NET
+bin/
+obj/
+*.user
+
+# Node
+node_modules/
+web/dist/
+
+# IDE (.vscode/ is shared on purpose)
+.vs/
+.idea/
+
+# Local SQLite data
+*.db
+*.db-shm
+*.db-wal
+data/
+
+# Secrets
+.env
+
+# Claude Code
+.claude/worktrees/
