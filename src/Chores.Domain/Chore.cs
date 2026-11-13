@@ -18,7 +18,7 @@ public abstract class Chore(string name, DateOnly createdOn)
     /// <summary>The date of the latest Completion, if any.</summary>
     public DateOnly? LastDone => _completions.Count == 0 ? null : _completions.Max(c => c.Date);
 
-    public virtual void Complete(DateOnly date) => _completions.Add(new Completion(date));
+    public void Complete(DateOnly date) => _completions.Add(new Completion(date));
 
     public void RemoveCompletion(Completion completion) => _completions.Remove(completion);
 

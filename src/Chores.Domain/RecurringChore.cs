@@ -10,13 +10,17 @@ public sealed class RecurringChore(string name, Interval interval, DateOnly crea
     /// <summary>The Postpone date, overriding the calculated Due Date until the next Completion.</summary>
     public DateOnly? PostponedTo { get; private set; }
 
-    public override void Complete(DateOnly date)
-    {
-        base.Complete(date);
-        PostponedTo = null;
-    }
+    /// <summary>
+    /// Last Done when the Chore was postponed: the Postpone holds while Last Done is unchanged, so a back-dated
+    /// Completion keeps it and removing the Completion that replaced it brings it back.
+    /// </summary>
+    public DateOnly? PostponedAfter { get; private set; }
 
-    public override void Postpone(DateOnly date) => PostponedTo = date;
+    public override void Postpone(DateOnly date)
+    {
+        PostponedTo = date;
+        PostponedAfter = LastDone;
+    }
 
     /// <summary>Outside its Season: no Due Date, never Overdue, no Urgency.</summary>
     public bool IsDormant(TimeProvider clock) => IsDormant(clock.Today());
@@ -29,7 +33,7 @@ public sealed class RecurringChore(string name, Interval interval, DateOnly crea
         {
             return null;
         }
-        if (PostponedTo is { } postponed)
+        if (PostponedTo is { } postponed && PostponedAfter == LastDone)
         {
             return postponed;
         }
