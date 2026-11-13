@@ -34,3 +34,7 @@ Each rule above has at least one test. These scenarios are tests verbatim:
 - "Every month, Saturday", done 15 March 2027 (a Monday) → 15 April 2027 is a Thursday → due Saturday 17 April.
 - "Every 2 weeks" behaves exactly like "every 14 days".
 - A Season of November–February, checked in January → not Dormant; in June → Dormant.
+
+## Comments
+
+**From 03 (solution skeleton):** `tests/Chores.Domain.Tests` is an xUnit v3 project on Microsoft.Testing.Platform (`global.json` opts `dotnet test` into it). It has no tests yet, so its csproj sets `<TestingPlatformCommandLineArguments>--ignore-exit-code 8</TestingPlatformCommandLineArguments>` to let "zero tests ran" pass. Remove that line once the first Domain test lands, otherwise an empty or misconfigured test project would pass silently. `src/Chores.Domain` is an empty class library; `Directory.Build.props` already sets the target framework, nullable, implicit usings and warnings-as-errors.
