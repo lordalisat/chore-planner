@@ -5,7 +5,7 @@ obj/
 
 # Node
 node_modules/
-web/dist/
+/src/Chores.Api/wwwroot/
 
 # IDE (.vscode/ is shared on purpose)
 .vs/
