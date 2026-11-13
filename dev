@@ -1,0 +1,15 @@
+#!/bin/sh
+# Start the devcontainer if needed, then run a command in it (default: zsh).
+#   ./dev               open a shell
+#   ./dev dotnet test   run one command
+set -e
+cd "$(dirname "$0")"
+[ $# -eq 0 ] && set -- zsh
+# Rootless Podman: map the host user to the container's vscode user (uid 1000)
+# so the workspace is writable. Docker ignores this.
+export PODMAN_USERNS="${PODMAN_USERNS:-keep-id:uid=1000,gid=1000}"
+# Podman's builder can't read the BuildKit build contexts that features use
+buildkit=auto
+docker version 2>/dev/null | grep -q Podman && buildkit=never
+devcontainer up --workspace-folder . --buildkit "$buildkit" >/dev/null
+exec devcontainer exec --workspace-folder . "$@"

@@ -14,3 +14,7 @@ Create the solution layout from the spec: `Chores.Domain`, `Chores.Api`, `Chores
 - In development, the Vite dev server proxies `/api` to the API.
 - A `Directory.Build.props` turns on nullable reference types, implicit usings and warnings-as-errors for all projects.
 - Everything above works inside the devcontainer from 02.
+
+## Comments
+
+**From 02 (devcontainer):** the container publishes ports 5080 (API) and 5173 (Vite). Make the API listen on `http://0.0.0.0:5080` in its launch profile and Vite on `0.0.0.0:5173` (`server.host: true`), otherwise the host browser can't reach them. Fill in the README "Inside the container" placeholder with the build, test and run commands.
