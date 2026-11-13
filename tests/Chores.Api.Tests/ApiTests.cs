@@ -11,7 +11,7 @@ public class ApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Health_endpoint_reports_ok()
     {
-        var response = await _client.GetAsync("/api/health", TestContext.Current.CancellationToken);
+        HttpResponseMessage response = await _client.GetAsync("/api/health", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -30,7 +30,7 @@ public class ApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [InlineData("/chores/42")]
     public async Task Client_routes_serve_the_front_end(string path)
     {
-        var html = await _client.GetStringAsync(path, TestContext.Current.CancellationToken);
+        string html = await _client.GetStringAsync(path, TestContext.Current.CancellationToken);
 
         Assert.Equal(ApiFactory.IndexHtml, html);
     }
@@ -38,7 +38,7 @@ public class ApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Unknown_api_routes_are_not_found()
     {
-        var response = await _client.GetAsync("/api/does-not-exist", TestContext.Current.CancellationToken);
+        HttpResponseMessage response = await _client.GetAsync("/api/does-not-exist", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }

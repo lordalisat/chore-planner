@@ -25,7 +25,7 @@ devcontainer exec --workspace-folder . zsh    # open a shell inside
 
 **VS Code**
 
-Install the Dev Containers extension, open the repo and run "Dev Containers: Reopen in Container". The C# Dev Kit, ESLint, Prettier and EditorConfig extensions install automatically, and the shared `.vscode/launch.json` debugs the API.
+Install the Dev Containers extension, open the repo and run "Dev Containers: Reopen in Container". The C# Dev Kit, Oxlint, Prettier and EditorConfig extensions install automatically, and the shared `.vscode/launch.json` debugs the API.
 
 **Inside the container**
 
