@@ -1,0 +1,27 @@
+{
+  "name": "Chores",
+  // Not the 1-10.0 tags: those are stuck on a .NET 10 release candidate
+  "image": "mcr.microsoft.com/devcontainers/dotnet:10.0-noble",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "lts" },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "remoteUser": "vscode",
+
+  // Published rather than forwarded, so they also work with the devcontainer CLI.
+  // API on 5080, Vite dev server on 5173; both must listen on 0.0.0.0.
+  "appPort": ["5080:5080", "5173:5173"],
+
+  "postCreateCommand": ".devcontainer/post-create.sh",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csdevkit",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "EditorConfig.EditorConfig"
+      ]
+    }
+  }
+}
