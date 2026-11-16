@@ -161,18 +161,18 @@ public class RecurringChoreTests
     }
 
     [Fact]
-    public void Low_14_day_Chore_two_days_Overdue_has_Urgency_0_86()
+    public void Low_14_day_Chore_two_days_Overdue_counts_as_due_3_days_later_with_Urgency_0_94()
     {
         var today = new DateOnly(2027, 3, 11);
         RecurringChore chore = NewChore(14, IntervalUnit.Day);
         chore.Importance = Importance.Low;
         chore.Complete(today.AddDays(-16));
 
-        Assert.Equal(0.86, chore.Urgency(new FixedClock(today))!.Value, 0.01);
+        Assert.Equal(16.0 / 17, chore.Urgency(new FixedClock(today))!.Value, 0.001);
     }
 
     [Fact]
-    public void High_Chore_due_today_has_Urgency_1_5_and_is_not_Overdue()
+    public void High_7_day_Chore_due_today_counts_as_due_3_days_earlier_with_Urgency_1_75_and_is_not_Overdue()
     {
         var today = new DateOnly(2027, 3, 11);
         RecurringChore chore = NewChore(7, IntervalUnit.Day);
@@ -180,7 +180,30 @@ public class RecurringChoreTests
         chore.Complete(today.AddDays(-7));
 
         Assert.False(chore.IsOverdue(new FixedClock(today)));
-        Assert.Equal(1.5, chore.Urgency(new FixedClock(today))!.Value, 0.01);
+        Assert.Equal(7.0 / 4, chore.Urgency(new FixedClock(today))!.Value, 0.001);
+    }
+
+    [Fact]
+    public void High_yearly_Chore_four_months_before_its_Due_Date_is_not_yet_pressing()
+    {
+        RecurringChore chore = NewChore(1, IntervalUnit.Year);
+        chore.Importance = Importance.High;
+        chore.Complete(new DateOnly(2026, 3, 1));
+
+        // 245 days in, effectively due 362 days in
+        Assert.Equal(245.0 / 362, chore.Urgency(new FixedClock(new DateOnly(2026, 11, 1)))!.Value, 0.001);
+    }
+
+    [Fact]
+    public void High_Importance_never_moves_the_effective_Due_Date_to_or_before_Last_Done()
+    {
+        var today = new DateOnly(2027, 3, 11);
+        RecurringChore chore = NewChore(1, IntervalUnit.Day);
+        chore.Importance = Importance.High;
+        chore.Complete(today.AddDays(-1));
+
+        Assert.Equal(1, chore.Urgency(new FixedClock(today)));
+        Assert.Equal(2, chore.Urgency(new FixedClock(today.AddDays(1))));
     }
 
     [Fact]
@@ -197,8 +220,10 @@ public class RecurringChoreTests
     [Fact]
     public void Without_a_Completion_progress_runs_from_the_creation_date()
     {
-        // Due on the creation date itself: progress is 1
+        // Due on the creation date itself: progress is 1, whatever the Importance
         Assert.Equal(1, NewChore(7, IntervalUnit.Day).Urgency(new FixedClock(CreatedOn)));
+        Assert.Equal(1, new RecurringChore("Laundry", new Interval(7, IntervalUnit.Day), CreatedOn) { Importance = Importance.Low }
+            .Urgency(new FixedClock(CreatedOn)));
 
         // Created 1 January, postponed to 9 January, two days in
         RecurringChore chore = NewChore(7, IntervalUnit.Day);

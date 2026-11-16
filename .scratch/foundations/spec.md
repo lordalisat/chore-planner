@@ -39,3 +39,4 @@ Chore screens, overview, history, planner, calendar, nested-Area filtering, MCP,
 5. `05-persistence.md` (after 04)
 6. `06-authentication.md` (after 03)
 7. `07-docker-image.md` (after 03)
+8. `08-month-preferred-day.md` (after 04)

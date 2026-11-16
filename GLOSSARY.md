@@ -57,7 +57,7 @@ _Avoid_: Snooze, skip, defer
 The state of a Chore whose Due Date has passed; independent of Importance.
 
 **Urgency**:
-A score for how pressing a Chore is right now: progress from Last Done towards the Due Date (1 on the Due Date), weighted by Importance.
+A score for how pressing a Chore is right now: progress from Last Done towards the Due Date (1 on the Due Date), which Importance moves a few days earlier or later.
 _Avoid_: Freshness, priority
 
 **Forecast**:

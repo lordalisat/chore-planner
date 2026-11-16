@@ -35,23 +35,18 @@ public abstract class Chore(string name, DateOnly createdOn)
         return !IsDormant(today) && today > DueDate;
     }
 
-    /// <summary>Progress towards the Due Date weighted by Importance; null when the Chore has none.</summary>
+    /// <summary>Progress towards the Due Date as moved by Importance; null when the Chore has none.</summary>
     public double? Urgency(TimeProvider clock)
     {
         DateOnly today = clock.Today();
-        return IsDormant(today) ? null : Progress(today) * Importance switch
-        {
-            Importance.Low => 0.75,
-            Importance.High => 1.5,
-            _ => 1,
-        };
+        return IsDormant(today) ? null : Progress(today);
     }
 
     protected virtual bool IsDormant(DateOnly today) => false;
 
     /// <summary>
-    /// How far today is from the cycle start (Last Done, or the creation date) to the Due Date:
-    /// 1 on the Due Date and above 1 when Overdue.
+    /// How far today is from the cycle start (Last Done, or the creation date) to the Due Date, which counts as
+    /// 3 days earlier for High and 3 days later for Low Importance: 1 on that date and above 1 after it.
     /// </summary>
     protected virtual double? Progress(DateOnly today)
     {
@@ -60,6 +55,17 @@ public abstract class Chore(string name, DateOnly createdOn)
             return null;
         }
         DateOnly start = LastDone ?? CreatedOn;
-        return due <= start ? 1 : (double)(today.DayNumber - start.DayNumber) / (due.DayNumber - start.DayNumber);
+        if (due <= start)
+        {
+            return 1;
+        }
+        DateOnly moved = due.AddDays(Importance switch
+        {
+            Importance.Low => 3,
+            Importance.High => -3,
+            _ => 0,
+        });
+        DateOnly effectiveDue = moved > start ? moved : start.AddDays(1);
+        return (double)(today.DayNumber - start.DayNumber) / (effectiveDue.DayNumber - start.DayNumber);
     }
 }

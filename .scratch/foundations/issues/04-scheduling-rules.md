@@ -16,8 +16,9 @@ Model Chore (Recurring and One-off), Completion, Importance, Effort, Area and Se
 - **Due Date of a One-off Chore**: optional, set by hand (Postpone changes it).
 - **Overdue**: today is after the Due Date. Importance plays no part.
 - **Season**: inclusive month range that may wrap the year (Nov–Feb). Outside it a Recurring Chore is **Dormant**: hidden, never Overdue, no Urgency. The Due Date itself never depends on today: when the calculated one falls outside the Season, follow the schedule (each next occurrence as if done on its Due Date) to the first one inside the next Season; if the schedule skips that Season entirely, or a Chore without Completions was created outside the Season, take the first Preferred Day from the Season start, or the Season start when there is none.
-- **Urgency** = progress × weight, with weight Low 0.75, Normal 1, High 1.5.
-  - Progress = (today − cycle start) ÷ (Due Date − cycle start), where cycle start is Last Done, or the creation date when there is no Completion. It is 1 on the Due Date and above 1 when Overdue.
+- **Urgency** = progress towards an effective Due Date: Importance moves the Due Date by a fixed number of days (High 3 days earlier, Low 3 days later, Normal unchanged), so the shift is the same for weekly and yearly Chores. A multiplier would make an important yearly Chore pressing months early.
+  - Progress = (today − cycle start) ÷ (effective Due Date − cycle start), where cycle start is Last Done, or the creation date when there is no Completion. It is 1 on the effective Due Date and above 1 after it.
+  - The effective Due Date is never on or before the cycle start; it is at least the day after.
   - When the Due Date equals the cycle start, progress is 1.
   - A One-off Chore without a Due Date has progress 0.5.
 - A completed One-off Chore is finished and has no Urgency.
@@ -29,7 +30,8 @@ Each rule above has at least one test. These scenarios are tests verbatim:
 - "Laundry, every 7 days, Tuesday", done on a Thursday → due the Tuesday 5 days later.
 - Same Chore done on a Monday → due the Tuesday 8 days later.
 - 7-day Interval, Normal, last done 10 days ago → Overdue, Urgency ≈ 1.43.
-- Low, 14-day Interval, 2 days Overdue → Urgency ≈ 0.86; High, due today → 1.5.
+- Low, 14-day Interval, 2 days Overdue → Urgency ≈ 0.94 (16 ÷ 17); High, 7-day Interval, due today → 1.75 (7 ÷ 4).
+- High, every year, four months before its Due Date → Urgency ≈ 0.68, not yet pressing.
 - "Every month", done 31 January (non-leap year) → due 28 February; "every year", done 29 February 2028 → due 28 February 2029.
 - "Every month, Saturday", done 15 March 2027 (a Monday) → 15 April 2027 is a Thursday → due Saturday 17 April.
 - "Every 2 weeks" behaves exactly like "every 14 days".

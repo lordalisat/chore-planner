@@ -42,7 +42,7 @@ public class OneOffChoreTests
         var chore = new OneOffChore("Fix the leaking tap", CreatedOn) { Importance = Importance.High };
 
         Assert.False(chore.IsOverdue(Today));
-        Assert.Equal(0.75, chore.Urgency(Today));
+        Assert.Equal(0.5, chore.Urgency(Today));
     }
 
     [Fact]
