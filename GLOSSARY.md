@@ -50,8 +50,12 @@ The date a Chore should be done by; for a Recurring Chore, Last Done plus the In
 _Avoid_: Deadline
 
 **Postpone**:
-To set a Chore's Due Date by hand, overriding the calculated one until its next Completion.
-_Avoid_: Snooze, skip, defer
+To set a Chore's Due Date by hand, overriding the calculated one until its next Completion or Skip.
+_Avoid_: Snooze, defer
+
+**Skip**:
+To let a Recurring Chore move on to its next Due Date as if it were done on the current one, without recording a Completion; unlike Postpone, the new Due Date is calculated, not picked.
+_Avoid_: Dismiss, pass
 
 **Overdue**:
 The state of a Chore whose Due Date has passed; independent of Importance.

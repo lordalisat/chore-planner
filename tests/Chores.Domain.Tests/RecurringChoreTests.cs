@@ -150,6 +150,70 @@ public class RecurringChoreTests
     }
 
     [Fact]
+    public void Skip_moves_on_from_the_skipped_Due_Date_without_a_Completion()
+    {
+        RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
+        laundry.Complete(new DateOnly(2027, 3, 11));
+
+        laundry.Skip();
+        Assert.Equal(new DateOnly(2027, 3, 23), laundry.DueDate);
+
+        laundry.Skip();
+        Assert.Equal(new DateOnly(2027, 3, 30), laundry.DueDate);
+
+        Assert.Equal(new DateOnly(2027, 3, 11), laundry.LastDone);
+        Assert.Single(laundry.Completions);
+    }
+
+    [Fact]
+    public void Skip_without_any_Completion_moves_on_from_the_first_Due_Date()
+    {
+        // Created Friday 1 January, first due Tuesday 5 January
+        RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
+
+        laundry.Skip();
+
+        Assert.Equal(new DateOnly(2027, 1, 12), laundry.DueDate);
+    }
+
+    [Fact]
+    public void Removing_a_Skip_restores_the_previous_Due_Date()
+    {
+        RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
+        laundry.Complete(new DateOnly(2027, 3, 11));
+        laundry.Skip();
+
+        laundry.RemoveSkip(new DateOnly(2027, 3, 16));
+
+        Assert.Equal(new DateOnly(2027, 3, 16), laundry.DueDate);
+    }
+
+    [Fact]
+    public void Skip_ends_a_Postpone_and_moves_on_from_the_Postpone_date()
+    {
+        RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
+        laundry.Complete(new DateOnly(2027, 3, 11));
+        laundry.Postpone(new DateOnly(2027, 3, 20));
+
+        laundry.Skip();
+
+        // Saturday 20 March + 7 is Saturday 27 March; the nearest Tuesday is 30 March
+        Assert.Equal(new DateOnly(2027, 3, 30), laundry.DueDate);
+    }
+
+    [Fact]
+    public void Completion_after_a_Skip_moves_on_from_the_Completion()
+    {
+        RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
+        laundry.Complete(new DateOnly(2027, 3, 11));
+        laundry.Skip();
+
+        laundry.Complete(new DateOnly(2027, 3, 25));
+
+        Assert.Equal(new DateOnly(2027, 3, 30), laundry.DueDate);
+    }
+
+    [Fact]
     public void Normal_7_day_Chore_last_done_10_days_ago_is_Overdue_with_Urgency_1_75()
     {
         var today = new DateOnly(2027, 3, 11);

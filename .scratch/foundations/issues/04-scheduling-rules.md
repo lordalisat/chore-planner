@@ -10,7 +10,9 @@ Model Chore (Recurring and One-off), Completion, Importance, Effort, Area and Se
 - **Interval** is a whole number ≥ 1 with a unit: day, week, month or year. A week is 7 days. Months and years are calendar arithmetic, clamped to the last day of the month (31 Jan + 1 month = 28/29 Feb), and a year is 12 months.
 - **Last Done** is the date of the latest Completion; never stored separately. Removing a Completion falls back to the previous one.
 - **Due Date of a Recurring Chore**:
-  - Postponed: the Postpone date, until the next Completion.
+  - Postponed: the Postpone date, until the next Completion or Skip.
+  - The schedule moves on from Last Done or the latest skipped Due Date, whichever is later ("With Last Done" below uses that date).
+- **Skip**: a Recurring Chore moves on to the Due Date after the current one, as if done exactly on the current Due Date (a Postponed one included), without a Completion; Last Done is unchanged. Removing a Skip restores the previous Due Date.
   - With Last Done: Last Done + Interval; with a Preferred Day, moved to the nearest such weekday (offset −3..+3, never a tie). If that lands on or before Last Done, take the following Preferred Day instead.
   - Without any Completion: the first Preferred Day from the creation date, or the creation date when there is none.
 - **Due Date of a One-off Chore**: optional, set by hand (Postpone changes it).
