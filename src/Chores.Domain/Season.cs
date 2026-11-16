@@ -19,4 +19,7 @@ public sealed record Season
     public bool Contains(DateOnly date) => FromMonth <= ToMonth
         ? date.Month >= FromMonth && date.Month <= ToMonth
         : date.Month >= FromMonth || date.Month <= ToMonth;
+
+    /// <summary>The first day of the Season that contains the given date; in January a November–February Season started last year.</summary>
+    public DateOnly StartOf(DateOnly date) => new(date.Month >= FromMonth ? date.Year : date.Year - 1, FromMonth, 1);
 }

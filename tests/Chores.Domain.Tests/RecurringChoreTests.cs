@@ -241,6 +241,62 @@ public class RecurringChoreTests
     }
 
     [Fact]
+    public void Waking_from_Dormant_it_is_due_on_the_first_Preferred_Day_of_the_Season()
+    {
+        RecurringChore mowing = NewChore(2, IntervalUnit.Week, DayOfWeek.Saturday);
+        mowing.Season = new Season(4, 10);
+        mowing.Complete(new DateOnly(2026, 10, 23));
+
+        var firstOfApril = new FixedClock(new DateOnly(2027, 4, 1));
+        Assert.Equal(new DateOnly(2027, 4, 3), mowing.DueDate(firstOfApril));
+        Assert.False(mowing.IsOverdue(firstOfApril));
+    }
+
+    [Fact]
+    public void Waking_from_Dormant_without_a_Preferred_Day_it_is_due_on_the_first_day_of_the_Season()
+    {
+        RecurringChore mowing = NewChore(2, IntervalUnit.Week);
+        mowing.Season = new Season(4, 10);
+        mowing.Complete(new DateOnly(2026, 10, 23));
+
+        var firstOfApril = new FixedClock(new DateOnly(2027, 4, 1));
+        Assert.Equal(new DateOnly(2027, 4, 1), mowing.DueDate(firstOfApril));
+        Assert.Equal(1, mowing.Urgency(firstOfApril));
+    }
+
+    [Fact]
+    public void Created_while_Dormant_it_is_due_on_the_first_day_of_the_Season()
+    {
+        var mowing = new RecurringChore("Mow the lawn", new Interval(2, IntervalUnit.Week), new DateOnly(2026, 12, 1))
+        {
+            Season = new Season(4, 10),
+        };
+
+        Assert.Equal(new DateOnly(2027, 4, 1), mowing.DueDate(new FixedClock(new DateOnly(2027, 4, 1))));
+    }
+
+    [Fact]
+    public void Season_that_wraps_the_year_starts_in_the_previous_year_when_checked_in_January()
+    {
+        RecurringChore chore = NewChore(1, IntervalUnit.Week);
+        chore.Season = new Season(11, 2);
+        chore.Complete(new DateOnly(2027, 2, 20));
+
+        Assert.Equal(new DateOnly(2027, 11, 1), chore.DueDate(new FixedClock(new DateOnly(2027, 11, 1))));
+        Assert.Equal(new DateOnly(2027, 11, 1), chore.DueDate(new FixedClock(new DateOnly(2028, 1, 10))));
+    }
+
+    [Fact]
+    public void Due_Date_inside_the_Season_is_not_moved_to_the_Season_start()
+    {
+        RecurringChore chore = NewChore(1, IntervalUnit.Year);
+        chore.Season = new Season(4, 10);
+        chore.Complete(new DateOnly(2026, 5, 15));
+
+        Assert.Equal(new DateOnly(2027, 5, 15), chore.DueDate(new FixedClock(new DateOnly(2027, 4, 1))));
+    }
+
+    [Fact]
     public void Interval_must_be_at_least_one()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new Interval(0, IntervalUnit.Day));

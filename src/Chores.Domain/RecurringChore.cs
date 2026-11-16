@@ -37,11 +37,18 @@ public sealed class RecurringChore(string name, Interval interval, DateOnly crea
         {
             return postponed;
         }
-        if (LastDone is not { } lastDone)
-        {
-            return PreferredDay is { } preferredDay ? NextOnOrAfter(CreatedOn, preferredDay) : CreatedOn;
-        }
+        DateOnly due = LastDone is { } lastDone ? DueAfter(lastDone) : FirstPreferredDayFrom(CreatedOn);
 
+        // Waking from Dormant starts afresh instead of carrying over last Season's Due Date
+        if (Season is { } season && due < season.StartOf(today))
+        {
+            due = FirstPreferredDayFrom(season.StartOf(today));
+        }
+        return due;
+    }
+
+    private DateOnly DueAfter(DateOnly lastDone)
+    {
         DateOnly due = Interval.AddTo(lastDone);
         if (PreferredDay is { } preferred)
         {
@@ -54,6 +61,8 @@ public sealed class RecurringChore(string name, Interval interval, DateOnly crea
         }
         return due;
     }
+
+    private DateOnly FirstPreferredDayFrom(DateOnly date) => PreferredDay is { } preferred ? NextOnOrAfter(date, preferred) : date;
 
     private static DateOnly NextOnOrAfter(DateOnly date, DayOfWeek day) => date.AddDays(DaysUntil(date, day));
 
