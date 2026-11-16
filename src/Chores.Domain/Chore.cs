@@ -25,24 +25,29 @@ public abstract class Chore(string name, DateOnly createdOn)
     /// <summary>Sets the Due Date by hand.</summary>
     public abstract void Postpone(DateOnly date);
 
-    public DateOnly? DueDate(TimeProvider clock) => DueDate(clock.Today());
+    /// <summary>Follows from the Completions and any Postpone; today plays no part.</summary>
+    public abstract DateOnly? DueDate { get; }
 
     /// <summary>Today is after the Due Date, whatever the Importance.</summary>
     public bool IsOverdue(TimeProvider clock)
     {
         DateOnly today = clock.Today();
-        return today > DueDate(today);
+        return !IsDormant(today) && today > DueDate;
     }
 
     /// <summary>Progress towards the Due Date weighted by Importance; null when the Chore has none.</summary>
-    public double? Urgency(TimeProvider clock) => Progress(clock.Today()) * Importance switch
+    public double? Urgency(TimeProvider clock)
     {
-        Importance.Low => 0.75,
-        Importance.High => 1.5,
-        _ => 1,
-    };
+        DateOnly today = clock.Today();
+        return IsDormant(today) ? null : Progress(today) * Importance switch
+        {
+            Importance.Low => 0.75,
+            Importance.High => 1.5,
+            _ => 1,
+        };
+    }
 
-    protected abstract DateOnly? DueDate(DateOnly today);
+    protected virtual bool IsDormant(DateOnly today) => false;
 
     /// <summary>
     /// How far today is from the cycle start (Last Done, or the creation date) to the Due Date:
@@ -50,7 +55,7 @@ public abstract class Chore(string name, DateOnly createdOn)
     /// </summary>
     protected virtual double? Progress(DateOnly today)
     {
-        if (DueDate(today) is not { } due)
+        if (DueDate is not { } due)
         {
             return null;
         }

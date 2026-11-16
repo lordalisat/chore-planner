@@ -10,7 +10,7 @@ public sealed class OneOffChore(string name, DateOnly createdOn) : Chore(name, c
 
     public override void Postpone(DateOnly date) => DueOn = date;
 
-    protected override DateOnly? DueDate(DateOnly today) => IsFinished ? null : DueOn;
+    public override DateOnly? DueDate => IsFinished ? null : DueOn;
 
     protected override double? Progress(DateOnly today) => IsFinished ? null : DueOn is null ? 0.5 : base.Progress(today);
 }

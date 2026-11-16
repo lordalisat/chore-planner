@@ -20,6 +20,6 @@ public sealed record Season
         ? date.Month >= FromMonth && date.Month <= ToMonth
         : date.Month >= FromMonth || date.Month <= ToMonth;
 
-    /// <summary>The first day of the Season that contains the given date; in January a November–February Season started last year.</summary>
-    public DateOnly StartOf(DateOnly date) => new(date.Month >= FromMonth ? date.Year : date.Year - 1, FromMonth, 1);
+    /// <summary>The first day of the next Season after a date outside it.</summary>
+    public DateOnly NextStartAfter(DateOnly date) => new(date.Month < FromMonth ? date.Year : date.Year + 1, FromMonth, 1);
 }

@@ -12,7 +12,7 @@ public class RecurringChoreTests
     private static DateOnly? DueDateAfterDoneOn(RecurringChore chore, DateOnly lastDone)
     {
         chore.Complete(lastDone);
-        return chore.DueDate(new FixedClock(lastDone));
+        return chore.DueDate;
     }
 
     [Fact]
@@ -73,15 +73,15 @@ public class RecurringChoreTests
     [Fact]
     public void Without_a_Completion_it_is_due_on_the_creation_date()
     {
-        Assert.Equal(CreatedOn, NewChore(7, IntervalUnit.Day).DueDate(new FixedClock(CreatedOn)));
+        Assert.Equal(CreatedOn, NewChore(7, IntervalUnit.Day).DueDate);
     }
 
     [Fact]
     public void Without_a_Completion_it_is_due_on_the_first_Preferred_Day_from_the_creation_date()
     {
         // 1 January 2027 is a Friday
-        Assert.Equal(new DateOnly(2027, 1, 5), NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday).DueDate(new FixedClock(CreatedOn)));
-        Assert.Equal(CreatedOn, NewChore(7, IntervalUnit.Day, DayOfWeek.Friday).DueDate(new FixedClock(CreatedOn)));
+        Assert.Equal(new DateOnly(2027, 1, 5), NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday).DueDate);
+        Assert.Equal(CreatedOn, NewChore(7, IntervalUnit.Day, DayOfWeek.Friday).DueDate);
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public class RecurringChoreTests
         chore.Complete(new DateOnly(2027, 3, 3));
 
         Assert.Equal(new DateOnly(2027, 3, 10), chore.LastDone);
-        Assert.Equal(new DateOnly(2027, 3, 17), chore.DueDate(new FixedClock(new DateOnly(2027, 3, 10))));
+        Assert.Equal(new DateOnly(2027, 3, 17), chore.DueDate);
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public class RecurringChoreTests
         chore.RemoveCompletion(chore.Completions.Single(c => c.Date == new DateOnly(2027, 3, 10)));
 
         Assert.Equal(new DateOnly(2027, 3, 3), chore.LastDone);
-        Assert.Equal(new DateOnly(2027, 3, 10), chore.DueDate(new FixedClock(new DateOnly(2027, 3, 10))));
+        Assert.Equal(new DateOnly(2027, 3, 10), chore.DueDate);
     }
 
     [Fact]
@@ -116,10 +116,10 @@ public class RecurringChoreTests
         chore.Complete(new DateOnly(2027, 3, 3));
 
         chore.Postpone(new DateOnly(2027, 3, 13));
-        Assert.Equal(new DateOnly(2027, 3, 13), chore.DueDate(new FixedClock(today)));
+        Assert.Equal(new DateOnly(2027, 3, 13), chore.DueDate);
 
         chore.Complete(today);
-        Assert.Equal(new DateOnly(2027, 3, 17), chore.DueDate(new FixedClock(today)));
+        Assert.Equal(new DateOnly(2027, 3, 17), chore.DueDate);
     }
 
     [Fact]
@@ -132,7 +132,7 @@ public class RecurringChoreTests
 
         chore.Complete(new DateOnly(2027, 2, 20));
 
-        Assert.Equal(new DateOnly(2027, 3, 13), chore.DueDate(new FixedClock(today)));
+        Assert.Equal(new DateOnly(2027, 3, 13), chore.DueDate);
     }
 
     [Fact]
@@ -146,7 +146,7 @@ public class RecurringChoreTests
 
         chore.RemoveCompletion(chore.Completions.Single(c => c.Date == today));
 
-        Assert.Equal(new DateOnly(2027, 3, 13), chore.DueDate(new FixedClock(today)));
+        Assert.Equal(new DateOnly(2027, 3, 13), chore.DueDate);
     }
 
     [Fact]
@@ -221,15 +221,15 @@ public class RecurringChoreTests
     }
 
     [Fact]
-    public void Dormant_Chore_has_no_Due_Date_is_never_Overdue_and_has_no_Urgency()
+    public void Dormant_Chore_is_never_Overdue_and_has_no_Urgency()
     {
         var june = new DateOnly(2027, 6, 15);
         RecurringChore chore = NewChore(7, IntervalUnit.Day);
         chore.Season = new Season(4, 5);
-        chore.Complete(june.AddDays(-30));
+        chore.Complete(new DateOnly(2027, 5, 16));
 
+        Assert.Equal(new DateOnly(2027, 5, 23), chore.DueDate);
         Assert.True(chore.IsDormant(new FixedClock(june)));
-        Assert.Null(chore.DueDate(new FixedClock(june)));
         Assert.False(chore.IsOverdue(new FixedClock(june)));
         Assert.Null(chore.Urgency(new FixedClock(june)));
     }
@@ -241,27 +241,36 @@ public class RecurringChoreTests
     }
 
     [Fact]
-    public void Waking_from_Dormant_it_is_due_on_the_first_Preferred_Day_of_the_Season()
+    public void Due_Date_outside_the_Season_follows_the_schedule_to_the_first_one_inside_it()
     {
         RecurringChore mowing = NewChore(2, IntervalUnit.Week, DayOfWeek.Saturday);
         mowing.Season = new Season(4, 10);
         mowing.Complete(new DateOnly(2026, 10, 23));
 
-        var firstOfApril = new FixedClock(new DateOnly(2027, 4, 1));
-        Assert.Equal(new DateOnly(2027, 4, 3), mowing.DueDate(firstOfApril));
-        Assert.False(mowing.IsOverdue(firstOfApril));
+        // Saturday 7 November 2026 plus whole fortnights
+        Assert.Equal(new DateOnly(2027, 4, 10), mowing.DueDate);
+        Assert.False(mowing.IsOverdue(new FixedClock(new DateOnly(2027, 4, 1))));
     }
 
     [Fact]
-    public void Waking_from_Dormant_without_a_Preferred_Day_it_is_due_on_the_first_day_of_the_Season()
+    public void Due_Date_outside_the_Season_without_a_Preferred_Day_follows_the_schedule()
     {
         RecurringChore mowing = NewChore(2, IntervalUnit.Week);
         mowing.Season = new Season(4, 10);
         mowing.Complete(new DateOnly(2026, 10, 23));
 
-        var firstOfApril = new FixedClock(new DateOnly(2027, 4, 1));
-        Assert.Equal(new DateOnly(2027, 4, 1), mowing.DueDate(firstOfApril));
-        Assert.Equal(1, mowing.Urgency(firstOfApril));
+        // Friday 6 November 2026 plus whole fortnights
+        Assert.Equal(new DateOnly(2027, 4, 9), mowing.DueDate);
+    }
+
+    [Fact]
+    public void Schedule_that_never_lands_inside_the_Season_is_due_on_the_Season_start()
+    {
+        RecurringChore chore = NewChore(1, IntervalUnit.Year);
+        chore.Season = new Season(4, 10);
+        chore.Complete(new DateOnly(2026, 3, 15));
+
+        Assert.Equal(new DateOnly(2027, 4, 1), chore.DueDate);
     }
 
     [Fact]
@@ -272,28 +281,28 @@ public class RecurringChoreTests
             Season = new Season(4, 10),
         };
 
-        Assert.Equal(new DateOnly(2027, 4, 1), mowing.DueDate(new FixedClock(new DateOnly(2027, 4, 1))));
+        Assert.Equal(new DateOnly(2027, 4, 1), mowing.DueDate);
     }
 
     [Fact]
-    public void Season_that_wraps_the_year_starts_in_the_previous_year_when_checked_in_January()
+    public void Due_Date_after_a_Season_that_wraps_the_year_follows_the_schedule_into_the_next_one()
     {
         RecurringChore chore = NewChore(1, IntervalUnit.Week);
         chore.Season = new Season(11, 2);
-        chore.Complete(new DateOnly(2027, 2, 20));
+        chore.Complete(new DateOnly(2027, 2, 27));
 
-        Assert.Equal(new DateOnly(2027, 11, 1), chore.DueDate(new FixedClock(new DateOnly(2027, 11, 1))));
-        Assert.Equal(new DateOnly(2027, 11, 1), chore.DueDate(new FixedClock(new DateOnly(2028, 1, 10))));
+        // Saturday 6 March is outside; the first weekly Saturday from Monday 1 November
+        Assert.Equal(new DateOnly(2027, 11, 6), chore.DueDate);
     }
 
     [Fact]
-    public void Due_Date_inside_the_Season_is_not_moved_to_the_Season_start()
+    public void Due_Date_inside_the_Season_stays_as_it_is()
     {
         RecurringChore chore = NewChore(1, IntervalUnit.Year);
         chore.Season = new Season(4, 10);
         chore.Complete(new DateOnly(2026, 5, 15));
 
-        Assert.Equal(new DateOnly(2027, 5, 15), chore.DueDate(new FixedClock(new DateOnly(2027, 4, 1))));
+        Assert.Equal(new DateOnly(2027, 5, 15), chore.DueDate);
     }
 
     [Fact]

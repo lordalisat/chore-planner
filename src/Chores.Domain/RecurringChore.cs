@@ -22,29 +22,43 @@ public sealed class RecurringChore(string name, Interval interval, DateOnly crea
         PostponedAfter = LastDone;
     }
 
-    /// <summary>Outside its Season: no Due Date, never Overdue, no Urgency.</summary>
+    /// <summary>Outside its Season: hidden, never Overdue, no Urgency.</summary>
     public bool IsDormant(TimeProvider clock) => IsDormant(clock.Today());
 
-    private bool IsDormant(DateOnly today) => Season is { } season && !season.Contains(today);
+    protected override bool IsDormant(DateOnly today) => Season is { } season && !season.Contains(today);
 
-    protected override DateOnly? DueDate(DateOnly today)
+    public override DateOnly? DueDate
     {
-        if (IsDormant(today))
+        get
         {
-            return null;
-        }
-        if (PostponedTo is { } postponed && PostponedAfter == LastDone)
-        {
-            return postponed;
-        }
-        DateOnly due = LastDone is { } lastDone ? DueAfter(lastDone) : FirstPreferredDayFrom(CreatedOn);
+            if (PostponedTo is { } postponed && PostponedAfter == LastDone)
+            {
+                return postponed;
+            }
+            if (LastDone is not { } lastDone)
+            {
+                DateOnly first = FirstPreferredDayFrom(CreatedOn);
+                return Season is { } dormantSeason && !dormantSeason.Contains(first)
+                    ? FirstPreferredDayFrom(dormantSeason.NextStartAfter(first))
+                    : first;
+            }
 
-        // Waking from Dormant starts afresh instead of carrying over last Season's Due Date
-        if (Season is { } season && due < season.StartOf(today))
-        {
-            due = FirstPreferredDayFrom(season.StartOf(today));
+            DateOnly due = DueAfter(lastDone);
+            if (Season is { } season && !season.Contains(due))
+            {
+                // Follow the schedule to its first occurrence inside the next Season
+                DateOnly seasonStart = season.NextStartAfter(due);
+                while (due < seasonStart)
+                {
+                    due = DueAfter(due);
+                }
+                if (!season.Contains(due))
+                {
+                    due = FirstPreferredDayFrom(seasonStart);
+                }
+            }
+            return due;
         }
-        return due;
     }
 
     private DateOnly DueAfter(DateOnly lastDone)

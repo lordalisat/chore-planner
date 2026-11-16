@@ -11,10 +11,10 @@ public class OneOffChoreTests
     public void Due_Date_is_optional_and_set_by_hand()
     {
         var chore = new OneOffChore("Fix the leaking tap", CreatedOn);
-        Assert.Null(chore.DueDate(Today));
+        Assert.Null(chore.DueDate);
 
         chore.DueOn = new DateOnly(2027, 3, 20);
-        Assert.Equal(new DateOnly(2027, 3, 20), chore.DueDate(Today));
+        Assert.Equal(new DateOnly(2027, 3, 20), chore.DueDate);
     }
 
     [Fact]
@@ -24,7 +24,7 @@ public class OneOffChoreTests
 
         chore.Postpone(new DateOnly(2027, 3, 21));
 
-        Assert.Equal(new DateOnly(2027, 3, 21), chore.DueDate(Today));
+        Assert.Equal(new DateOnly(2027, 3, 21), chore.DueDate);
         Assert.False(chore.IsOverdue(Today));
     }
 

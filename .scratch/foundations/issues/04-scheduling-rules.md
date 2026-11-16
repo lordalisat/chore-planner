@@ -15,7 +15,7 @@ Model Chore (Recurring and One-off), Completion, Importance, Effort, Area and Se
   - Without any Completion: the first Preferred Day from the creation date, or the creation date when there is none.
 - **Due Date of a One-off Chore**: optional, set by hand (Postpone changes it).
 - **Overdue**: today is after the Due Date. Importance plays no part.
-- **Season**: inclusive month range that may wrap the year (Nov–Feb). Outside it a Recurring Chore is **Dormant**: no Due Date, never Overdue, no Urgency. Inside it the Due Date is never before the start of the current Season: when the calculated one is earlier (Last Done or the creation date lies in an earlier Season or the Dormant gap), it is the first Preferred Day from the Season start, or the Season start when there is none. A Due Date that already falls inside the Season stays as it is.
+- **Season**: inclusive month range that may wrap the year (Nov–Feb). Outside it a Recurring Chore is **Dormant**: hidden, never Overdue, no Urgency. The Due Date itself never depends on today: when the calculated one falls outside the Season, follow the schedule (each next occurrence as if done on its Due Date) to the first one inside the next Season; if the schedule skips that Season entirely, or a Chore without Completions was created outside the Season, take the first Preferred Day from the Season start, or the Season start when there is none.
 - **Urgency** = progress × weight, with weight Low 0.75, Normal 1, High 1.5.
   - Progress = (today − cycle start) ÷ (Due Date − cycle start), where cycle start is Last Done, or the creation date when there is no Completion. It is 1 on the Due Date and above 1 when Overdue.
   - When the Due Date equals the cycle start, progress is 1.
