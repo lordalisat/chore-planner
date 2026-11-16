@@ -440,6 +440,63 @@ public class RecurringChoreTests
     }
 
     [Fact]
+    public void Forecasts_follow_the_Due_Date_as_if_each_occurrence_is_done_on_its_Due_Date()
+    {
+        RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
+        laundry.Complete(new DateOnly(2027, 3, 11));
+
+        Assert.Equal(
+            [new DateOnly(2027, 3, 23), new DateOnly(2027, 3, 30), new DateOnly(2027, 4, 6)],
+            laundry.Forecasts(until: new DateOnly(2027, 4, 6)));
+    }
+
+    [Fact]
+    public void Forecasts_of_a_monthly_Chore_move_each_occurrence_to_the_nearest_Preferred_Day()
+    {
+        RecurringChore chore = NewChore(1, IntervalUnit.Month, DayOfWeek.Saturday);
+        chore.Complete(new DateOnly(2027, 3, 15));
+
+        // Due Saturday 17 April; 17 May is a Monday, 15 June a Tuesday
+        Assert.Equal(
+            [new DateOnly(2027, 5, 15), new DateOnly(2027, 6, 12)],
+            chore.Forecasts(until: new DateOnly(2027, 6, 30)));
+    }
+
+    [Fact]
+    public void Forecasts_skip_occurrences_outside_the_Season()
+    {
+        RecurringChore mowing = NewChore(2, IntervalUnit.Week, DayOfWeek.Saturday);
+        mowing.Season = new Season(4, 10);
+        mowing.Complete(new DateOnly(2027, 10, 9));
+
+        // Due Saturday 23 October; the next fortnightly Saturdays inside the Season
+        Assert.Equal(
+            [new DateOnly(2028, 4, 8), new DateOnly(2028, 4, 22)],
+            mowing.Forecasts(until: new DateOnly(2028, 4, 30)));
+    }
+
+    [Fact]
+    public void Forecasts_start_after_a_Postponed_Due_Date()
+    {
+        RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
+        laundry.Complete(new DateOnly(2027, 3, 11));
+        laundry.Postpone(new DateOnly(2027, 3, 20));
+
+        Assert.Equal(
+            [new DateOnly(2027, 3, 30), new DateOnly(2027, 4, 6)],
+            laundry.Forecasts(until: new DateOnly(2027, 4, 6)));
+    }
+
+    [Fact]
+    public void No_Forecasts_before_the_next_occurrence()
+    {
+        RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
+        laundry.Complete(new DateOnly(2027, 3, 11));
+
+        Assert.Empty(laundry.Forecasts(until: new DateOnly(2027, 3, 22)));
+    }
+
+    [Fact]
     public void Interval_must_be_at_least_one()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new Interval(0, IntervalUnit.Day));

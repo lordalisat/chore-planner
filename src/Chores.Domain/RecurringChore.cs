@@ -1,72 +1,47 @@
 namespace Chores.Domain;
 
 /// <summary>A Chore that comes back after an Interval.</summary>
-public sealed class RecurringChore : Chore
+public sealed class RecurringChore(string name, Interval interval, DateOnly createdOn) : Chore(name, createdOn)
 {
     private readonly List<DateOnly> _skippedDueDates = [];
 
-    public RecurringChore(string name, Interval interval, DateOnly createdOn) : base(name, createdOn)
-    {
-        Interval = interval;
-    }
-
-    public Interval Interval
-    {
-        get;
-        set
-        {
-            field = value;
-            Reschedule();
-        }
-    }
-
-    public DayOfWeek? PreferredDay
-    {
-        get;
-        set
-        {
-            field = value;
-            Reschedule();
-        }
-    }
-
-    public Season? Season
-    {
-        get;
-        set
-        {
-            field = value;
-            Reschedule();
-        }
-    }
-
-    /// <summary>Stored so it can be queried; kept up to date by every change that affects it.</summary>
-    public DateOnly DueDate { get; private set; }
+    public Interval Interval { get; set; } = interval;
+    public DayOfWeek? PreferredDay { get; set; }
+    public Season? Season { get; set; }
 
     /// <summary>The Postpone date, overriding the calculated Due Date until the next Completion or Skip.</summary>
     public DateOnly? PostponedTo { get; private set; }
 
     public IReadOnlyList<DateOnly> SkippedDueDates => _skippedDueDates;
 
-    public override void Postpone(DateOnly date)
-    {
-        PostponedTo = date;
-        Reschedule();
-    }
+    /// <summary>Follows from the Completions, Skips and any Postpone; today plays no part.</summary>
+    public DateOnly DueDate => PostponedTo ?? CalculatedDueDate();
+
+    public override void Postpone(DateOnly date) => PostponedTo = date;
 
     /// <summary>Moves on to the next Due Date as if done on the current one, without a Completion.</summary>
     public void Skip()
     {
         _skippedDueDates.Add(DueDate);
         PostponedTo = null;
-        Reschedule();
     }
 
     public void RemoveSkip(DateOnly skippedDueDate)
     {
         _skippedDueDates.Remove(skippedDueDate);
         PostponedTo = null;
-        Reschedule();
+    }
+
+    /// <summary>
+    /// The expected occurrences after the Due Date, up to and including <paramref name="until"/>, assuming each
+    /// is done exactly on its Due Date.
+    /// </summary>
+    public IEnumerable<DateOnly> Forecasts(DateOnly until)
+    {
+        for (DateOnly next = NextOccurrenceAfter(DueDate); next <= until; next = NextOccurrenceAfter(next))
+        {
+            yield return next;
+        }
     }
 
     /// <summary>Outside its Season; occurrences that would fall there are skipped by the Due Date.</summary>
@@ -76,26 +51,23 @@ public sealed class RecurringChore : Chore
 
     protected override Completion CompletionOn(DateOnly date) => new(date, CalculatedDueDate(), PostponedTo);
 
-    protected override void OnCompletionsChanged()
-    {
-        PostponedTo = null;
-        Reschedule();
-    }
-
-    private void Reschedule() => DueDate = PostponedTo ?? CalculatedDueDate();
+    protected override void OnCompletionsChanged() => PostponedTo = null;
 
     private DateOnly CalculatedDueDate()
     {
         // Last Done or the latest skipped Due Date, whichever is later
-        if (_skippedDueDates.Select(d => (DateOnly?)d).Append(LastDone).Max() is not { } from)
+        if (_skippedDueDates.Select(d => (DateOnly?)d).Append(LastDone).Max() is { } from)
         {
-            DateOnly first = FirstPreferredDayFrom(CreatedOn);
-            return Season is { } dormantSeason && !dormantSeason.Contains(first)
-                ? FirstPreferredDayFrom(dormantSeason.NextStartAfter(first))
-                : first;
+            return NextOccurrenceAfter(from);
         }
+        DateOnly first = FirstPreferredDayFrom(CreatedOn);
+        return Season is { } season && !season.Contains(first) ? FirstPreferredDayFrom(season.NextStartAfter(first)) : first;
+    }
 
-        DateOnly due = DueAfter(from);
+    /// <summary>The occurrence after one done on the given date, skipping any that fall outside the Season.</summary>
+    private DateOnly NextOccurrenceAfter(DateOnly done)
+    {
+        DateOnly due = DueAfter(done);
         if (Season is { } season && !season.Contains(due))
         {
             // Follow the schedule to its first occurrence inside the next Season
