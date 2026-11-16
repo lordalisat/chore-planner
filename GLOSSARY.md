@@ -57,7 +57,7 @@ _Avoid_: Snooze, skip, defer
 The state of a Chore whose Due Date has passed; independent of Importance.
 
 **Urgency**:
-A score for how pressing a Chore is right now: progress from Last Done towards the Due Date (1 on the Due Date), which Importance moves a few days earlier or later.
+A score for how pressing a Chore is right now, from how close today is to the Due Date and its Importance: 0 until a few days before the Due Date, rising to twice the Importance weight a few days after it.
 _Avoid_: Freshness, priority
 
 **Forecast**:
@@ -70,5 +70,5 @@ _Avoid_: Projection, occurrence, instance
 The part of the year in which a Recurring Chore applies, such as spring to autumn for mowing the lawn.
 
 **Dormant**:
-The state of a Recurring Chore outside its Season: hidden and never Overdue.
+The state of a Recurring Chore outside its Season: hidden, with every occurrence that would fall in it skipped.
 _Avoid_: Paused, inactive

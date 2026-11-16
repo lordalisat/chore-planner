@@ -22,10 +22,8 @@ public sealed class RecurringChore(string name, Interval interval, DateOnly crea
         PostponedAfter = LastDone;
     }
 
-    /// <summary>Outside its Season: hidden, never Overdue, no Urgency.</summary>
-    public bool IsDormant(TimeProvider clock) => IsDormant(clock.Today());
-
-    protected override bool IsDormant(DateOnly today) => Season is { } season && !season.Contains(today);
+    /// <summary>Outside its Season; occurrences that would fall there are skipped by the Due Date.</summary>
+    public bool IsDormant(TimeProvider clock) => Season is { } season && !season.Contains(clock.Today());
 
     public override DateOnly? DueDate
     {

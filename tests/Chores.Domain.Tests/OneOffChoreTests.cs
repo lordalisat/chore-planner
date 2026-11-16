@@ -37,18 +37,18 @@ public class OneOffChoreTests
     }
 
     [Fact]
-    public void Without_a_Due_Date_it_is_never_Overdue_and_progress_is_one_half()
+    public void Without_a_Due_Date_it_is_never_Overdue_and_counts_as_two_days_before_due()
     {
         var chore = new OneOffChore("Fix the leaking tap", CreatedOn) { Importance = Importance.High };
 
         Assert.False(chore.IsOverdue(Today));
-        Assert.Equal(0.5, chore.Urgency(Today));
+        Assert.Equal(0.75, chore.Urgency(Today));
     }
 
     [Fact]
-    public void With_a_Due_Date_progress_runs_from_the_creation_date()
+    public void With_a_Due_Date_Urgency_follows_it()
     {
-        var chore = new OneOffChore("Fix the leaking tap", CreatedOn) { DueOn = new DateOnly(2027, 3, 21) };
+        var chore = new OneOffChore("Fix the leaking tap", CreatedOn) { DueOn = new DateOnly(2027, 3, 13) };
 
         Assert.Equal(0.5, chore.Urgency(Today));
     }

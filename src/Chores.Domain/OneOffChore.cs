@@ -12,5 +12,6 @@ public sealed class OneOffChore(string name, DateOnly createdOn) : Chore(name, c
 
     public override DateOnly? DueDate => IsFinished ? null : DueOn;
 
-    protected override double? Progress(DateOnly today) => IsFinished ? null : DueOn is null ? 0.5 : base.Progress(today);
+    /// <summary>Without a Due Date it counts as two days before due.</summary>
+    protected override double? UnweightedUrgency(DateOnly today) => DueOn is null && !IsFinished ? 0.5 : base.UnweightedUrgency(today);
 }

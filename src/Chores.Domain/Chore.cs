@@ -29,43 +29,19 @@ public abstract class Chore(string name, DateOnly createdOn)
     public abstract DateOnly? DueDate { get; }
 
     /// <summary>Today is after the Due Date, whatever the Importance.</summary>
-    public bool IsOverdue(TimeProvider clock)
-    {
-        DateOnly today = clock.Today();
-        return !IsDormant(today) && today > DueDate;
-    }
-
-    /// <summary>Progress towards the Due Date as moved by Importance; null when the Chore has none.</summary>
-    public double? Urgency(TimeProvider clock)
-    {
-        DateOnly today = clock.Today();
-        return IsDormant(today) ? null : Progress(today);
-    }
-
-    protected virtual bool IsDormant(DateOnly today) => false;
+    public bool IsOverdue(TimeProvider clock) => clock.Today() > DueDate;
 
     /// <summary>
-    /// How far today is from the cycle start (Last Done, or the creation date) to the Due Date, which counts as
-    /// 3 days earlier for High and 3 days later for Low Importance: 1 on that date and above 1 after it.
+    /// Rises from 0 four days before the Due Date to 2 four days after it (1 on the Due Date), times the
+    /// Importance weight; null when the Chore has no Due Date.
     /// </summary>
-    protected virtual double? Progress(DateOnly today)
+    public double? Urgency(TimeProvider clock) => UnweightedUrgency(clock.Today()) * Importance switch
     {
-        if (DueDate is not { } due)
-        {
-            return null;
-        }
-        DateOnly start = LastDone ?? CreatedOn;
-        if (due <= start)
-        {
-            return 1;
-        }
-        DateOnly moved = due.AddDays(Importance switch
-        {
-            Importance.Low => 3,
-            Importance.High => -3,
-            _ => 0,
-        });
-        DateOnly effectiveDue = moved > start ? moved : start.AddDays(1);
-        return (double)(today.DayNumber - start.DayNumber) / (effectiveDue.DayNumber - start.DayNumber);
-    }
+        Importance.Low => 0.75,
+        Importance.High => 1.5,
+        _ => 1,
+    };
+
+    protected virtual double? UnweightedUrgency(DateOnly today) =>
+        DueDate is { } due ? Math.Clamp((today.DayNumber - due.DayNumber) * 0.25 + 1, 0, 2) : null;
 }
