@@ -10,12 +10,14 @@ Model Chore (Recurring and One-off), Completion, Importance, Effort, Area and Se
 - **Interval** is a whole number ≥ 1 with a unit: day, week, month or year. A week is 7 days. Months and years are calendar arithmetic, clamped to the last day of the month (31 Jan + 1 month = 28/29 Feb), and a year is 12 months.
 - **Last Done** is the date of the latest Completion; never stored separately. Removing a Completion falls back to the previous one.
 - **Due Date of a Recurring Chore**:
-  - Postponed: the Postpone date, until the next Completion or Skip.
+  - Stored, so it can be queried (ADR-0003), and recalculated by the Domain on every change that affects it.
+  - Postponed: the Postpone date. Any Completion or Skip, or removing either, ends the Postpone.
   - The schedule moves on from Last Done or the latest skipped Due Date, whichever is later ("With Last Done" below uses that date).
 - **Skip**: a Recurring Chore moves on to the Due Date after the current one, as if done exactly on the current Due Date (a Postponed one included), without a Completion; Last Done is unchanged. Removing a Skip restores the previous Due Date.
   - With Last Done: Last Done + Interval; with a Preferred Day, moved to the nearest such weekday (offset −3..+3, never a tie). If that lands on or before Last Done, take the following Preferred Day instead.
   - Without any Completion: the first Preferred Day from the creation date, or the creation date when there is none.
-- **Due Date of a One-off Chore**: optional, set by hand (Postpone changes it).
+- **Due Date of a One-off Chore**: optional, set by hand (Postpone changes it); kept once the Chore is finished. A Recurring Chore always has one.
+- **Completion** records its date, the calculated Due Date it was done against, and the Postpone date when one was in effect.
 - **Overdue**: today is after the Due Date. Importance plays no part.
 - **Season**: inclusive month range that may wrap the year (Nov–Feb). Outside it a Recurring Chore is **Dormant**: every occurrence that falls outside the Season is skipped. The Season affects only the Due Date, not Overdue or Urgency directly.
   - A Due Date outside the Season follows the schedule (each next occurrence as if done on its Due Date) to the first one inside it.

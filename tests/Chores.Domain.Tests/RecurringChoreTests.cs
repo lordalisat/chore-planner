@@ -123,30 +123,84 @@ public class RecurringChoreTests
     }
 
     [Fact]
-    public void Back_dated_Completion_before_Last_Done_keeps_the_Postpone()
+    public void Back_dated_Completion_ends_a_Postpone()
     {
-        var today = new DateOnly(2027, 3, 10);
         RecurringChore chore = NewChore(7, IntervalUnit.Day);
         chore.Complete(new DateOnly(2027, 3, 3));
         chore.Postpone(new DateOnly(2027, 3, 13));
 
         chore.Complete(new DateOnly(2027, 2, 20));
 
-        Assert.Equal(new DateOnly(2027, 3, 13), chore.DueDate);
+        Assert.Null(chore.PostponedTo);
+        Assert.Equal(new DateOnly(2027, 3, 10), chore.DueDate);
     }
 
     [Fact]
-    public void Removing_the_Completion_after_a_Postpone_restores_the_Postpone()
+    public void Removing_a_Completion_ends_a_Postpone()
     {
-        var today = new DateOnly(2027, 3, 10);
         RecurringChore chore = NewChore(7, IntervalUnit.Day);
         chore.Complete(new DateOnly(2027, 3, 3));
-        chore.Postpone(new DateOnly(2027, 3, 13));
-        chore.Complete(today);
+        chore.Complete(new DateOnly(2027, 3, 10));
+        chore.Postpone(new DateOnly(2027, 3, 20));
 
-        chore.RemoveCompletion(chore.Completions.Single(c => c.Date == today));
+        chore.RemoveCompletion(chore.Completions.Single(c => c.Date == new DateOnly(2027, 3, 10)));
 
-        Assert.Equal(new DateOnly(2027, 3, 13), chore.DueDate);
+        Assert.Null(chore.PostponedTo);
+        Assert.Equal(new DateOnly(2027, 3, 10), chore.DueDate);
+    }
+
+    [Fact]
+    public void Removing_a_Skip_ends_a_Postpone()
+    {
+        RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
+        laundry.Complete(new DateOnly(2027, 3, 11));
+        laundry.Skip();
+        laundry.Postpone(new DateOnly(2027, 3, 26));
+
+        laundry.RemoveSkip(new DateOnly(2027, 3, 16));
+
+        Assert.Null(laundry.PostponedTo);
+        Assert.Equal(new DateOnly(2027, 3, 16), laundry.DueDate);
+    }
+
+    [Fact]
+    public void Changing_the_Interval_reschedules_but_keeps_a_Postpone()
+    {
+        RecurringChore chore = NewChore(7, IntervalUnit.Day);
+        chore.Complete(new DateOnly(2027, 3, 3));
+
+        chore.Interval = new Interval(2, IntervalUnit.Week);
+        Assert.Equal(new DateOnly(2027, 3, 17), chore.DueDate);
+
+        chore.Postpone(new DateOnly(2027, 3, 20));
+        chore.Interval = new Interval(1, IntervalUnit.Day);
+        Assert.Equal(new DateOnly(2027, 3, 20), chore.DueDate);
+    }
+
+    [Fact]
+    public void Changing_the_Preferred_Day_or_Season_reschedules()
+    {
+        RecurringChore chore = NewChore(7, IntervalUnit.Day);
+        chore.Complete(new DateOnly(2027, 3, 11));
+
+        chore.PreferredDay = DayOfWeek.Tuesday;
+        Assert.Equal(new DateOnly(2027, 3, 16), chore.DueDate);
+
+        chore.Season = new Season(4, 10);
+        Assert.Equal(new DateOnly(2027, 4, 6), chore.DueDate);
+    }
+
+    [Fact]
+    public void Completion_records_the_calculated_Due_Date_and_any_Postpone()
+    {
+        RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
+        laundry.Complete(new DateOnly(2027, 3, 11));
+        laundry.Postpone(new DateOnly(2027, 3, 18));
+
+        laundry.Complete(new DateOnly(2027, 3, 19));
+
+        Assert.Equal(new Completion(new DateOnly(2027, 3, 19), new DateOnly(2027, 3, 16), new DateOnly(2027, 3, 18)), laundry.Completions[^1]);
+        Assert.Equal(new Completion(new DateOnly(2027, 3, 11), new DateOnly(2027, 1, 5), null), laundry.Completions[0]);
     }
 
     [Fact]

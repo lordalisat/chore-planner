@@ -18,18 +18,23 @@ public abstract class Chore(string name, DateOnly createdOn)
     /// <summary>The date of the latest Completion, if any.</summary>
     public DateOnly? LastDone => _completions.Count == 0 ? null : _completions.Max(c => c.Date);
 
-    public void Complete(DateOnly date) => _completions.Add(new Completion(date));
+    public void Complete(DateOnly date)
+    {
+        _completions.Add(CompletionOn(date));
+        OnCompletionsChanged();
+    }
 
-    public void RemoveCompletion(Completion completion) => _completions.Remove(completion);
+    public void RemoveCompletion(Completion completion)
+    {
+        _completions.Remove(completion);
+        OnCompletionsChanged();
+    }
 
     /// <summary>Sets the Due Date by hand.</summary>
     public abstract void Postpone(DateOnly date);
 
-    /// <summary>Follows from the Completions and any Postpone; today plays no part.</summary>
-    public abstract DateOnly? DueDate { get; }
-
     /// <summary>Today is after the Due Date, whatever the Importance.</summary>
-    public bool IsOverdue(TimeProvider clock) => clock.Today() > DueDate;
+    public bool IsOverdue(TimeProvider clock) => clock.Today() > OpenDueDate;
 
     /// <summary>
     /// Rises from 0 four days before the Due Date to 2 four days after it (1 on the Due Date), times the
@@ -42,6 +47,15 @@ public abstract class Chore(string name, DateOnly createdOn)
         _ => 1,
     };
 
+    /// <summary>The Due Date that still has to be met: none once a One-off Chore is finished.</summary>
+    protected abstract DateOnly? OpenDueDate { get; }
+
+    protected abstract Completion CompletionOn(DateOnly date);
+
+    protected virtual void OnCompletionsChanged()
+    {
+    }
+
     protected virtual double? UnweightedUrgency(DateOnly today) =>
-        DueDate is { } due ? Math.Clamp((today.DayNumber - due.DayNumber) * 0.25 + 1, 0, 2) : null;
+        OpenDueDate is { } due ? Math.Clamp((today.DayNumber - due.DayNumber) * 0.25 + 1, 0, 2) : null;
 }
