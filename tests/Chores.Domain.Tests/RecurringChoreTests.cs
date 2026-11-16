@@ -154,10 +154,10 @@ public class RecurringChoreTests
     {
         RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
         laundry.Complete(new DateOnly(2027, 3, 11));
-        laundry.Skip();
+        laundry.Skip(new DateOnly(2027, 3, 18));
         laundry.Postpone(new DateOnly(2027, 3, 26));
 
-        laundry.RemoveSkip(new DateOnly(2027, 3, 16));
+        laundry.RemoveCompletion(laundry.Completions.Single(c => c.Skipped));
 
         Assert.Null(laundry.PostponedTo);
         Assert.Equal(new DateOnly(2027, 3, 16), laundry.DueDate);
@@ -199,24 +199,25 @@ public class RecurringChoreTests
 
         laundry.Complete(new DateOnly(2027, 3, 19));
 
-        Assert.Equal(new Completion(new DateOnly(2027, 3, 19), new DateOnly(2027, 3, 16), new DateOnly(2027, 3, 18)), laundry.Completions[^1]);
-        Assert.Equal(new Completion(new DateOnly(2027, 3, 11), new DateOnly(2027, 1, 5), null), laundry.Completions[0]);
+        Assert.Equal(new Completion(new DateOnly(2027, 3, 19), new DateOnly(2027, 3, 16), new DateOnly(2027, 3, 18), Skipped: false), laundry.Completions[^1]);
+        Assert.Equal(new Completion(new DateOnly(2027, 3, 11), new DateOnly(2027, 1, 5), null, Skipped: false), laundry.Completions[0]);
     }
 
     [Fact]
-    public void Skip_moves_on_from_the_skipped_Due_Date_without_a_Completion()
+    public void Skip_moves_on_from_the_skipped_Due_Date_and_leaves_Last_Done()
     {
         RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
         laundry.Complete(new DateOnly(2027, 3, 11));
 
-        laundry.Skip();
+        // Skipped two days after it was due, yet the next one keeps the rhythm
+        laundry.Skip(new DateOnly(2027, 3, 18));
         Assert.Equal(new DateOnly(2027, 3, 23), laundry.DueDate);
 
-        laundry.Skip();
+        laundry.Skip(new DateOnly(2027, 3, 23));
         Assert.Equal(new DateOnly(2027, 3, 30), laundry.DueDate);
 
         Assert.Equal(new DateOnly(2027, 3, 11), laundry.LastDone);
-        Assert.Single(laundry.Completions);
+        Assert.Equal(new Completion(new DateOnly(2027, 3, 18), new DateOnly(2027, 3, 16), null, Skipped: true), laundry.Completions[1]);
     }
 
     [Fact]
@@ -225,7 +226,7 @@ public class RecurringChoreTests
         // Created Friday 1 January, first due Tuesday 5 January
         RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
 
-        laundry.Skip();
+        laundry.Skip(new DateOnly(2027, 1, 5));
 
         Assert.Equal(new DateOnly(2027, 1, 12), laundry.DueDate);
     }
@@ -235,9 +236,9 @@ public class RecurringChoreTests
     {
         RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
         laundry.Complete(new DateOnly(2027, 3, 11));
-        laundry.Skip();
+        laundry.Skip(new DateOnly(2027, 3, 18));
 
-        laundry.RemoveSkip(new DateOnly(2027, 3, 16));
+        laundry.RemoveCompletion(laundry.Completions.Single(c => c.Skipped));
 
         Assert.Equal(new DateOnly(2027, 3, 16), laundry.DueDate);
     }
@@ -249,7 +250,7 @@ public class RecurringChoreTests
         laundry.Complete(new DateOnly(2027, 3, 11));
         laundry.Postpone(new DateOnly(2027, 3, 20));
 
-        laundry.Skip();
+        laundry.Skip(new DateOnly(2027, 3, 18));
 
         // Saturday 20 March + 7 is Saturday 27 March; the nearest Tuesday is 30 March
         Assert.Equal(new DateOnly(2027, 3, 30), laundry.DueDate);
@@ -260,7 +261,7 @@ public class RecurringChoreTests
     {
         RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
         laundry.Complete(new DateOnly(2027, 3, 11));
-        laundry.Skip();
+        laundry.Skip(new DateOnly(2027, 3, 18));
 
         laundry.Complete(new DateOnly(2027, 3, 25));
 

@@ -3,34 +3,23 @@ namespace Chores.Domain;
 /// <summary>A Chore that comes back after an Interval.</summary>
 public sealed class RecurringChore(string name, Interval interval, DateOnly createdOn) : Chore(name, createdOn)
 {
-    private readonly List<DateOnly> _skippedDueDates = [];
-
     public Interval Interval { get; set; } = interval;
     public DayOfWeek? PreferredDay { get; set; }
     public Season? Season { get; set; }
 
-    /// <summary>The Postpone date, overriding the calculated Due Date until the next Completion or Skip.</summary>
+    /// <summary>The Postpone date, overriding the calculated Due Date until the next Completion, done or skipped.</summary>
     public DateOnly? PostponedTo { get; private set; }
 
-    public IReadOnlyList<DateOnly> SkippedDueDates => _skippedDueDates;
-
-    /// <summary>Follows from the Completions, Skips and any Postpone; today plays no part.</summary>
+    /// <summary>Follows from the Completions and any Postpone; today plays no part.</summary>
     public DateOnly DueDate => PostponedTo ?? CalculatedDueDate();
 
     public override void Postpone(DateOnly date) => PostponedTo = date;
 
-    /// <summary>Moves on to the next Due Date as if done on the current one, without a Completion.</summary>
-    public void Skip()
-    {
-        _skippedDueDates.Add(DueDate);
-        PostponedTo = null;
-    }
-
-    public void RemoveSkip(DateOnly skippedDueDate)
-    {
-        _skippedDueDates.Remove(skippedDueDate);
-        PostponedTo = null;
-    }
+    /// <summary>
+    /// Moves on to the next Due Date as if done on the current one, recording a skipped Completion that leaves
+    /// Last Done as it is.
+    /// </summary>
+    public void Skip(DateOnly date) => Add(new Completion(date, CalculatedDueDate(), PostponedTo, Skipped: true));
 
     /// <summary>
     /// The expected occurrences after the Due Date, up to and including <paramref name="until"/>, assuming each
@@ -47,16 +36,16 @@ public sealed class RecurringChore(string name, Interval interval, DateOnly crea
     /// <summary>Outside its Season; occurrences that would fall there are skipped by the Due Date.</summary>
     public bool IsDormant(TimeProvider clock) => Season is { } season && !season.Contains(clock.Today());
 
-    protected override DateOnly? OpenDueDate => DueDate;
+    protected override DateOnly? NextDueDate => DueDate;
 
-    protected override Completion CompletionOn(DateOnly date) => new(date, CalculatedDueDate(), PostponedTo);
+    protected override Completion CompletionOn(DateOnly date) => new(date, CalculatedDueDate(), PostponedTo, Skipped: false);
 
     protected override void OnCompletionsChanged() => PostponedTo = null;
 
     private DateOnly CalculatedDueDate()
     {
-        // Last Done or the latest skipped Due Date, whichever is later
-        if (_skippedDueDates.Select(d => (DateOnly?)d).Append(LastDone).Max() is { } from)
+        // The latest Completion moves the schedule on: a done one from its date, a skipped one from the Due Date it skipped
+        if (Completions.Select(c => c.Skipped ? c.PostponedTo ?? c.DueDate : c.Date).Max() is { } from)
         {
             return NextOccurrenceAfter(from);
         }

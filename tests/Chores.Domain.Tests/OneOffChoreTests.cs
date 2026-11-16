@@ -64,6 +64,6 @@ public class OneOffChoreTests
         Assert.Equal(new DateOnly(2027, 3, 5), chore.DueDate);
         Assert.Null(chore.Urgency(Today));
         Assert.False(chore.IsOverdue(Today));
-        Assert.Equal(new Completion(new DateOnly(2027, 3, 9), new DateOnly(2027, 3, 5), null), chore.Completions.Single());
+        Assert.Equal(new Completion(new DateOnly(2027, 3, 9), new DateOnly(2027, 3, 5), null, Skipped: false), chore.Completions.Single());
     }
 }
