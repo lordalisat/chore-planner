@@ -8,8 +8,19 @@ public sealed class RecurringChore(string name, Interval interval, DateOnly crea
     {
     }
 
-    public Interval Interval { get; set; } = interval;
-    public DayOfWeek? PreferredDay { get; set; }
+    public Interval Interval
+    {
+        get;
+        set => field = Allows(value, PreferredDay) ? value : throw new ArgumentException("First or last of month needs an Interval in months or years.", nameof(value));
+    } = interval;
+
+    /// <summary>A weekday, or the first or last of the month for an Interval in months or years.</summary>
+    public PreferredDay? PreferredDay
+    {
+        get;
+        set => field = Allows(Interval, value) ? value : throw new ArgumentException("First or last of month needs an Interval in months or years.", nameof(value));
+    }
+
     public Season? Season { get; set; }
 
     /// <summary>The Postpone date, overriding the calculated Due Date until the next Completion, done or skipped.</summary>
@@ -83,19 +94,21 @@ public sealed class RecurringChore(string name, Interval interval, DateOnly crea
         DateOnly due = Interval.AddTo(lastDone);
         if (PreferredDay is { } preferred)
         {
-            int offset = DaysUntil(due, preferred);
-            due = due.AddDays(offset > 3 ? offset - 7 : offset);
+            // The nearest Preferred Day; ties go to the later one
+            DateOnly before = preferred.OnOrBefore(due);
+            DateOnly after = preferred.OnOrAfter(due);
+            due = due.DayNumber - before.DayNumber < after.DayNumber - due.DayNumber ? before : after;
             if (due <= lastDone)
             {
-                due = NextOnOrAfter(lastDone.AddDays(1), preferred);
+                due = preferred.OnOrAfter(lastDone.AddDays(1));
             }
         }
         return due;
     }
 
-    private DateOnly FirstPreferredDayFrom(DateOnly date) => PreferredDay is { } preferred ? NextOnOrAfter(date, preferred) : date;
+    private static bool Allows(Interval interval, PreferredDay? preferredDay) =>
+        preferredDay is not (Domain.PreferredDay.FirstOfMonth or Domain.PreferredDay.LastOfMonth)
+        || interval.Unit is IntervalUnit.Month or IntervalUnit.Year;
 
-    private static DateOnly NextOnOrAfter(DateOnly date, DayOfWeek day) => date.AddDays(DaysUntil(date, day));
-
-    private static int DaysUntil(DateOnly date, DayOfWeek day) => ((int)day - (int)date.DayOfWeek + 7) % 7;
+    private DateOnly FirstPreferredDayFrom(DateOnly date) => PreferredDay is { } preferred ? preferred.OnOrAfter(date) : date;
 }

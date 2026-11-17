@@ -1,6 +1,6 @@
 # Day-of-month preferences for monthly Chores
 
-Not scheduled yet; to be grilled before it gets issues. Builds on Foundations issue 04.
+Not scheduled yet; to be grilled before it gets issues. Builds on Foundations issue 04. First and last of month landed as Preferred Days in Foundations issue 08; what remains is "first Saturday of the month" and the like.
 
 ## Want
 

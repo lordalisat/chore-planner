@@ -36,7 +36,7 @@ public sealed class PersistenceTests : IDisposable
     {
         var laundry = new RecurringChore("Laundry", new Interval(7, IntervalUnit.Day), new DateOnly(2027, 1, 1))
         {
-            PreferredDay = DayOfWeek.Tuesday,
+            PreferredDay = PreferredDay.Tuesday,
             Importance = Importance.High,
             Effort = 30,
             Area = new Area("Utility room"),
@@ -86,6 +86,20 @@ public sealed class PersistenceTests : IDisposable
         });
 
         Assert.Equal(new Season(11, 2), LoadChore<RecurringChore>("Clear the gutters").Season);
+    }
+
+    [Fact]
+    public void A_Recurring_Chore_keeps_a_last_of_month_Preferred_Day()
+    {
+        Save(new RecurringChore("Pay the rent", new Interval(1, IntervalUnit.Month), new DateOnly(2027, 1, 1))
+        {
+            PreferredDay = PreferredDay.LastOfMonth,
+        });
+
+        RecurringChore loaded = LoadChore<RecurringChore>("Pay the rent");
+
+        Assert.Equal(PreferredDay.LastOfMonth, loaded.PreferredDay);
+        Assert.Equal(new DateOnly(2027, 1, 31), loaded.DueDate);
     }
 
     [Fact]
