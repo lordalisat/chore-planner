@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using Xunit;
 
 namespace Chores.Api.Tests;
@@ -51,12 +52,14 @@ public class AuthTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.NoContent, (await client.GetAsync("/api/session", TestContext.Current.CancellationToken)).StatusCode);
     }
 
-    [Fact]
-    public async Task Logging_in_with_a_wrong_password_is_unauthorized()
+    [Theory]
+    [InlineData("""{ "password": "wrong" }""")]
+    [InlineData("{}")]
+    public async Task Logging_in_with_a_wrong_password_is_unauthorized(string body)
     {
         HttpClient client = factory.CreateBrowserClient();
 
-        HttpResponseMessage response = await client.PostAsJsonAsync("/api/login", new { password = "wrong" }, TestContext.Current.CancellationToken);
+        HttpResponseMessage response = await client.PostAsync("/api/login", new StringContent(body, Encoding.UTF8, "application/json"), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/session", TestContext.Current.CancellationToken)).StatusCode);

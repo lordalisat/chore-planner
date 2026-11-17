@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 
 namespace Chores.Api;
 
@@ -56,7 +57,7 @@ public static class Auth
         api.MapPost("/login", async Task<Results<NoContent, UnauthorizedHttpResult>> (LoginRequest request, HttpContext context, IConfiguration configuration) =>
         {
             string? hash = configuration["Auth:PasswordHash"];
-            if (string.IsNullOrEmpty(hash) || Hasher.VerifyHashedPassword(Household, hash, request.Password) == PasswordVerificationResult.Failed)
+            if (string.IsNullOrEmpty(hash) || request.Password is null || Hasher.VerifyHashedPassword(Household, hash, request.Password) == PasswordVerificationResult.Failed)
             {
                 return TypedResults.Unauthorized();
             }
@@ -76,7 +77,7 @@ public static class Auth
         api.MapGet("/session", () => TypedResults.NoContent());
     }
 
-    private sealed record LoginRequest(string Password);
+    private sealed record LoginRequest(string? Password);
 
     private sealed class ApiKeyOptions : AuthenticationSchemeOptions
     {
@@ -89,7 +90,7 @@ public static class Auth
     {
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
-            if (!Request.Headers.TryGetValue("X-Api-Key", out var sent))
+            if (!Request.Headers.TryGetValue("X-Api-Key", out StringValues sent))
             {
                 return Task.FromResult(AuthenticateResult.NoResult());
             }

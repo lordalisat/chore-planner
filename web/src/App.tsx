@@ -1,13 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react'
 
-type Session = 'checking' | 'anonymous' | 'authenticated'
+type Session = 'checking' | 'anonymous' | 'authenticated' | 'unreachable'
 
 function App() {
   const [session, setSession] = useState<Session>('checking')
 
   useEffect(() => {
     // Any 401 from the API means the household password is needed
-    fetch('/api/session').then((response) => setSession(response.status === 401 ? 'anonymous' : 'authenticated'))
+    fetch('/api/session')
+      .then((response) => setSession(response.ok ? 'authenticated' : response.status === 401 ? 'anonymous' : 'unreachable'))
+      .catch(() => setSession('unreachable'))
   }, [])
 
   async function logout() {
@@ -16,6 +18,14 @@ function App() {
   }
 
   if (session === 'checking') return null
+  if (session === 'unreachable') {
+    return (
+      <main>
+        <h1>Chores</h1>
+        <p role="alert">The server can't be reached right now. Try again later.</p>
+      </main>
+    )
+  }
   if (session === 'anonymous') return <Login onLogin={() => setSession('authenticated')} />
 
   return (
@@ -31,7 +41,7 @@ function App() {
 
 function Login({ onLogin }: { onLogin: () => void }) {
   const [password, setPassword] = useState('')
-  const [wrong, setWrong] = useState(false)
+  const [error, setError] = useState<string>()
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -39,9 +49,10 @@ function Login({ onLogin }: { onLogin: () => void }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password }),
-    })
-    if (response.ok) onLogin()
-    else setWrong(true)
+    }).catch(() => undefined)
+    if (response?.ok) onLogin()
+    else if (response?.status === 401) setError('That password is not right.')
+    else setError("The server can't be reached right now. Try again later.")
   }
 
   return (
@@ -59,7 +70,7 @@ function Login({ onLogin }: { onLogin: () => void }) {
           />
         </label>{' '}
         <button type="submit">Log in</button>
-        {wrong && <p role="alert">That password is not right.</p>}
+        {error && <p role="alert">{error}</p>}
       </form>
     </main>
   )
