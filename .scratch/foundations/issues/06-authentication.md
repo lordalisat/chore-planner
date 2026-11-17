@@ -22,3 +22,10 @@ Implement ADR 0001.
 - `/openapi/v1.json` is mapped outside `/api` and is public in every environment. Decide whether it stays anonymous (it is how AI tooling discovers the API) or requires the cookie or API key.
 - `/api/health` exists. Decide whether it stays anonymous, for example for a Docker health check in 07.
 - `tests/Chores.Api.Tests` already has an `ApiFactory` (`WebApplicationFactory<Program>`, `Testing` environment, temporary web root) to build the integration tests on.
+
+**From 06 (authentication):**
+- `/api/health` and `/openapi/v1.json` stay anonymous: neither exposes household data, the health check needs no secret for Docker in 07, and AI tooling can discover the API before it has a key.
+- `GET /api/session` answers 204 when logged in (cookie or key) and 401 otherwise; the front end uses it to choose between the login page and the home page.
+- The cookie is encrypted with Data Protection keys kept in `keys/` next to the database (`Database:Path`). 07 must mount that whole directory as the volume, or every restart logs everyone out.
+- The password hash is ASP.NET Core Identity's `PasswordHasher` format (PBKDF2), generated with `dotnet run --project src/Chores.Api -- hash-password`. Configure with `Auth__PasswordHash` and `Auth__ApiKey`.
+- There is no rate limiting on `POST /api/login`; worth adding before the app faces the internet if the proxy doesn't do it.

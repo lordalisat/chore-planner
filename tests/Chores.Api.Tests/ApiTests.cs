@@ -41,7 +41,7 @@ public class ApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Unknown_api_routes_are_not_found()
     {
-        HttpResponseMessage response = await _client.GetAsync("/api/does-not-exist", TestContext.Current.CancellationToken);
+        HttpResponseMessage response = await factory.CreateApiKeyClient().GetAsync("/api/does-not-exist", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
