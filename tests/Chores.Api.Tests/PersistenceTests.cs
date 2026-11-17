@@ -32,7 +32,7 @@ public sealed class PersistenceTests : IDisposable
     }
 
     [Fact]
-    public void A_Recurring_Chore_keeps_its_schedule()
+    public void A_Recurring_Chore_keeps_its_Interval_and_details()
     {
         var laundry = new RecurringChore("Laundry", new Interval(7, IntervalUnit.Day), new DateOnly(2027, 1, 1))
         {
@@ -59,8 +59,9 @@ public sealed class PersistenceTests : IDisposable
     {
         var vacuuming = new RecurringChore("Vacuuming", new Interval(7, IntervalUnit.Day), new DateOnly(2027, 1, 1));
         vacuuming.Complete(new DateOnly(2027, 1, 5));
-        vacuuming.Skip(new DateOnly(2027, 1, 10));
-        vacuuming.Postpone(new DateOnly(2027, 1, 21));
+        vacuuming.Postpone(new DateOnly(2027, 1, 14));
+        vacuuming.Skip(new DateOnly(2027, 1, 13));
+        vacuuming.Postpone(new DateOnly(2027, 1, 25));
         Save(vacuuming);
 
         RecurringChore loaded = LoadChore<RecurringChore>("Vacuuming");
@@ -68,12 +69,12 @@ public sealed class PersistenceTests : IDisposable
         Assert.Equal(
             [
                 new Completion(new DateOnly(2027, 1, 5), new DateOnly(2027, 1, 1), null, Skipped: false),
-                new Completion(new DateOnly(2027, 1, 10), new DateOnly(2027, 1, 12), null, Skipped: true),
+                new Completion(new DateOnly(2027, 1, 13), new DateOnly(2027, 1, 12), new DateOnly(2027, 1, 14), Skipped: true),
             ],
             loaded.Completions);
         Assert.Equal(new DateOnly(2027, 1, 5), loaded.LastDone);
-        Assert.Equal(new DateOnly(2027, 1, 21), loaded.PostponedTo);
-        Assert.Equal(new DateOnly(2027, 1, 21), loaded.DueDate);
+        Assert.Equal(new DateOnly(2027, 1, 25), loaded.PostponedTo);
+        Assert.Equal(new DateOnly(2027, 1, 25), loaded.DueDate);
     }
 
     [Fact]

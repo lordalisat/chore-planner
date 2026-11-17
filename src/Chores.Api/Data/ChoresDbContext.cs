@@ -15,6 +15,7 @@ public sealed class ChoresDbContext(DbContextOptions<ChoresDbContext> options) :
         {
             chore.Property<int>("Id");
             chore.HasKey("Id");
+            // Get-only properties, here and in Interval and Season, are not mapped by convention
             chore.Property(c => c.CreatedOn);
             chore.HasDiscriminator<string>("Kind")
                 .HasValue<RecurringChore>("Recurring")
