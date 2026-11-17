@@ -39,6 +39,8 @@ npm run build --prefix web                 # front end into src/Chores.Api/wwwro
 npm run lint --prefix web
 ```
 
+In Development the household password is `chores` and the API key is `dev-api-key` (see `src/Chores.Api/appsettings.Development.json`). The login cookie is marked secure, which browsers accept over plain HTTP only on `localhost`.
+
 For front-end work, run the API and the Vite dev server side by side and open port 5173. To see the app the way it ships, build the front end and open port 5080.
 
 The API is published on <http://localhost:5080> and the Vite dev server on <http://localhost:5173>. Local SQLite data lives in `data/` in the workspace (git-ignored), so it survives rebuilding the container. The database is `data/chores.db` relative to the working directory, or the path in the `Database__Path` environment variable; migrations are applied when the API starts.
@@ -46,3 +48,21 @@ The API is published on <http://localhost:5080> and the Vite dev server on <http
 ## Run
 
 _To be filled in by the Docker image issue._
+
+### Configuration
+
+Environment variables, using `__` for nesting:
+
+| Variable | Meaning |
+| --- | --- |
+| `Auth__PasswordHash` | Hash of the household password (see below). Without it nobody can log in. |
+| `Auth__ApiKey` | Key AI tooling sends in the `X-Api-Key` header. Without it no key is accepted. |
+| `Database__Path` | SQLite file, default `data/chores.db`. The cookie encryption keys live in `keys/` next to it, so mount that whole directory as a volume, or every restart logs everyone out. |
+
+Generate the password hash, never configure the password itself:
+
+```sh
+dotnet run --project src/Chores.Api -- hash-password   # type the password, prints the hash
+```
+
+Logging in (`POST /api/login`) gives a cookie valid for a year. `/api/health` and the OpenAPI document at `/openapi/v1.json` are public; every other `/api` endpoint needs the cookie or the API key.
