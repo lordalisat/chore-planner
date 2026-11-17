@@ -1,0 +1,21 @@
+# Example for the home server. Put the secrets in a .env file next to this one (git-ignored):
+#   CHORES_PASSWORD_HASH=...   from: docker compose run --rm chores hash-password
+#   CHORES_API_KEY=...         any long random string, e.g. from: openssl rand -hex 32
+services:
+  chores:
+    build: .
+    image: chores
+    restart: unless-stopped
+    # Plain HTTP; point the reverse proxy here and let it terminate HTTPS
+    ports:
+      - "8080:8080"
+    environment:
+      TZ: Europe/Amsterdam
+      Auth__PasswordHash: ${CHORES_PASSWORD_HASH}
+      Auth__ApiKey: ${CHORES_API_KEY}
+    volumes:
+      # The database and the cookie keys; losing them loses the data and logs everyone out
+      - chores-data:/data
+
+volumes:
+  chores-data:

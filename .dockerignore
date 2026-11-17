@@ -1,0 +1,8 @@
+**/bin/
+**/obj/
+**/node_modules/
+src/Chores.Api/wwwroot/
+data/
+.git
+.claude/
+.env

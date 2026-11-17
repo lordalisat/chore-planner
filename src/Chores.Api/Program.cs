@@ -1,5 +1,6 @@
 using Chores.Api;
 using Chores.Api.Data;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 
 if (args is ["hash-password"])
@@ -16,6 +17,13 @@ builder.Services.AddOpenApi();
 string databasePath = Path.GetFullPath(builder.Configuration["Database:Path"] ?? "data/chores.db");
 builder.Services.AddDbContext<ChoresDbContext>(options => options.UseSqlite($"Data Source={databasePath}"));
 builder.Services.AddHouseholdAuth(new DirectoryInfo(Path.Combine(Path.GetDirectoryName(databasePath)!, "keys")));
+// HTTPS ends at the home server's reverse proxy, whose address inside Docker isn't known up front, so any proxy is trusted
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 WebApplication app = builder.Build();
 
@@ -25,6 +33,7 @@ using (IServiceScope scope = app.Services.CreateScope())
     scope.ServiceProvider.GetRequiredService<ChoresDbContext>().Database.Migrate();
 }
 
+app.UseForwardedHeaders();
 app.UseStaticFiles();
 app.MapOpenApi();
 
