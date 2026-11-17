@@ -47,7 +47,16 @@ The API is published on <http://localhost:5080> and the Vite dev server on <http
 
 ## Run
 
-_To be filled in by the Docker image issue._
+The `Dockerfile` builds one image that serves the front end and the API on plain HTTP port 8080; the reverse proxy in front terminates HTTPS and its `X-Forwarded-*` headers are honoured from any address, so only the proxy should reach port 8080. [`compose.yaml`](compose.yaml) is an example for the home server:
+
+```sh
+docker compose build
+docker compose run --rm chores hash-password   # type the password, prints the hash
+# put CHORES_PASSWORD_HASH and CHORES_API_KEY in .env next to compose.yaml
+docker compose up -d
+```
+
+Data lives in the `chores-data` volume, mounted at `/data` (`Database__Path=/data/chores.db`, cookie keys in `/data/keys`); back that up. The example sets `TZ=Europe/Amsterdam`.
 
 ### Configuration
 
@@ -62,7 +71,7 @@ Environment variables, using `__` for nesting:
 Generate the password hash, never configure the password itself:
 
 ```sh
-dotnet run --project src/Chores.Api -- hash-password   # type the password, prints the hash
+dotnet run --project src/Chores.Api -- hash-password   # in the devcontainer; type the password, prints the hash
 ```
 
 Logging in (`POST /api/login`) gives a cookie valid for a year. `/api/health` and the OpenAPI document at `/openapi/v1.json` are public; every other `/api` endpoint needs the cookie or the API key.

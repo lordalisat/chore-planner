@@ -28,6 +28,20 @@ public class ApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.True(document.RootElement.GetProperty("paths").TryGetProperty("/api/health", out _));
     }
 
+    [Fact]
+    public async Task Requests_forwarded_by_the_reverse_proxy_see_its_public_https_address()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "/openapi/v1.json");
+        request.Headers.Add("X-Forwarded-Proto", "https");
+        request.Headers.Add("X-Forwarded-Host", "chores.example");
+        request.Headers.Add("X-Forwarded-For", "192.168.1.20");
+
+        HttpResponseMessage response = await _client.SendAsync(request, TestContext.Current.CancellationToken);
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+
+        Assert.Equal("https://chores.example/", document.RootElement.GetProperty("servers")[0].GetProperty("url").GetString());
+    }
+
     [Theory]
     [InlineData("/")]
     [InlineData("/chores/42")]
