@@ -1,0 +1,69 @@
+using Xunit;
+
+namespace Chores.Domain.Tests;
+
+public class OneOffChoreTests
+{
+    private static readonly DateOnly CreatedOn = new(2027, 3, 1);
+    private static readonly FixedClock Today = new(new DateOnly(2027, 3, 11));
+
+    [Fact]
+    public void Due_Date_is_optional_and_set_by_hand()
+    {
+        var chore = new OneOffChore("Fix the leaking tap", CreatedOn);
+        Assert.Null(chore.DueDate);
+
+        chore.DueDate = new DateOnly(2027, 3, 20);
+        Assert.Equal(new DateOnly(2027, 3, 20), chore.DueDate);
+    }
+
+    [Fact]
+    public void Postpone_changes_the_Due_Date()
+    {
+        var chore = new OneOffChore("Fix the leaking tap", CreatedOn) { DueDate = new DateOnly(2027, 3, 5) };
+
+        chore.Postpone(new DateOnly(2027, 3, 21));
+
+        Assert.Equal(new DateOnly(2027, 3, 21), chore.DueDate);
+        Assert.False(chore.IsOverdue(Today));
+    }
+
+    [Fact]
+    public void Overdue_when_today_is_after_the_Due_Date()
+    {
+        var chore = new OneOffChore("Fix the leaking tap", CreatedOn) { DueDate = new DateOnly(2027, 3, 10) };
+
+        Assert.True(chore.IsOverdue(Today));
+    }
+
+    [Fact]
+    public void Without_a_Due_Date_it_is_never_Overdue_and_counts_as_two_days_before_due()
+    {
+        var chore = new OneOffChore("Fix the leaking tap", CreatedOn) { Importance = Importance.High };
+
+        Assert.False(chore.IsOverdue(Today));
+        Assert.Equal(0.75, chore.Urgency(Today));
+    }
+
+    [Fact]
+    public void With_a_Due_Date_Urgency_follows_it()
+    {
+        var chore = new OneOffChore("Fix the leaking tap", CreatedOn) { DueDate = new DateOnly(2027, 3, 13) };
+
+        Assert.Equal(0.5, chore.Urgency(Today));
+    }
+
+    [Fact]
+    public void Completed_it_is_finished_keeps_its_Due_Date_and_has_no_Urgency()
+    {
+        var chore = new OneOffChore("Fix the leaking tap", CreatedOn) { DueDate = new DateOnly(2027, 3, 5) };
+
+        chore.Complete(new DateOnly(2027, 3, 9));
+
+        Assert.True(chore.IsFinished);
+        Assert.Equal(new DateOnly(2027, 3, 5), chore.DueDate);
+        Assert.Null(chore.Urgency(Today));
+        Assert.False(chore.IsOverdue(Today));
+        Assert.Equal(new Completion(new DateOnly(2027, 3, 9), new DateOnly(2027, 3, 5), null, Skipped: false), chore.Completions.Single());
+    }
+}

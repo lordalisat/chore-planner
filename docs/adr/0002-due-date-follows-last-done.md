@@ -5,3 +5,5 @@ Todoist-style recurrence ("every Tuesday") keeps firing on the calendar regardle
 ## Consequences
 
 The future is not stored: the week planner and month calendar compute Forecasts by assuming each occurrence is done on its Due Date, so they shift whenever a Chore is completed early or late.
+
+Any Completion or Skip, or undoing either, ends a Postpone, so undoing a Completion restores the calculated Due Date rather than an earlier Postpone.

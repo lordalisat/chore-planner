@@ -29,7 +29,7 @@ A part of the house a Chore belongs to, such as the kitchen or the garden; an Ar
 _Avoid_: Room, location, zone, area group
 
 **Completion**:
-A record that a Chore was done on a given date; the history of a Chore is its list of Completions.
+A record that a Chore's Due Date was dealt with on a given date: done, or skipped (see Skip); the history of a Chore is its list of Completions.
 _Avoid_: Check-off, log entry
 
 ### Scheduling
@@ -42,7 +42,7 @@ _Avoid_: Frequency, recurrence
 The weekday a Recurring Chore would ideally be done on, such as Tuesday for laundry.
 
 **Last Done**:
-The date of a Chore's most recent Completion.
+The date of a Chore's most recent Completion that was not skipped.
 _Avoid_: Completed at, last completion
 
 **Due Date**:
@@ -50,14 +50,18 @@ The date a Chore should be done by; for a Recurring Chore, Last Done plus the In
 _Avoid_: Deadline
 
 **Postpone**:
-To set a Chore's Due Date by hand, overriding the calculated one until its next Completion.
-_Avoid_: Snooze, skip, defer
+To set a Chore's Due Date by hand, overriding the calculated one until its next Completion, done or skipped.
+_Avoid_: Snooze, defer
+
+**Skip**:
+To let a Recurring Chore move on to its next Due Date as if it were done on the current one, recorded as a skipped Completion that leaves Last Done as it is; unlike Postpone, the new Due Date is calculated, not picked.
+_Avoid_: Dismiss, pass
 
 **Overdue**:
 The state of a Chore whose Due Date has passed; independent of Importance.
 
 **Urgency**:
-A score for how pressing a Chore is right now: progress from Last Done towards the Due Date (1 on the Due Date), weighted by Importance.
+A score for how pressing a Chore is right now, from how close today is to the Due Date and its Importance: 0 until a few days before the Due Date, rising to twice the Importance weight a few days after it.
 _Avoid_: Freshness, priority
 
 **Forecast**:
@@ -70,5 +74,5 @@ _Avoid_: Projection, occurrence, instance
 The part of the year in which a Recurring Chore applies, such as spring to autumn for mowing the lawn.
 
 **Dormant**:
-The state of a Recurring Chore outside its Season: hidden and never Overdue.
+The state of a Recurring Chore outside its Season: hidden, with every occurrence that would fall in it skipped.
 _Avoid_: Paused, inactive

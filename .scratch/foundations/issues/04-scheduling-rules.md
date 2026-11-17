@@ -8,18 +8,22 @@ Model Chore (Recurring and One-off), Completion, Importance, Effort, Area and Se
 ## Rules
 
 - **Interval** is a whole number ≥ 1 with a unit: day, week, month or year. A week is 7 days. Months and years are calendar arithmetic, clamped to the last day of the month (31 Jan + 1 month = 28/29 Feb), and a year is 12 months.
-- **Last Done** is the date of the latest Completion; never stored separately. Removing a Completion falls back to the previous one.
+- **Last Done** is the date of the latest Completion that was not skipped; never stored separately. Removing a Completion falls back to the previous one.
 - **Due Date of a Recurring Chore**:
-  - Postponed: the Postpone date, until the next Completion.
+  - Postponed: the Postpone date. Any Completion, done or skipped, or removing one, ends the Postpone.
+  - The schedule moves on from the latest Completion: a done one from its date, a skipped one from the Due Date it skipped (its Postpone date when it had one), whichever is later ("With Last Done" below uses that date).
+- **Skip**: a Recurring Chore moves on to the Due Date after the current one, as if done exactly on the current Due Date (a Postponed one included), recorded as a Completion marked skipped, with the date it was skipped; Last Done is unchanged. Removing it restores the previous Due Date.
+- **Forecasts** of a Recurring Chore up to a date: each next occurrence after the Due Date (a Postponed one included), as if every occurrence is done exactly on its Due Date, so it is moved to the nearest Preferred Day each time and occurrences outside the Season are skipped. Not stored; the week planner and month calendar use them.
   - With Last Done: Last Done + Interval; with a Preferred Day, moved to the nearest such weekday (offset −3..+3, never a tie). If that lands on or before Last Done, take the following Preferred Day instead.
   - Without any Completion: the first Preferred Day from the creation date, or the creation date when there is none.
-- **Due Date of a One-off Chore**: optional, set by hand (Postpone changes it).
+- **Due Date of a One-off Chore**: optional, set by hand (Postpone changes it); kept once the Chore is finished. A Recurring Chore always has one.
+- **Completion** records its date, the calculated Due Date it dealt with, the Postpone date when one was in effect, and whether it was skipped.
 - **Overdue**: today is after the Due Date. Importance plays no part.
-- **Season**: inclusive month range that may wrap the year (Nov–Feb). Outside it a Recurring Chore is **Dormant**: no Due Date, never Overdue, no Urgency.
-- **Urgency** = progress × weight, with weight Low 0.75, Normal 1, High 1.5.
-  - Progress = (today − cycle start) ÷ (Due Date − cycle start), where cycle start is Last Done, or the creation date when there is no Completion. It is 1 on the Due Date and above 1 when Overdue.
-  - When the Due Date equals the cycle start, progress is 1.
-  - A One-off Chore without a Due Date has progress 0.5.
+- **Season**: inclusive month range that may wrap the year (Nov–Feb). Outside it a Recurring Chore is **Dormant**: every occurrence that falls outside the Season is skipped. The Season affects only the Due Date, not Overdue or Urgency directly.
+  - A Due Date outside the Season follows the schedule (each next occurrence as if done on its Due Date) to the first one inside it.
+  - If the schedule never lands inside the next Season, or a Chore without Completions was created outside it, the Due Date is the first Preferred Day from the Season start, or the Season start when there is none.
+- **Urgency** = clamp((today − Due Date) × 0.25 + 1, 0, 2) × weight, with weight Low 0.75, Normal 1, High 1.5. So it is 0 until four days before the Due Date, equal to the weight on the Due Date, and twice the weight from four days after it.
+  - A One-off Chore without a Due Date counts as two days before due: 0.5 × weight.
 - A completed One-off Chore is finished and has no Urgency.
 
 ## Acceptance
@@ -28,8 +32,9 @@ Each rule above has at least one test. These scenarios are tests verbatim:
 
 - "Laundry, every 7 days, Tuesday", done on a Thursday → due the Tuesday 5 days later.
 - Same Chore done on a Monday → due the Tuesday 8 days later.
-- 7-day Interval, Normal, last done 10 days ago → Overdue, Urgency ≈ 1.43.
-- Low, 14-day Interval, 2 days Overdue → Urgency ≈ 0.86; High, due today → 1.5.
+- 7-day Interval, Normal, last done 10 days ago → Overdue, Urgency 1.75.
+- Low, 2 days Overdue → Urgency 1.125; High, due today → 1.5.
+- High, every year, four months before its Due Date → Urgency 0.
 - "Every month", done 31 January (non-leap year) → due 28 February; "every year", done 29 February 2028 → due 28 February 2029.
 - "Every month, Saturday", done 15 March 2027 (a Monday) → 15 April 2027 is a Thursday → due Saturday 17 April.
 - "Every 2 weeks" behaves exactly like "every 14 days".
