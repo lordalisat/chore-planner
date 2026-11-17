@@ -84,9 +84,14 @@ public class RecurringChoreTests
     }
 
     [Fact]
-    public void Without_a_Completion_it_is_due_on_the_first_last_of_month_from_the_creation_date()
+    public void Without_a_Completion_last_of_month_is_due_at_the_end_of_the_creation_month()
     {
         Assert.Equal(new DateOnly(2027, 1, 31), NewChore(3, IntervalUnit.Month, PreferredDay.LastOfMonth).DueDate);
+    }
+
+    [Fact]
+    public void Without_a_Completion_created_on_the_first_of_month_it_is_due_that_day()
+    {
         Assert.Equal(CreatedOn, NewChore(1, IntervalUnit.Year, PreferredDay.FirstOfMonth).DueDate);
     }
 

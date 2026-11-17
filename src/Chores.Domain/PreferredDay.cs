@@ -13,12 +13,16 @@ public enum PreferredDay
     Thursday = DayOfWeek.Thursday,
     Friday = DayOfWeek.Friday,
     Saturday = DayOfWeek.Saturday,
-    FirstOfMonth,
-    LastOfMonth,
+    // Pinned, as they are stored
+    FirstOfMonth = 7,
+    LastOfMonth = 8,
 }
 
 internal static class PreferredDays
 {
+    /// <summary>First or last of month, which only an Interval in months or years allows.</summary>
+    public static bool IsInMonth(this PreferredDay day) => day is PreferredDay.FirstOfMonth or PreferredDay.LastOfMonth;
+
     /// <summary>The first such day on or after a date.</summary>
     public static DateOnly OnOrAfter(this PreferredDay day, DateOnly date) => day switch
     {
@@ -31,7 +35,7 @@ internal static class PreferredDays
     public static DateOnly OnOrBefore(this PreferredDay day, DateOnly date) => day switch
     {
         PreferredDay.FirstOfMonth => FirstOfMonth(date),
-        PreferredDay.LastOfMonth => day.OnOrAfter(date) == date ? date : FirstOfMonth(date).AddDays(-1),
+        PreferredDay.LastOfMonth => date.AddDays(1).Day == 1 ? date : FirstOfMonth(date).AddDays(-1),
         _ => date.AddDays(-(((int)date.DayOfWeek - (int)day + 7) % 7)),
     };
 

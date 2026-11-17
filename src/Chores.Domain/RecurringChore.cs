@@ -3,7 +3,7 @@ namespace Chores.Domain;
 /// <summary>A Chore that comes back after an Interval.</summary>
 public sealed class RecurringChore(string name, Interval interval, DateOnly createdOn) : Chore(name, createdOn)
 {
-    // For persistence, which sets the Interval after construction
+    // For persistence, which sets the Interval and Preferred Day through their backing fields, past the setters' check
     private RecurringChore(string name, DateOnly createdOn) : this(name, null!, createdOn)
     {
     }
@@ -11,14 +11,22 @@ public sealed class RecurringChore(string name, Interval interval, DateOnly crea
     public Interval Interval
     {
         get;
-        set => field = Allows(value, PreferredDay) ? value : throw new ArgumentException("First or last of month needs an Interval in months or years.", nameof(value));
+        set
+        {
+            EnsureAllowed(value, PreferredDay);
+            field = value;
+        }
     } = interval;
 
     /// <summary>A weekday, or the first or last of the month for an Interval in months or years.</summary>
     public PreferredDay? PreferredDay
     {
         get;
-        set => field = Allows(Interval, value) ? value : throw new ArgumentException("First or last of month needs an Interval in months or years.", nameof(value));
+        set
+        {
+            EnsureAllowed(Interval, value);
+            field = value;
+        }
     }
 
     public Season? Season { get; set; }
@@ -106,9 +114,13 @@ public sealed class RecurringChore(string name, Interval interval, DateOnly crea
         return due;
     }
 
-    private static bool Allows(Interval interval, PreferredDay? preferredDay) =>
-        preferredDay is not (Domain.PreferredDay.FirstOfMonth or Domain.PreferredDay.LastOfMonth)
-        || interval.Unit is IntervalUnit.Month or IntervalUnit.Year;
+    private static void EnsureAllowed(Interval interval, PreferredDay? preferredDay)
+    {
+        if (preferredDay?.IsInMonth() == true && interval.Unit is not (IntervalUnit.Month or IntervalUnit.Year))
+        {
+            throw new ArgumentException("First or last of month needs an Interval in months or years.");
+        }
+    }
 
     private DateOnly FirstPreferredDayFrom(DateOnly date) => PreferredDay is { } preferred ? preferred.OnOrAfter(date) : date;
 }
