@@ -1,5 +1,8 @@
 using System.Net;
 using System.Text.Json;
+using Chores.Api.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Chores.Api.Tests;
@@ -41,5 +44,15 @@ public class ApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         HttpResponseMessage response = await _client.GetAsync("/api/does-not-exist", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public void Startup_migrates_the_configured_database()
+    {
+        using IServiceScope scope = factory.Services.CreateScope();
+        ChoresDbContext db = scope.ServiceProvider.GetRequiredService<ChoresDbContext>();
+
+        Assert.True(File.Exists(factory.DatabasePath));
+        Assert.Empty(db.Database.GetPendingMigrations());
     }
 }

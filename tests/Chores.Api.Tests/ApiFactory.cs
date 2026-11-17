@@ -3,17 +3,20 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Chores.Api.Tests;
 
-/// <summary>Runs the API against a throwaway web root standing in for the built front end.</summary>
+/// <summary>Runs the API against a throwaway web root standing in for the built front end, and a throwaway database.</summary>
 public sealed class ApiFactory : WebApplicationFactory<Program>
 {
     public const string IndexHtml = "<!doctype html><title>Chores test page</title>";
 
     private readonly DirectoryInfo _webRoot = Directory.CreateTempSubdirectory("chores-wwwroot-");
 
+    public string DatabasePath { get; } = Path.Combine(Directory.CreateTempSubdirectory("chores-data-").FullName, "chores.db");
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         File.WriteAllText(Path.Combine(_webRoot.FullName, "index.html"), IndexHtml);
         builder.UseWebRoot(_webRoot.FullName);
+        builder.UseSetting("Database:Path", DatabasePath);
         // Development would layer the project's own wwwroot (a built front end, if any) over this web root
         builder.UseEnvironment("Testing");
     }
@@ -22,5 +25,6 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     {
         await base.DisposeAsync();
         _webRoot.Delete(recursive: true);
+        Directory.Delete(Path.GetDirectoryName(DatabasePath)!, recursive: true);
     }
 }

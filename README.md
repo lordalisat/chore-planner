@@ -33,6 +33,7 @@ Install the Dev Containers extension, open the repo and run "Dev Containers: Reo
 dotnet build                               # API, Domain and tests (Chores.slnx)
 dotnet test                                # all test projects
 dotnet run --project src/Chores.Api        # API on :5080, OpenAPI at /openapi/v1.json
+dotnet ef migrations add <Name> --project src/Chores.Api --output-dir Data/Migrations
 npm run dev --prefix web                   # Vite dev server on :5173, proxies /api to :5080
 npm run build --prefix web                 # front end into src/Chores.Api/wwwroot, served by the API
 npm run lint --prefix web
@@ -40,7 +41,7 @@ npm run lint --prefix web
 
 For front-end work, run the API and the Vite dev server side by side and open port 5173. To see the app the way it ships, build the front end and open port 5080.
 
-The API is published on <http://localhost:5080> and the Vite dev server on <http://localhost:5173>. Local SQLite data lives in `data/` in the workspace (git-ignored), so it survives rebuilding the container.
+The API is published on <http://localhost:5080> and the Vite dev server on <http://localhost:5173>. Local SQLite data lives in `data/` in the workspace (git-ignored), so it survives rebuilding the container. The database is `data/chores.db` relative to the working directory, or the path in the `Database__Path` environment variable; migrations are applied when the API starts.
 
 ## Run
 

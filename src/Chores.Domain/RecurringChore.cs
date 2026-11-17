@@ -3,6 +3,11 @@ namespace Chores.Domain;
 /// <summary>A Chore that comes back after an Interval.</summary>
 public sealed class RecurringChore(string name, Interval interval, DateOnly createdOn) : Chore(name, createdOn)
 {
+    // For persistence, which sets the Interval after construction
+    private RecurringChore(string name, DateOnly createdOn) : this(name, null!, createdOn)
+    {
+    }
+
     public Interval Interval { get; set; } = interval;
     public DayOfWeek? PreferredDay { get; set; }
     public Season? Season { get; set; }
