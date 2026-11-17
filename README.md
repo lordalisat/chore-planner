@@ -47,7 +47,7 @@ The API is published on <http://localhost:5080> and the Vite dev server on <http
 
 ## Run
 
-The `Dockerfile` builds one image that serves the front end and the API on plain HTTP port 8080; the reverse proxy in front terminates HTTPS and its `X-Forwarded-*` headers are honoured. [`compose.yaml`](compose.yaml) is an example for the home server:
+The `Dockerfile` builds one image that serves the front end and the API on plain HTTP port 8080; the reverse proxy in front terminates HTTPS and its `X-Forwarded-*` headers are honoured from any address, so only the proxy should reach port 8080. [`compose.yaml`](compose.yaml) is an example for the home server:
 
 ```sh
 docker compose build

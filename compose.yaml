@@ -6,9 +6,11 @@ services:
     build: .
     image: chores
     restart: unless-stopped
-    # Plain HTTP; point the reverse proxy here and let it terminate HTTPS
+    # Plain HTTP; point the reverse proxy here and let it terminate HTTPS. The app trusts X-Forwarded-*
+    # headers from anyone who reaches this port, so publish it only to the proxy: this suits a proxy on
+    # the same host; a proxy container on a shared network needs no published port at all.
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
       TZ: Europe/Amsterdam
       Auth__PasswordHash: ${CHORES_PASSWORD_HASH}
