@@ -102,10 +102,7 @@ public sealed class RecurringChore(string name, Interval interval, DateOnly crea
         DateOnly due = Interval.AddTo(lastDone);
         if (PreferredDay is { } preferred)
         {
-            // The nearest Preferred Day; ties go to the later one
-            DateOnly before = preferred.OnOrBefore(due);
-            DateOnly after = preferred.OnOrAfter(due);
-            due = due.DayNumber - before.DayNumber < after.DayNumber - due.DayNumber ? before : after;
+            due = preferred.NearestTo(due);
             if (due <= lastDone)
             {
                 due = preferred.OnOrAfter(lastDone.AddDays(1));
@@ -116,9 +113,9 @@ public sealed class RecurringChore(string name, Interval interval, DateOnly crea
 
     private static void EnsureAllowed(Interval interval, PreferredDay? preferredDay)
     {
-        if (preferredDay?.IsInMonth() == true && interval.Unit is not (IntervalUnit.Month or IntervalUnit.Year))
+        if (preferredDay?.Allows(interval) == false)
         {
-            throw new ArgumentException("First or last of month needs an Interval in months or years.");
+            throw new ArgumentException("This Preferred Day does not allow that Interval.");
         }
     }
 

@@ -36,7 +36,7 @@ public sealed class PersistenceTests : IDisposable
     {
         var laundry = new RecurringChore("Laundry", new Interval(7, IntervalUnit.Day), new DateOnly(2027, 1, 1))
         {
-            PreferredDay = PreferredDay.Tuesday,
+            PreferredDay = DayOfWeek.Tuesday,
             Importance = Importance.High,
             Effort = 30,
             Area = new Area("Utility room"),
@@ -93,12 +93,12 @@ public sealed class PersistenceTests : IDisposable
     {
         Save(new RecurringChore("Pay the rent", new Interval(1, IntervalUnit.Month), new DateOnly(2027, 1, 1))
         {
-            PreferredDay = PreferredDay.LastOfMonth,
+            PreferredDay = new PreferredDay.LastOfMonth(),
         });
 
         RecurringChore loaded = LoadChore<RecurringChore>("Pay the rent");
 
-        Assert.Equal(PreferredDay.LastOfMonth, loaded.PreferredDay);
+        Assert.Equal(new PreferredDay.LastOfMonth(), loaded.PreferredDay);
         Assert.Equal(new DateOnly(2027, 1, 31), loaded.DueDate);
     }
 

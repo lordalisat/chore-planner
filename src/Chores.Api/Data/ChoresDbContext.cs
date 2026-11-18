@@ -33,6 +33,8 @@ public sealed class ChoresDbContext(DbContextOptions<ChoresDbContext> options) :
 
         modelBuilder.Entity<RecurringChore>(chore =>
         {
+            // EF never passes null to a converter
+            chore.Property(c => c.PreferredDay).HasConversion(day => ToCode(day!), code => FromCode(code));
             chore.ComplexProperty(c => c.Interval, interval =>
             {
                 interval.Property(i => i.Count);
@@ -52,4 +54,20 @@ public sealed class ChoresDbContext(DbContextOptions<ChoresDbContext> options) :
             area.HasOne(a => a.Parent).WithMany().HasForeignKey("ParentId");
         });
     }
+
+    // A Preferred Day is stored as its weekday's number, or 7 and 8 for the first and last of the month
+    private static int ToCode(PreferredDay day) => day switch
+    {
+        PreferredDay.Weekday weekday => (int)weekday.Day,
+        PreferredDay.FirstOfMonth => 7,
+        PreferredDay.LastOfMonth => 8,
+        _ => throw new ArgumentOutOfRangeException(nameof(day), day, null),
+    };
+
+    private static PreferredDay FromCode(int code) => code switch
+    {
+        7 => new PreferredDay.FirstOfMonth(),
+        8 => new PreferredDay.LastOfMonth(),
+        _ => (DayOfWeek)code,
+    };
 }

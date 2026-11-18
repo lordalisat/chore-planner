@@ -1,43 +1,60 @@
 namespace Chores.Domain;
 
 /// <summary>
-/// The day a Recurring Chore would ideally be done on: a weekday, or the first or last of the month for an Interval in
-/// months or years. Weekdays share their values with <see cref="DayOfWeek"/>.
+/// The day a Recurring Chore would ideally be done on: a weekday, or a day in the month for an Interval in months or
+/// years.
 /// </summary>
-public enum PreferredDay
+public abstract record PreferredDay
 {
-    Sunday = DayOfWeek.Sunday,
-    Monday = DayOfWeek.Monday,
-    Tuesday = DayOfWeek.Tuesday,
-    Wednesday = DayOfWeek.Wednesday,
-    Thursday = DayOfWeek.Thursday,
-    Friday = DayOfWeek.Friday,
-    Saturday = DayOfWeek.Saturday,
-    // Pinned, as they are stored
-    FirstOfMonth = 7,
-    LastOfMonth = 8,
-}
+    // Closed to the kinds declared here
+    private PreferredDay()
+    {
+    }
 
-internal static class PreferredDays
-{
-    /// <summary>First or last of month, which only an Interval in months or years allows.</summary>
-    public static bool IsInMonth(this PreferredDay day) => day is PreferredDay.FirstOfMonth or PreferredDay.LastOfMonth;
+    public static implicit operator PreferredDay(DayOfWeek day) => new Weekday(day);
 
     /// <summary>The first such day on or after a date.</summary>
-    public static DateOnly OnOrAfter(this PreferredDay day, DateOnly date) => day switch
-    {
-        PreferredDay.FirstOfMonth => date.Day == 1 ? date : FirstOfMonth(date).AddMonths(1),
-        PreferredDay.LastOfMonth => FirstOfMonth(date).AddMonths(1).AddDays(-1),
-        _ => date.AddDays(((int)day - (int)date.DayOfWeek + 7) % 7),
-    };
+    public abstract DateOnly OnOrAfter(DateOnly date);
 
     /// <summary>The last such day on or before a date.</summary>
-    public static DateOnly OnOrBefore(this PreferredDay day, DateOnly date) => day switch
-    {
-        PreferredDay.FirstOfMonth => FirstOfMonth(date),
-        PreferredDay.LastOfMonth => date.AddDays(1).Day == 1 ? date : FirstOfMonth(date).AddDays(-1),
-        _ => date.AddDays(-(((int)date.DayOfWeek - (int)day + 7) % 7)),
-    };
+    public abstract DateOnly OnOrBefore(DateOnly date);
 
-    private static DateOnly FirstOfMonth(DateOnly date) => new(date.Year, date.Month, 1);
+    public virtual bool Allows(Interval interval) => true;
+
+    /// <summary>The nearest such day to a date; ties go to the later one.</summary>
+    public DateOnly NearestTo(DateOnly date)
+    {
+        DateOnly before = OnOrBefore(date);
+        DateOnly after = OnOrAfter(date);
+        return date.DayNumber - before.DayNumber < after.DayNumber - date.DayNumber ? before : after;
+    }
+
+    public sealed record Weekday(DayOfWeek Day) : PreferredDay
+    {
+        public override DateOnly OnOrAfter(DateOnly date) => date.AddDays(((int)Day - (int)date.DayOfWeek + 7) % 7);
+
+        public override DateOnly OnOrBefore(DateOnly date) => date.AddDays(-(((int)date.DayOfWeek - (int)Day + 7) % 7));
+    }
+
+    /// <summary>A day in the month, which only an Interval in months or years allows.</summary>
+    public abstract record DayInMonth : PreferredDay
+    {
+        public override bool Allows(Interval interval) => interval.Unit is IntervalUnit.Month or IntervalUnit.Year;
+
+        protected static DateOnly FirstOf(DateOnly date) => new(date.Year, date.Month, 1);
+    }
+
+    public sealed record FirstOfMonth : DayInMonth
+    {
+        public override DateOnly OnOrAfter(DateOnly date) => date.Day == 1 ? date : FirstOf(date).AddMonths(1);
+
+        public override DateOnly OnOrBefore(DateOnly date) => FirstOf(date);
+    }
+
+    public sealed record LastOfMonth : DayInMonth
+    {
+        public override DateOnly OnOrAfter(DateOnly date) => FirstOf(date).AddMonths(1).AddDays(-1);
+
+        public override DateOnly OnOrBefore(DateOnly date) => date.AddDays(1).Day == 1 ? date : FirstOf(date).AddDays(-1);
+    }
 }

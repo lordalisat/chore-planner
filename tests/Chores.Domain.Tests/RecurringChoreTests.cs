@@ -20,7 +20,7 @@ public class RecurringChoreTests
     {
         var thursday = new DateOnly(2027, 3, 11);
 
-        Assert.Equal(new DateOnly(2027, 3, 16), DueDateAfterDoneOn(NewChore(7, IntervalUnit.Day, PreferredDay.Tuesday), thursday));
+        Assert.Equal(new DateOnly(2027, 3, 16), DueDateAfterDoneOn(NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday), thursday));
     }
 
     [Fact]
@@ -28,7 +28,7 @@ public class RecurringChoreTests
     {
         var monday = new DateOnly(2027, 3, 8);
 
-        Assert.Equal(new DateOnly(2027, 3, 16), DueDateAfterDoneOn(NewChore(7, IntervalUnit.Day, PreferredDay.Tuesday), monday));
+        Assert.Equal(new DateOnly(2027, 3, 16), DueDateAfterDoneOn(NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday), monday));
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public class RecurringChoreTests
         var wednesday = new DateOnly(2027, 3, 10);
 
         // Thursday's nearest Tuesday is the day before Last Done
-        Assert.Equal(new DateOnly(2027, 3, 16), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Day, PreferredDay.Tuesday), wednesday));
+        Assert.Equal(new DateOnly(2027, 3, 16), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Day, DayOfWeek.Tuesday), wednesday));
     }
 
     [Fact]
@@ -55,49 +55,54 @@ public class RecurringChoreTests
     [Fact]
     public void Every_month_on_Saturday_done_15_March_is_due_Saturday_17_April()
     {
-        Assert.Equal(new DateOnly(2027, 4, 17), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Month, PreferredDay.Saturday), new DateOnly(2027, 3, 15)));
+        Assert.Equal(new DateOnly(2027, 4, 17), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Month, DayOfWeek.Saturday), new DateOnly(2027, 3, 15)));
     }
 
     [Fact]
     public void Every_month_on_the_first_done_3_March_is_due_1_April()
     {
-        Assert.Equal(new DateOnly(2027, 4, 1), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Month, PreferredDay.FirstOfMonth), new DateOnly(2027, 3, 3)));
+        Assert.Equal(new DateOnly(2027, 4, 1), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Month, new PreferredDay.FirstOfMonth()), new DateOnly(2027, 3, 3)));
     }
 
     [Fact]
     public void Every_month_on_the_first_done_28_March_is_due_1_May()
     {
-        Assert.Equal(new DateOnly(2027, 5, 1), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Month, PreferredDay.FirstOfMonth), new DateOnly(2027, 3, 28)));
+        Assert.Equal(new DateOnly(2027, 5, 1), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Month, new PreferredDay.FirstOfMonth()), new DateOnly(2027, 3, 28)));
     }
 
     [Fact]
     public void Every_month_on_the_last_done_2_March_is_due_31_March()
     {
-        Assert.Equal(new DateOnly(2027, 3, 31), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Month, PreferredDay.LastOfMonth), new DateOnly(2027, 3, 2)));
+        Assert.Equal(new DateOnly(2027, 3, 31), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Month, new PreferredDay.LastOfMonth()), new DateOnly(2027, 3, 2)));
     }
 
     [Fact]
     public void First_of_month_halfway_between_two_goes_to_the_later_one()
     {
         // 16 April is 15 days from both 1 April and 1 May
-        Assert.Equal(new DateOnly(2027, 5, 1), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Month, PreferredDay.FirstOfMonth), new DateOnly(2027, 3, 16)));
+        Assert.Equal(new DateOnly(2027, 5, 1), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Month, new PreferredDay.FirstOfMonth()), new DateOnly(2027, 3, 16)));
     }
 
     [Fact]
     public void Without_a_Completion_last_of_month_is_due_at_the_end_of_the_creation_month()
     {
-        Assert.Equal(new DateOnly(2027, 1, 31), NewChore(3, IntervalUnit.Month, PreferredDay.LastOfMonth).DueDate);
+        Assert.Equal(new DateOnly(2027, 1, 31), NewChore(3, IntervalUnit.Month, new PreferredDay.LastOfMonth()).DueDate);
     }
 
     [Fact]
     public void Without_a_Completion_created_on_the_first_of_month_it_is_due_that_day()
     {
-        Assert.Equal(CreatedOn, NewChore(1, IntervalUnit.Year, PreferredDay.FirstOfMonth).DueDate);
+        Assert.Equal(CreatedOn, NewChore(1, IntervalUnit.Year, new PreferredDay.FirstOfMonth()).DueDate);
     }
 
+    public static TheoryData<IntervalUnit, PreferredDay> DayOrWeekWithDayInMonth => new()
+    {
+        { IntervalUnit.Day, new PreferredDay.FirstOfMonth() },
+        { IntervalUnit.Week, new PreferredDay.LastOfMonth() },
+    };
+
     [Theory]
-    [InlineData(IntervalUnit.Day, PreferredDay.FirstOfMonth)]
-    [InlineData(IntervalUnit.Week, PreferredDay.LastOfMonth)]
+    [MemberData(nameof(DayOrWeekWithDayInMonth))]
     public void First_or_last_of_month_on_a_day_or_week_Interval_is_rejected(IntervalUnit unit, PreferredDay preferredDay)
     {
         Assert.Throws<ArgumentException>(() => NewChore(1, unit, preferredDay));
@@ -108,10 +113,11 @@ public class RecurringChoreTests
 
     [Theory]
     [InlineData(null)]
-    [InlineData(PreferredDay.Friday)]
-    public void Every_2_weeks_behaves_exactly_like_every_14_days(PreferredDay? preferredDay)
+    [InlineData(DayOfWeek.Friday)]
+    public void Every_2_weeks_behaves_exactly_like_every_14_days(DayOfWeek? weekday)
     {
         var lastDone = new DateOnly(2027, 3, 8);
+        PreferredDay? preferredDay = weekday is { } day ? day : null;
 
         Assert.Equal(
             DueDateAfterDoneOn(NewChore(14, IntervalUnit.Day, preferredDay), lastDone),
@@ -128,8 +134,8 @@ public class RecurringChoreTests
     public void Without_a_Completion_it_is_due_on_the_first_Preferred_Day_from_the_creation_date()
     {
         // 1 January 2027 is a Friday
-        Assert.Equal(new DateOnly(2027, 1, 5), NewChore(7, IntervalUnit.Day, PreferredDay.Tuesday).DueDate);
-        Assert.Equal(CreatedOn, NewChore(7, IntervalUnit.Day, PreferredDay.Friday).DueDate);
+        Assert.Equal(new DateOnly(2027, 1, 5), NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday).DueDate);
+        Assert.Equal(CreatedOn, NewChore(7, IntervalUnit.Day, DayOfWeek.Friday).DueDate);
     }
 
     [Fact]
@@ -200,7 +206,7 @@ public class RecurringChoreTests
     [Fact]
     public void Removing_a_Skip_ends_a_Postpone()
     {
-        RecurringChore laundry = NewChore(7, IntervalUnit.Day, PreferredDay.Tuesday);
+        RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
         laundry.Complete(new DateOnly(2027, 3, 11));
         laundry.Skip(new DateOnly(2027, 3, 18));
         laundry.Postpone(new DateOnly(2027, 3, 26));
@@ -231,7 +237,7 @@ public class RecurringChoreTests
         RecurringChore chore = NewChore(7, IntervalUnit.Day);
         chore.Complete(new DateOnly(2027, 3, 11));
 
-        chore.PreferredDay = PreferredDay.Tuesday;
+        chore.PreferredDay = DayOfWeek.Tuesday;
         Assert.Equal(new DateOnly(2027, 3, 16), chore.DueDate);
 
         chore.Season = new Season(4, 10);
@@ -241,7 +247,7 @@ public class RecurringChoreTests
     [Fact]
     public void Completion_records_the_calculated_Due_Date_and_any_Postpone()
     {
-        RecurringChore laundry = NewChore(7, IntervalUnit.Day, PreferredDay.Tuesday);
+        RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
         laundry.Complete(new DateOnly(2027, 3, 11));
         laundry.Postpone(new DateOnly(2027, 3, 18));
 
@@ -254,7 +260,7 @@ public class RecurringChoreTests
     [Fact]
     public void Skip_moves_on_from_the_skipped_Due_Date_and_leaves_Last_Done()
     {
-        RecurringChore laundry = NewChore(7, IntervalUnit.Day, PreferredDay.Tuesday);
+        RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
         laundry.Complete(new DateOnly(2027, 3, 11));
 
         // Skipped two days after it was due, yet the next one keeps the rhythm
@@ -272,7 +278,7 @@ public class RecurringChoreTests
     public void Skip_without_any_Completion_moves_on_from_the_first_Due_Date()
     {
         // Created Friday 1 January, first due Tuesday 5 January
-        RecurringChore laundry = NewChore(7, IntervalUnit.Day, PreferredDay.Tuesday);
+        RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
 
         laundry.Skip(new DateOnly(2027, 1, 5));
 
@@ -282,7 +288,7 @@ public class RecurringChoreTests
     [Fact]
     public void Removing_a_Skip_restores_the_previous_Due_Date()
     {
-        RecurringChore laundry = NewChore(7, IntervalUnit.Day, PreferredDay.Tuesday);
+        RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
         laundry.Complete(new DateOnly(2027, 3, 11));
         laundry.Skip(new DateOnly(2027, 3, 18));
 
@@ -294,7 +300,7 @@ public class RecurringChoreTests
     [Fact]
     public void Skip_ends_a_Postpone_and_moves_on_from_the_Postpone_date()
     {
-        RecurringChore laundry = NewChore(7, IntervalUnit.Day, PreferredDay.Tuesday);
+        RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
         laundry.Complete(new DateOnly(2027, 3, 11));
         laundry.Postpone(new DateOnly(2027, 3, 20));
 
@@ -307,7 +313,7 @@ public class RecurringChoreTests
     [Fact]
     public void Completion_after_a_Skip_moves_on_from_the_Completion()
     {
-        RecurringChore laundry = NewChore(7, IntervalUnit.Day, PreferredDay.Tuesday);
+        RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
         laundry.Complete(new DateOnly(2027, 3, 11));
         laundry.Skip(new DateOnly(2027, 3, 18));
 
@@ -426,7 +432,7 @@ public class RecurringChoreTests
     [Fact]
     public void Due_Date_outside_the_Season_follows_the_schedule_to_the_first_one_inside_it()
     {
-        RecurringChore mowing = NewChore(2, IntervalUnit.Week, PreferredDay.Saturday);
+        RecurringChore mowing = NewChore(2, IntervalUnit.Week, DayOfWeek.Saturday);
         mowing.Season = new Season(4, 10);
         mowing.Complete(new DateOnly(2026, 10, 23));
 
@@ -491,7 +497,7 @@ public class RecurringChoreTests
     [Fact]
     public void Forecasts_follow_the_Due_Date_as_if_each_occurrence_is_done_on_its_Due_Date()
     {
-        RecurringChore laundry = NewChore(7, IntervalUnit.Day, PreferredDay.Tuesday);
+        RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
         laundry.Complete(new DateOnly(2027, 3, 11));
 
         Assert.Equal(
@@ -502,7 +508,7 @@ public class RecurringChoreTests
     [Fact]
     public void Forecasts_of_a_monthly_Chore_move_each_occurrence_to_the_nearest_Preferred_Day()
     {
-        RecurringChore chore = NewChore(1, IntervalUnit.Month, PreferredDay.Saturday);
+        RecurringChore chore = NewChore(1, IntervalUnit.Month, DayOfWeek.Saturday);
         chore.Complete(new DateOnly(2027, 3, 15));
 
         // Due Saturday 17 April; 17 May is a Monday, 15 June a Tuesday
@@ -514,7 +520,7 @@ public class RecurringChoreTests
     [Fact]
     public void Forecasts_skip_occurrences_outside_the_Season()
     {
-        RecurringChore mowing = NewChore(2, IntervalUnit.Week, PreferredDay.Saturday);
+        RecurringChore mowing = NewChore(2, IntervalUnit.Week, DayOfWeek.Saturday);
         mowing.Season = new Season(4, 10);
         mowing.Complete(new DateOnly(2027, 10, 9));
 
@@ -527,7 +533,7 @@ public class RecurringChoreTests
     [Fact]
     public void Forecasts_start_after_a_Postponed_Due_Date()
     {
-        RecurringChore laundry = NewChore(7, IntervalUnit.Day, PreferredDay.Tuesday);
+        RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
         laundry.Complete(new DateOnly(2027, 3, 11));
         laundry.Postpone(new DateOnly(2027, 3, 20));
 
@@ -539,7 +545,7 @@ public class RecurringChoreTests
     [Fact]
     public void No_Forecasts_before_the_next_occurrence()
     {
-        RecurringChore laundry = NewChore(7, IntervalUnit.Day, PreferredDay.Tuesday);
+        RecurringChore laundry = NewChore(7, IntervalUnit.Day, DayOfWeek.Tuesday);
         laundry.Complete(new DateOnly(2027, 3, 11));
 
         Assert.Empty(laundry.Forecasts(until: new DateOnly(2027, 3, 22)));
