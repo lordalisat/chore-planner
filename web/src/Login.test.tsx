@@ -2,21 +2,10 @@ import { createMemoryHistory } from '@tanstack/react-router'
 import { QueryClient } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expect, test, vi } from 'vitest'
+import { expect, test } from 'vitest'
 import App from './App.tsx'
 import { createAppRouter } from './router.tsx'
-
-// The API as the browser sees it: each path answers with a status, or the server can't be reached
-function stubApi(answers: Record<string, number | 'unreachable'>) {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (input: RequestInfo | URL) => {
-      const answer = answers[String(input)]
-      if (answer === undefined || answer === 'unreachable') throw new TypeError('Failed to fetch')
-      return new Response(null, { status: answer })
-    }),
-  )
-}
+import { stubApi } from './test-api.ts'
 
 function renderAt(url: string) {
   const queryClient = new QueryClient()
@@ -56,7 +45,7 @@ test('a server that answers with an error at start-up counts as unreachable', as
 })
 
 test('logging out goes to the login, which returns to where you were', async () => {
-  stubApi({ '/api/session': 204, '/api/logout': 204 })
+  stubApi({ '/api/session': 204, '/api/chores': [], '/api/logout': 204 })
   const router = renderAt('/')
 
   await userEvent.click(await screen.findByRole('button', { name: 'Log out' }))

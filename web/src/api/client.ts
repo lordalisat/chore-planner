@@ -7,13 +7,18 @@ type Operation<P extends keyof paths, M extends MethodOf<P>> = NonNullable<paths
 type RequestBody<O> = O extends { requestBody: { content: { 'application/json': infer B } } } ? B : undefined
 type ResponseBody<O> = O extends { responses: { 200: { content: { 'application/json': infer R } } } } ? R : undefined
 
-/** The API answered, but not with success; `status` says how. */
+/** A validation problem's messages by field, such as `{ preferredDay: ['…'] }`. */
+export type FieldErrors = Partial<Record<string, string[]>>
+
+/** The API answered, but not with success; `status` says how, and `errors` what was wrong with which field. */
 export class ApiError extends Error {
   readonly status: number
+  readonly errors: FieldErrors
 
-  constructor(status: number) {
+  constructor(status: number, errors: FieldErrors = {}) {
     super(`The API answered ${status}`)
     this.status = status
+    this.errors = errors
   }
 }
 
@@ -33,6 +38,11 @@ export async function api<P extends keyof paths, M extends MethodOf<P>>(
     method: method.toUpperCase(),
     ...(body !== undefined && { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
   })
-  if (!response.ok) throw new ApiError(response.status)
+  if (!response.ok) {
+    const problem = response.headers.get('Content-Type')?.startsWith('application/problem+json')
+      ? ((await response.json()) as { errors?: FieldErrors })
+      : {}
+    throw new ApiError(response.status, problem.errors)
+  }
   return (response.status === 204 ? undefined : await response.json()) as ResponseBody<Operation<P, M>>
 }

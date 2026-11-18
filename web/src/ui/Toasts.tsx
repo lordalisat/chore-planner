@@ -3,7 +3,8 @@ import { Toast, ToastAction, ToastDescription, ToastRegion, ToastTitle } from '@
 /** Where toasts show, once near the app's root. */
 export function Toasts() {
   return (
-    <ToastRegion side="bottom" align="center" className="fixed inset-x-4 bottom-24 z-50 flex flex-col items-center gap-2 md:bottom-6">
+    // The UI SDK centres the region itself (left 50%, translated back by half its width); setting left or right breaks that
+    <ToastRegion side="bottom" align="center" className="bottom-24 flex w-[calc(100vw-2rem)] max-w-sm flex-col items-center gap-2 md:bottom-6">
       {() => (
         <Toast className="flex w-full max-w-sm items-center gap-3 rounded-lg bg-ink px-4 py-3 text-white shadow-lg">
           <div className="flex-1">
