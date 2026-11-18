@@ -11,7 +11,7 @@ The first real slice: create Recurring Chores and see them on the Overview order
 - `POST /api/chores/recurring`: Name, Interval, Preferred Day, Season, Importance, Effort, and an optional **Last done** date. When given, the Chore is created with a done Completion on that date, so moving over from Todoist gives the right Due Date immediately. Answers 201 with the Chore DTO.
 - Domain rule violations (a month Preferred Day on a day or week Interval, an Interval count below 1, an invalid Season) answer 400 with a validation problem keyed by field. Area is left out until 08.
 - A Name already used by another Chore (ignoring case and surrounding spaces) answers 400 at `name`, so the Overview never shows two Chores that look the same. Added while testing by hand; revisit per Area once 08 lands.
-- A weekday Preferred Day needs an Interval of at least a week (so "every 7 days, Tuesday" still works, "every 1 day, Monday" answers 400 at `preferredDay`). Added while testing by hand; this narrows Foundations 08's "daily Chores keep weekday Preferred Days". The form hides Preferred Day when the Interval allows none.
+- A weekday Preferred Day needs an Interval in weeks, months or years; on a day Interval it answers 400 at `preferredDay` ("every 7 days, Tuesday" is now "every week, Tuesday"). Added while testing by hand; this overrides Foundations 08's "daily Chores keep weekday Preferred Days". The form hides Preferred Day for an Interval in days, and offers "Any day" to clear a picked one.
 
 ## UI
 

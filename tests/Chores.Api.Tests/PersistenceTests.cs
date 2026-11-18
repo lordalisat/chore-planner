@@ -36,7 +36,7 @@ public sealed class PersistenceTests : IDisposable
     [Fact]
     public void A_Recurring_Chore_keeps_its_Interval_and_details()
     {
-        var laundry = new RecurringChore("Laundry", new Interval(7, IntervalUnit.Day), new DateOnly(2027, 1, 1))
+        var laundry = new RecurringChore("Laundry", new Interval(1, IntervalUnit.Week), new DateOnly(2027, 1, 1))
         {
             PreferredDay = DayOfWeek.Tuesday,
             Importance = Importance.High,
@@ -49,7 +49,7 @@ public sealed class PersistenceTests : IDisposable
         RecurringChore loaded = LoadChore<RecurringChore>("Laundry");
 
         Assert.Equal(new DateOnly(2027, 3, 9), loaded.DueDate);
-        Assert.Equal(new Interval(7, IntervalUnit.Day), loaded.Interval);
+        Assert.Equal(new Interval(1, IntervalUnit.Week), loaded.Interval);
         Assert.Equal(new DateOnly(2027, 1, 1), loaded.CreatedOn);
         Assert.Equal(Importance.High, loaded.Importance);
         Assert.Equal(30, loaded.Effort);

@@ -40,12 +40,10 @@ const importances: Option<Importance>[] = [
   { value: 'High', label: 'High' },
 ]
 
-// The Preferred Days an Interval allows, as the API's own rule: a weekday needs at least a week, the first or last
-// of the month an Interval in months or years
-function preferredDaysFor(count: number | null, unit: Unit): Option<PreferredDay>[] {
-  const allowsWeekday = unit !== 'Day' || (count ?? 0) >= 7
-  const allowsDayInMonth = unit === 'Month' || unit === 'Year'
-  return [...(allowsWeekday ? weekdays : []), ...(allowsDayInMonth ? daysInMonth : [])]
+// The Preferred Days an Interval's unit allows, as the API's own rule: a weekday needs weeks, months or years, the
+// first or last of the month months or years
+function preferredDaysFor(unit: Unit): Option<PreferredDay>[] {
+  return [...(unit === 'Day' ? [] : weekdays), ...(unit === 'Month' || unit === 'Year' ? daysInMonth : [])]
 }
 
 /** Creates a Recurring Chore; `onDone` closes it. */
@@ -65,12 +63,11 @@ export function ChoreForm({ onDone }: { onDone: () => void }) {
   const [errors, setErrors] = useState<FieldErrors>({})
   const nameInput = useRef<HTMLInputElement>(null)
 
-  const preferredDays = preferredDaysFor(count, unit)
+  const preferredDays = preferredDaysFor(unit)
 
-  function changeInterval(nextCount: number | null, nextUnit: Unit) {
-    setCount(nextCount)
-    setUnit(nextUnit)
-    if (!preferredDaysFor(nextCount, nextUnit).some((day) => day.value === preferredDay)) setPreferredDay(null)
+  function changeUnit(next: Unit) {
+    setUnit(next)
+    if (!preferredDaysFor(next).some((day) => day.value === preferredDay)) setPreferredDay(null)
   }
 
   const create = useMutation({
@@ -119,19 +116,19 @@ export function ChoreForm({ onDone }: { onDone: () => void }) {
       <TextField ref={nameInput} label="Name" autoFocus value={name} onValueChange={setName} error={errors.name?.[0]} />
       <div className="flex flex-col gap-1">
         <div className="flex items-end gap-2">
-          <NumberField label="Every" min={1} value={count} onValueChange={(next) => changeInterval(next, unit)} invalid={!!errors.interval} className="w-24" />
-          <SelectField label="Unit" hideLabel options={units} value={unit} onValueChange={(next) => next && changeInterval(count, next)} invalid={!!errors.interval} className="flex-1" />
+          <NumberField label="Every" min={1} value={count} onValueChange={setCount} invalid={!!errors.interval} className="w-24" />
+          <SelectField label="Unit" hideLabel options={units} value={unit} onValueChange={(next) => next && changeUnit(next)} invalid={!!errors.interval} className="flex-1" />
         </div>
         {errors.interval && <p className="text-sm text-red-700">{errors.interval[0]}</p>}
       </div>
-      {/* Nothing to prefer for every few days */}
+      {/* Nothing to prefer for an Interval in days */}
       {preferredDays.length > 0 && (
         <SelectField
           label="Preferred day"
           options={preferredDays}
           value={preferredDay}
           onValueChange={setPreferredDay}
-          placeholder="Any day"
+          noneLabel="Any day"
           error={errors.preferredDay?.[0]}
         />
       )}

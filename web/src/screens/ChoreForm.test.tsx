@@ -87,14 +87,14 @@ test('a field the API rejects shows why', async () => {
   expect(screen.getByRole('combobox', { name: 'Preferred day' })).toHaveAttribute('aria-invalid', 'true')
 })
 
-test('a weekday is only offered for an Interval of at least a week', async () => {
+test('there is no Preferred Day for an Interval in days', async () => {
   renderForm()
-  await pick('Unit', 'days')
 
-  expect(screen.queryByRole('combobox', { name: 'Preferred day' })).not.toBeInTheDocument()
+  await pick('Unit', 'days')
   await userEvent.clear(screen.getByRole('textbox', { name: 'Every' }))
   await userEvent.type(screen.getByRole('textbox', { name: 'Every' }), '7')
-  expect(await preferredDayOptions()).toEqual(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
+
+  expect(screen.queryByRole('combobox', { name: 'Preferred day' })).not.toBeInTheDocument()
 })
 
 test('a Preferred Day the new Interval does not allow is cleared', async () => {
@@ -102,10 +102,22 @@ test('a Preferred Day the new Interval does not allow is cleared', async () => {
   await pick('Preferred day', 'Monday')
 
   await pick('Unit', 'days')
-  await userEvent.clear(screen.getByRole('textbox', { name: 'Every' }))
-  await userEvent.type(screen.getByRole('textbox', { name: 'Every' }), '7')
+  await pick('Unit', 'weeks')
 
   expect(screen.getByRole('combobox', { name: 'Preferred day' })).toHaveTextContent('Any day')
+})
+
+test('Any day clears a picked Preferred Day', async () => {
+  const fetch = stubApi({ '/api/chores/recurring': new Response('{}', { status: 201 }), '/api/chores': [] })
+  renderForm()
+  await pick('Preferred day', 'Tuesday')
+
+  await pick('Preferred day', 'Any day')
+  await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Dust{Enter}')
+
+  expect(screen.getByRole('combobox', { name: 'Preferred day' })).toHaveTextContent('Any day')
+  await expect.poll(() => fetch.mock.calls.length).toBe(1)
+  expect(JSON.parse(String(fetch.mock.calls[0]?.[1]?.body))).toMatchObject({ name: 'Dust', preferredDay: null })
 })
 
 test('the first and last of the month are only offered for an Interval in months or years', async () => {

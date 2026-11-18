@@ -3,7 +3,10 @@ import { Select, SelectContent, SelectItem, SelectItemIndicator, SelectTrigger, 
 
 export type Option<T extends string> = { value: T; label: string }
 
-/** A labelled pick from a list; `null` is nothing picked, shown as the placeholder. */
+// Stands for null in the list, which only takes text values
+const none = ''
+
+/** A labelled pick from a list; `null` is nothing picked, shown as the placeholder or as `noneLabel`. */
 export function SelectField<T extends string>({
   label,
   hideLabel,
@@ -11,6 +14,7 @@ export function SelectField<T extends string>({
   value,
   onValueChange,
   placeholder,
+  noneLabel,
   error,
   invalid,
   className,
@@ -22,15 +26,23 @@ export function SelectField<T extends string>({
   value: T | null
   onValueChange: (value: T | null) => void
   placeholder?: string
+  /** Offers picking nothing as the first option, such as "Any day", so a pick can be undone. */
+  noneLabel?: string
   error?: string
   /** Marks the field wrong when the message shows elsewhere, such as under a row of fields. */
   invalid?: boolean
   className?: string
 }) {
+  const items: Option<string>[] = noneLabel ? [{ value: none, label: noneLabel }, ...options] : options
   return (
     <Field invalid={error || invalid ? true : undefined} className={`flex flex-col gap-1 ${className ?? ''}`}>
       <FieldLabel className={hideLabel ? 'sr-only' : 'text-sm font-medium'}>{label}</FieldLabel>
-      <Select<T> items={options} value={value} onValueChange={(next) => onValueChange(next)} placeholder={placeholder}>
+      <Select<string>
+        items={items}
+        value={value ?? (noneLabel ? none : null)}
+        onValueChange={(next) => onValueChange(next === null || next === none ? null : (next as T))}
+        placeholder={placeholder}
+      >
         <SelectTrigger className="group flex cursor-pointer items-center gap-2 rounded-lg border border-black/20 bg-white px-3 py-2 text-left hover:border-black/40 focus:outline-2 focus:outline-brand data-invalid:border-red-700">
           <SelectValue className="flex-1 truncate group-data-placeholder:text-ink/50" />
           <ChevronIcon />
@@ -40,7 +52,7 @@ export function SelectField<T extends string>({
           sideOffset={4}
           className="max-h-[min(20rem,var(--available-height))] w-(--anchor-width) overflow-y-auto rounded-lg border border-black/20 bg-white p-1 shadow-lg"
         >
-          {options.map((option) => (
+          {items.map((option) => (
             <SelectItem
               key={option.value}
               value={option.value}
