@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, Outlet, useLocation, useNavigate } from '@tanstack/react-router'
+import { Link, Outlet, useNavigate, useRouter } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { api } from '../api/client.ts'
 import { sessionQuery } from '../session.ts'
@@ -14,12 +14,13 @@ const navLinks: { to: '/'; label: string }[] = []
 export function Shell() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const location = useLocation()
-  // Refetched on focus, so a session ended elsewhere sends this device to the login
+  const router = useRouter()
+  // Refetched on focus, so a session ended elsewhere sends this device to the login. The route guard does the
+  // redirect, once; navigating from here would rerun on every location change until the Shell unmounts.
   const { data: session } = useQuery(sessionQuery)
   useEffect(() => {
-    if (session === 'anonymous') void navigate({ to: '/login', search: { redirect: location.href } })
-  }, [session, navigate, location.href])
+    if (session === 'anonymous') void router.invalidate()
+  }, [session, router])
 
   const logout = useMutation({
     mutationFn: () => api('/api/logout', 'post'),

@@ -22,6 +22,7 @@ function renderAt(url: string) {
   const queryClient = new QueryClient()
   const router = createAppRouter(queryClient, createMemoryHistory({ initialEntries: [url] }))
   render(<App queryClient={queryClient} router={router} />)
+  return router
 }
 
 async function logIn(password: string) {
@@ -45,4 +46,14 @@ test('logging in when the server is gone says it can’t be reached', async () =
   await logIn('chores')
 
   expect(await screen.findByText(/The server can't be reached right now/)).toHaveRole('alert')
+})
+
+test('logging out goes to the login, which returns to where you were', async () => {
+  stubApi({ '/api/session': 204, '/api/logout': 204 })
+  const router = renderAt('/')
+
+  await userEvent.click(await screen.findByRole('button', { name: 'Log out' }))
+
+  await screen.findByLabelText('Household password')
+  expect(router.state.location.href).toBe('/login?redirect=%2F')
 })
