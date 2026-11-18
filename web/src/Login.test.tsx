@@ -48,6 +48,13 @@ test('logging in when the server is gone says it can’t be reached', async () =
   expect(await screen.findByText(/The server can't be reached right now/)).toHaveRole('alert')
 })
 
+test('a server that answers with an error at start-up counts as unreachable', async () => {
+  stubApi({ '/api/session': 502 })
+  renderAt('/')
+
+  expect(await screen.findByText(/The server can't be reached right now/)).toHaveRole('alert')
+})
+
 test('logging out goes to the login, which returns to where you were', async () => {
   stubApi({ '/api/session': 204, '/api/logout': 204 })
   const router = renderAt('/')
