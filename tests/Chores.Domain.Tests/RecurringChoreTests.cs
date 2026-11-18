@@ -32,15 +32,6 @@ public class RecurringChoreTests
     }
 
     [Fact]
-    public void Preferred_Day_on_or_before_Last_Done_moves_to_the_following_one()
-    {
-        var wednesday = new DateOnly(2027, 3, 10);
-
-        // Thursday's nearest Tuesday is the day before Last Done
-        Assert.Equal(new DateOnly(2027, 3, 16), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Day, DayOfWeek.Tuesday), wednesday));
-    }
-
-    [Fact]
     public void Every_month_done_31_January_is_due_28_February()
     {
         Assert.Equal(new DateOnly(2027, 2, 28), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Month), new DateOnly(2027, 1, 31)));
@@ -109,6 +100,18 @@ public class RecurringChoreTests
 
         RecurringChore monthly = NewChore(1, IntervalUnit.Month, preferredDay);
         Assert.Throws<ArgumentException>(() => monthly.Interval = new Interval(1, unit));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(6)]
+    public void A_weekday_on_an_Interval_shorter_than_a_week_is_rejected(int days)
+    {
+        // Moving to the nearest Monday, up to three days either way, would swamp the Interval
+        Assert.Throws<ArgumentException>(() => NewChore(days, IntervalUnit.Day, DayOfWeek.Monday));
+
+        RecurringChore weekly = NewChore(7, IntervalUnit.Day, DayOfWeek.Monday);
+        Assert.Throws<ArgumentException>(() => weekly.Interval = new Interval(days, IntervalUnit.Day));
     }
 
     [Theory]

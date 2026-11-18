@@ -42,7 +42,9 @@ public sealed record CreateRecurringChoreRequest(
         }
         else if (interval is not null && preferredDay?.Allows(interval) == false)
         {
-            errors.Add(new FieldError("preferredDay", "The first or last of the month needs an Interval in months or years."));
+            errors.Add(new FieldError("preferredDay", preferredDay is PreferredDay.Weekday
+                ? "A weekday needs an Interval of at least a week."
+                : "The first or last of the month needs an Interval in months or years."));
         }
         Season? season = Season is null
             ? null

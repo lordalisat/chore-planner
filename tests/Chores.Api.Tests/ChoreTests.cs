@@ -91,6 +91,7 @@ public class ChoreTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Theory]
     [InlineData("preferredDay", 1, "Week", "FirstOfMonth", 1, 12)]
     [InlineData("preferredDay", 1, "Week", "Tuesdays", 1, 12)]
+    [InlineData("preferredDay", 1, "Day", "Monday", 1, 12)]
     [InlineData("interval", 0, "Week", null, 1, 12)]
     [InlineData("season", 1, "Week", null, 0, 12)]
     [InlineData("season", 1, "Week", null, 1, 13)]

@@ -87,11 +87,30 @@ test('a field the API rejects shows why', async () => {
   expect(screen.getByRole('combobox', { name: 'Preferred day' })).toHaveAttribute('aria-invalid', 'true')
 })
 
+test('a weekday is only offered for an Interval of at least a week', async () => {
+  renderForm()
+  await pick('Unit', 'days')
+
+  expect(screen.queryByRole('combobox', { name: 'Preferred day' })).not.toBeInTheDocument()
+  await userEvent.clear(screen.getByRole('textbox', { name: 'Every' }))
+  await userEvent.type(screen.getByRole('textbox', { name: 'Every' }), '7')
+  expect(await preferredDayOptions()).toEqual(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
+})
+
+test('a Preferred Day the new Interval does not allow is cleared', async () => {
+  renderForm()
+  await pick('Preferred day', 'Monday')
+
+  await pick('Unit', 'days')
+  await userEvent.clear(screen.getByRole('textbox', { name: 'Every' }))
+  await userEvent.type(screen.getByRole('textbox', { name: 'Every' }), '7')
+
+  expect(screen.getByRole('combobox', { name: 'Preferred day' })).toHaveTextContent('Any day')
+})
+
 test('the first and last of the month are only offered for an Interval in months or years', async () => {
   renderForm()
 
-  await pick('Unit', 'days')
-  expect(await preferredDayOptions()).not.toContain('First of the month')
   await pick('Unit', 'weeks')
   expect(await preferredDayOptions()).not.toContain('Last of the month')
   await pick('Unit', 'months')

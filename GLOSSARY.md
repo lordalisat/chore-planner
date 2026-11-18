@@ -39,7 +39,7 @@ How often a Recurring Chore should roughly be done: a whole number of days, week
 _Avoid_: Frequency, recurrence
 
 **Preferred Day**:
-The day a Recurring Chore would ideally be done on: a weekday, such as Tuesday for laundry, or, for an Interval in months or years, the first or last of the month.
+The day a Recurring Chore would ideally be done on: a weekday, such as Tuesday for laundry, for an Interval of at least a week, or, for an Interval in months or years, the first or last of the month.
 
 **Last Done**:
 The date of a Chore's most recent Completion that was not skipped.
