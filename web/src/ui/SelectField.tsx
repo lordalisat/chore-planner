@@ -1,5 +1,5 @@
 import { Field, FieldError, FieldLabel } from '@ui-sdk/react/field'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ui-sdk/react/select'
+import { Select, SelectContent, SelectItem, SelectItemIndicator, SelectTrigger, SelectValue } from '@ui-sdk/react/select'
 
 export type Option<T extends string> = { value: T; label: string }
 
@@ -35,14 +35,19 @@ export function SelectField<T extends string>({
           <SelectValue className="flex-1 truncate group-data-placeholder:text-ink/50" />
           <ChevronIcon />
         </SelectTrigger>
-        <SelectContent sideOffset={4} className="max-h-72 min-w-40 overflow-y-auto rounded-lg border border-black/10 bg-white p-1 shadow-lg">
+        {/* As wide as the field it opens from, and no taller than the room below it */}
+        <SelectContent
+          sideOffset={4}
+          className="max-h-[min(20rem,var(--available-height))] w-(--anchor-width) overflow-y-auto rounded-lg border border-black/20 bg-white p-1 shadow-lg"
+        >
           {options.map((option) => (
             <SelectItem
               key={option.value}
               value={option.value}
-              className="cursor-pointer rounded-md px-3 py-2 data-highlighted:bg-cream data-selected:font-semibold"
+              className="flex cursor-pointer items-center rounded-md px-3 py-2.5 outline-none data-highlighted:bg-cream data-selected:font-semibold data-selected:text-brand"
             >
-              {option.label}
+              <span className="flex-1">{option.label}</span>
+              <SelectItemIndicator aria-hidden="true">✓</SelectItemIndicator>
             </SelectItem>
           ))}
         </SelectContent>
