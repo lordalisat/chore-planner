@@ -6,7 +6,7 @@ public class RecurringChoreTests
 {
     private static readonly DateOnly CreatedOn = new(2027, 1, 1);
 
-    private static RecurringChore NewChore(int count, IntervalUnit unit, DayOfWeek? preferredDay = null) =>
+    private static RecurringChore NewChore(int count, IntervalUnit unit, PreferredDay? preferredDay = null) =>
         new("Laundry", new Interval(count, unit), CreatedOn) { PreferredDay = preferredDay };
 
     private static DateOnly? DueDateAfterDoneOn(RecurringChore chore, DateOnly lastDone)
@@ -58,12 +58,66 @@ public class RecurringChoreTests
         Assert.Equal(new DateOnly(2027, 4, 17), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Month, DayOfWeek.Saturday), new DateOnly(2027, 3, 15)));
     }
 
+    [Fact]
+    public void Every_month_on_the_first_done_3_March_is_due_1_April()
+    {
+        Assert.Equal(new DateOnly(2027, 4, 1), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Month, new PreferredDay.FirstOfMonth()), new DateOnly(2027, 3, 3)));
+    }
+
+    [Fact]
+    public void Every_month_on_the_first_done_28_March_is_due_1_May()
+    {
+        Assert.Equal(new DateOnly(2027, 5, 1), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Month, new PreferredDay.FirstOfMonth()), new DateOnly(2027, 3, 28)));
+    }
+
+    [Fact]
+    public void Every_month_on_the_last_done_2_March_is_due_31_March()
+    {
+        Assert.Equal(new DateOnly(2027, 3, 31), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Month, new PreferredDay.LastOfMonth()), new DateOnly(2027, 3, 2)));
+    }
+
+    [Fact]
+    public void First_of_month_halfway_between_two_goes_to_the_later_one()
+    {
+        // 16 April is 15 days from both 1 April and 1 May
+        Assert.Equal(new DateOnly(2027, 5, 1), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Month, new PreferredDay.FirstOfMonth()), new DateOnly(2027, 3, 16)));
+    }
+
+    [Fact]
+    public void Without_a_Completion_last_of_month_is_due_at_the_end_of_the_creation_month()
+    {
+        Assert.Equal(new DateOnly(2027, 1, 31), NewChore(3, IntervalUnit.Month, new PreferredDay.LastOfMonth()).DueDate);
+    }
+
+    [Fact]
+    public void Without_a_Completion_created_on_the_first_of_month_it_is_due_that_day()
+    {
+        Assert.Equal(CreatedOn, NewChore(1, IntervalUnit.Year, new PreferredDay.FirstOfMonth()).DueDate);
+    }
+
+    public static TheoryData<IntervalUnit, PreferredDay> DayOrWeekWithDayInMonth => new()
+    {
+        { IntervalUnit.Day, new PreferredDay.FirstOfMonth() },
+        { IntervalUnit.Week, new PreferredDay.LastOfMonth() },
+    };
+
+    [Theory]
+    [MemberData(nameof(DayOrWeekWithDayInMonth))]
+    public void First_or_last_of_month_on_a_day_or_week_Interval_is_rejected(IntervalUnit unit, PreferredDay preferredDay)
+    {
+        Assert.Throws<ArgumentException>(() => NewChore(1, unit, preferredDay));
+
+        RecurringChore monthly = NewChore(1, IntervalUnit.Month, preferredDay);
+        Assert.Throws<ArgumentException>(() => monthly.Interval = new Interval(1, unit));
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData(DayOfWeek.Friday)]
-    public void Every_2_weeks_behaves_exactly_like_every_14_days(DayOfWeek? preferredDay)
+    public void Every_2_weeks_behaves_exactly_like_every_14_days(DayOfWeek? weekday)
     {
         var lastDone = new DateOnly(2027, 3, 8);
+        PreferredDay? preferredDay = weekday is { } day ? day : null;
 
         Assert.Equal(
             DueDateAfterDoneOn(NewChore(14, IntervalUnit.Day, preferredDay), lastDone),

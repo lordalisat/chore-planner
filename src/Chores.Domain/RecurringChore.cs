@@ -3,13 +3,32 @@ namespace Chores.Domain;
 /// <summary>A Chore that comes back after an Interval.</summary>
 public sealed class RecurringChore(string name, Interval interval, DateOnly createdOn) : Chore(name, createdOn)
 {
-    // For persistence, which sets the Interval after construction
+    // For persistence, which sets the Interval and Preferred Day through their backing fields, past the setters' check
     private RecurringChore(string name, DateOnly createdOn) : this(name, null!, createdOn)
     {
     }
 
-    public Interval Interval { get; set; } = interval;
-    public DayOfWeek? PreferredDay { get; set; }
+    public Interval Interval
+    {
+        get;
+        set
+        {
+            EnsureAllowed(value, PreferredDay);
+            field = value;
+        }
+    } = interval;
+
+    /// <summary>A weekday, or the first or last of the month for an Interval in months or years.</summary>
+    public PreferredDay? PreferredDay
+    {
+        get;
+        set
+        {
+            EnsureAllowed(Interval, value);
+            field = value;
+        }
+    }
+
     public Season? Season { get; set; }
 
     /// <summary>The Postpone date, overriding the calculated Due Date until the next Completion, done or skipped.</summary>
@@ -83,19 +102,22 @@ public sealed class RecurringChore(string name, Interval interval, DateOnly crea
         DateOnly due = Interval.AddTo(lastDone);
         if (PreferredDay is { } preferred)
         {
-            int offset = DaysUntil(due, preferred);
-            due = due.AddDays(offset > 3 ? offset - 7 : offset);
+            due = preferred.NearestTo(due);
             if (due <= lastDone)
             {
-                due = NextOnOrAfter(lastDone.AddDays(1), preferred);
+                due = preferred.OnOrAfter(lastDone.AddDays(1));
             }
         }
         return due;
     }
 
-    private DateOnly FirstPreferredDayFrom(DateOnly date) => PreferredDay is { } preferred ? NextOnOrAfter(date, preferred) : date;
+    private static void EnsureAllowed(Interval interval, PreferredDay? preferredDay)
+    {
+        if (preferredDay?.Allows(interval) == false)
+        {
+            throw new ArgumentException("This Preferred Day does not allow that Interval.");
+        }
+    }
 
-    private static DateOnly NextOnOrAfter(DateOnly date, DayOfWeek day) => date.AddDays(DaysUntil(date, day));
-
-    private static int DaysUntil(DateOnly date, DayOfWeek day) => ((int)day - (int)date.DayOfWeek + 7) % 7;
+    private DateOnly FirstPreferredDayFrom(DateOnly date) => PreferredDay is { } preferred ? preferred.OnOrAfter(date) : date;
 }
