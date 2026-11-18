@@ -13,10 +13,10 @@ Blocked by: 04
 ## UI
 
 - **Areas** screen from the menu: a flat list showing each Area's parent; create, rename, set or clear the parent, and delete with a confirmation naming how many Chores use it.
-- An Area picker in the Chore form; Overview rows show the Area name.
+- An Area picker in the Chore form; Overview rows show the Area name, and so does the All Chores screen (09) as a column, whichever of 08 and 09 lands last adds it.
 - No filtering or grouping by Area (later effort).
 
 ## Acceptance
 
 - Integration tests: create, rename, re-parent, delete; cycle rejected; deleting an Area detaches its Chores and children; unknown `areaId` on a Chore is 400.
-- On a phone: create "Kitchen" inside "Downstairs", assign it to "Clean fridge", see it on the Overview row.
+- On a phone and in a desktop browser: create "Kitchen" inside "Downstairs", assign it to "Clean fridge", see it on the Overview row.

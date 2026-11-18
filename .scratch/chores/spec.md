@@ -10,8 +10,8 @@ From the PWA, the household can see what needs doing ordered by Urgency, tick Ch
 
 ### Scope
 
-- **In:** Overview by Urgency; Complete (today or another day), Skip and Postpone from the Overview with Undo; create, edit and delete Recurring and One-off Chores with all Domain fields (Name, Importance, Effort, Area, Interval, Preferred Day, Season, Due Date); manage Areas (flat screen, optional parent).
-- **Later efforts:** History, week planner and Forecasts, nested-Area filtering, "15 minutes free?", who completed a Chore, reminders, Todoist import, an Archived Chores screen, offline actions, live push updates.
+- **In:** Overview by Urgency; Complete (today or another day), Skip and Postpone from the Overview with Undo; create, edit and delete Recurring and One-off Chores with all Domain fields (Name, Importance, Effort, Area, Interval, Preferred Day, Season, Due Date); manage Areas (flat screen, optional parent); an All Chores screen for setup, with an Archived filter. Usable on a phone and in a desktop browser.
+- **Later efforts:** History, week planner and Forecasts, nested-Area filtering, "15 minutes free?", who completed a Chore, reminders, Todoist import, permanently deleting Archived Chores, offline actions, live push updates.
 - **Slicing:** vertical slices, each ticket ships its endpoint(s), integration tests and the UI using them.
 
 ### API
@@ -24,7 +24,8 @@ From the PWA, the household can see what needs doing ordered by Urgency, tick Ch
 
 ### Deleting
 
-- **Archived** (new glossary term): a Chore removed by the household whose Completions are kept for history. Archived Chores are hidden everywhere, are never Overdue and have no Urgency. The Domain gets `Archive()` and `Restore()`.
+- **Archived** (new glossary term): a Chore removed by the household whose Completions are kept for history. Archived Chores are hidden everywhere except the Archived filter of All Chores, are never Overdue and have no Urgency. The Domain gets `Archive(date)` and `Restore()`, and keeps the archive date.
+- Archived Chores are **read-only**: the only action on one is Restore. There is no permanent delete.
 - `DELETE /api/chores/{id}` archives a Chore that has Completions and hard-deletes one that has none; the response says which. The UI button says "Delete" either way.
 - Archiving shows an Undo toast (`POST /api/chores/{id}/restore`) and needs no confirmation; a hard delete has no Undo, so it asks for confirmation first.
 - **Areas are hard-deleted**, after a confirmation naming how many Chores use it; their Chores (Archived ones included) and child Areas are detached.
@@ -37,7 +38,10 @@ From the PWA, the household can see what needs doing ordered by Urgency, tick Ch
   - **TanStack Query** for all API calls; **TanStack Router** for screens, with code-based routes in one `router.tsx` (no file-based routing or generated route tree), loaders prefetching through TanStack Query, and a `beforeLoad` session check redirecting to the login; **no form library**: controlled state plus the UI SDK Field, with errors from the API's validation problems.
 - **No live push (SSE) in v1.** Queries refetch when the app regains focus and after every mutation the device makes; the 409 guard covers two devices acting at once.
 - **Undo instead of confirmation** for Complete, Skip and archiving: a toast for a few seconds. Completions are undone with `DELETE /api/chores/{id}/completions/{completionId}` (the Domain's `RemoveCompletion`).
-- **Shell:** the Overview is the home screen; a floating **+** opens the new-Chore form; tapping a row opens it for editing; a small menu holds Areas and Log out. No tab bar.
+- **One responsive app**, mobile-first: the same screens and routes at every width, with Tailwind breakpoints adding wider layouts. The phone is for daily use; the desktop browser mainly for setting up Chores.
+- **Shell:** the Overview is the home screen. On a phone, a floating **+** opens the new-Chore form and a small menu holds All Chores, Areas and Log out; no tab bar. From `md` up, the menu becomes a top navigation bar with a "New Chore" button. Tapping a row opens the Chore for editing.
+- **All Chores:** every Chore that isn't Archived, including Dormant, finished and not-yet-due ones, with an Archived filter. A list on a phone, a sortable table from `md` up, and from `lg` up the Chore form opens beside the list. The Overview stays a single centered column at every width.
+- **Fast entry:** the Chore form focuses its first field, submits on Enter, and has "Save and add another", which keeps Interval, Preferred Day, Season and Area.
 - **Overview:** one list sorted by Urgency, highest first, Overdue rows marked; each row shows Name, Area, Effort and Due Date. Dormant Recurring Chores and finished One-off Chores are hidden; One-off Chores without a Due Date sit in an "Anytime" section at the bottom. No grouping by Area.
 - **Dates:** relative in lists ("today", "tomorrow", "in 3 days", "2 days overdue", and "Tue 24 Nov" beyond a week); absolute in forms; weeks start on Monday.
 - **English only**, matching the glossary; no i18n library.
@@ -46,7 +50,7 @@ From the PWA, the household can see what needs doing ordered by Urgency, tick Ch
 ### Testing
 
 - API: integration tests on the existing `ApiFactory` for every endpoint, including 400, 401 and 409 paths.
-- Front end: Vitest + Testing Library only for components with real logic (the Chore form's Interval / Preferred Day / Season rules, relative date formatting). No end-to-end browser suite in v1.
+- Front end: Vitest + Testing Library only for components with real logic (the Chore form's Interval / Preferred Day / Season rules, "Save and add another", relative date formatting, All Chores sorting). Every UI ticket is checked by hand on a phone and in a desktop browser. No end-to-end browser suite in v1.
 
 ## Issues
 
@@ -58,3 +62,4 @@ From the PWA, the household can see what needs doing ordered by Urgency, tick Ch
 6. `06-skip-and-postpone.md` (after 05)
 7. `07-delete-and-archive.md` (after 02)
 8. `08-areas.md` (after 04)
+9. `09-all-chores.md` (after 04, 07)

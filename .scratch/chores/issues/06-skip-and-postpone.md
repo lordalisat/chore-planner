@@ -16,4 +16,4 @@ Blocked by: 05
 ## Acceptance
 
 - Integration tests: Skip leaves Last Done unchanged and moves the Due Date on; Skip on a One-off Chore is 400; Postpone sets the Due Date and the next Completion clears it; 409 on a stale `dueDate` for both.
-- On a phone: skipping laundry moves it a week on; Undo brings it back.
+- On a phone and in a desktop browser: skipping laundry moves it a week on; Undo brings it back.

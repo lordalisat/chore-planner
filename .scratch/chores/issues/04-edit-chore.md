@@ -16,4 +16,4 @@ Blocked by: 02
 ## Acceptance
 
 - Integration tests: edit each kind; 400 on an invalid combination; 404 on an unknown id; the Due Date in the response reflects a new Interval or Preferred Day.
-- On a phone: changing laundry from Tuesday to Saturday moves its Due Date on the Overview.
+- On a phone and in a desktop browser: changing laundry from Tuesday to Saturday moves its Due Date on the Overview.
