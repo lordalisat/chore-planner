@@ -28,7 +28,7 @@ public static class ChoreEndpoints
                 errors["name"] = ["A Chore needs a name."];
             }
             // Missing when the JSON leaves it out, whatever its type says
-            Interval? interval = Build("interval", "Every needs a whole number of at least 1.", () => request.Interval is { } given
+            Interval? interval = OrFieldError("interval", "Every needs a whole number of at least 1.", () => request.Interval is { } given
                 ? new Interval(given.Count, given.Unit)
                 : throw new ArgumentNullException(nameof(request.Interval)));
             PreferredDay? preferredDay = null;
@@ -42,7 +42,7 @@ public static class ChoreEndpoints
             }
             Season? season = request.Season is null
                 ? null
-                : Build("season", "A Season runs between months 1 and 12.", () => new Season(request.Season.FromMonth, request.Season.ToMonth));
+                : OrFieldError("season", "A Season runs between months 1 and 12.", () => new Season(request.Season.FromMonth, request.Season.ToMonth));
             if (errors.Count > 0)
             {
                 return TypedResults.ValidationProblem(errors);
@@ -65,7 +65,7 @@ public static class ChoreEndpoints
             // No address yet: there is no endpoint for one Chore
             return TypedResults.Created((string?)null, ChoreDto.From(chore, entity => IdOf(db, entity), clock));
 
-            T? Build<T>(string field, string error, Func<T> build) where T : class
+            T? OrFieldError<T>(string field, string error, Func<T> build) where T : class
             {
                 try
                 {
@@ -83,14 +83,15 @@ public static class ChoreEndpoints
     // Keys are shadow properties, see ChoresDbContext
     private static int IdOf(ChoresDbContext db, object entity) => (int)db.Entry(entity).Property("Id").CurrentValue!;
 
+    // Defaults apply to properties the JSON leaves out
     private sealed record CreateRecurringChoreRequest(
         string Name,
         IntervalDto Interval,
-        string? PreferredDay,
-        SeasonDto? Season,
-        Importance Importance,
-        int? Effort,
-        DateOnly? LastDone);
+        string? PreferredDay = null,
+        SeasonDto? Season = null,
+        Importance Importance = Importance.Normal,
+        int? Effort = null,
+        DateOnly? LastDone = null);
 }
 
 /// <summary>A Chore as the front end sees it, with its scheduling computed for today.</summary>

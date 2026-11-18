@@ -14,7 +14,7 @@ import { unreachableMessage } from './Unreachable.tsx'
 type Request = components['schemas']['CreateRecurringChoreRequest']
 type Unit = Request['interval']['unit']
 type PreferredDay = NonNullable<Request['preferredDay']>
-type Importance = Request['importance']
+type Importance = NonNullable<Request['importance']>
 
 const units: Option<Unit>[] = [
   { value: 'Day', label: 'days' },
@@ -108,8 +108,8 @@ export function ChoreForm({ onDone }: { onDone: () => void }) {
       <TextField ref={nameInput} label="Name" autoFocus value={name} onValueChange={setName} error={errors.name?.[0]} />
       <div className="flex flex-col gap-1">
         <div className="flex items-end gap-2">
-          <NumberField label="Every" min={1} value={count} onValueChange={setCount} className="w-24" />
-          <SelectField label="Unit" hideLabel options={units} value={unit} onValueChange={(next) => next && changeUnit(next)} className="flex-1" />
+          <NumberField label="Every" min={1} value={count} onValueChange={setCount} invalid={!!errors.interval} className="w-24" />
+          <SelectField label="Unit" hideLabel options={units} value={unit} onValueChange={(next) => next && changeUnit(next)} invalid={!!errors.interval} className="flex-1" />
         </div>
         {errors.interval && <p className="text-sm text-red-700">{errors.interval[0]}</p>}
       </div>
@@ -123,8 +123,8 @@ export function ChoreForm({ onDone }: { onDone: () => void }) {
       />
       <div className="flex flex-col gap-1">
         <div className="flex gap-2">
-          <SelectField label="Season from" options={months} value={seasonFrom} onValueChange={setSeasonFrom} placeholder="All year" className="flex-1" />
-          <SelectField label="Season to" options={months} value={seasonTo} onValueChange={setSeasonTo} placeholder="All year" className="flex-1" />
+          <SelectField label="Season from" options={months} value={seasonFrom} onValueChange={setSeasonFrom} placeholder="All year" invalid={!!errors.season} className="flex-1" />
+          <SelectField label="Season to" options={months} value={seasonTo} onValueChange={setSeasonTo} placeholder="All year" invalid={!!errors.season} className="flex-1" />
         </div>
         {errors.season && <p className="text-sm text-red-700">{errors.season[0]}</p>}
       </div>

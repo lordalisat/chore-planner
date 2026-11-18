@@ -259,13 +259,13 @@ export interface components {
             name: string;
             interval: components["schemas"]["IntervalDto"];
             /** @enum {null|string} */
-            preferredDay: "Sunday" | "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "FirstOfMonth" | "LastOfMonth" | null;
-            season: null | components["schemas"]["SeasonDto"];
-            importance: components["schemas"]["Importance"];
+            preferredDay?: "Sunday" | "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "FirstOfMonth" | "LastOfMonth" | null;
+            season?: null | components["schemas"]["SeasonDto"];
+            importance?: components["schemas"]["Importance"];
             /** Format: int32 */
-            effort: null | number;
+            effort?: null | number;
             /** Format: date */
-            lastDone: null | string;
+            lastDone?: null | string;
         };
         HttpValidationProblemDetails: {
             type?: null | string;

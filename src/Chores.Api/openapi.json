@@ -266,12 +266,7 @@
       "CreateRecurringChoreRequest": {
         "required": [
           "name",
-          "interval",
-          "preferredDay",
-          "season",
-          "importance",
-          "effort",
-          "lastDone"
+          "interval"
         ],
         "type": "object",
         "properties": {

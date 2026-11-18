@@ -80,6 +80,14 @@ public class ChoreTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal("2027-04-01", lawn.GetProperty("dueDate").GetString());
     }
 
+    [Fact]
+    public async Task A_Chore_without_an_Importance_is_Normal()
+    {
+        await Create(new { name = "Dust", interval = new { count = 1, unit = "Week" } });
+
+        Assert.Equal("Normal", (await Listed("Dust")).GetProperty("importance").GetString());
+    }
+
     [Theory]
     [InlineData("preferredDay", 1, "Week", "FirstOfMonth", 1, 12)]
     [InlineData("preferredDay", 1, "Week", "Tuesdays", 1, 12)]
