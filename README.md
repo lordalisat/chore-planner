@@ -37,7 +37,13 @@ dotnet ef migrations add <Name> --project src/Chores.Api --output-dir Data/Migra
 npm run dev --prefix web                   # Vite dev server on :5173, proxies /api to :5080
 npm run build --prefix web                 # front end into src/Chores.Api/wwwroot, served by the API
 npm run lint --prefix web
+npm test --prefix web                      # Vitest in watch mode; `npm test --prefix web -- --run` runs once
+npm run api --prefix web                   # TypeScript types in web/src/api/schema.d.ts from src/Chores.Api/openapi.json
 ```
+
+Building the API writes its OpenAPI document to `src/Chores.Api/openapi.json`. After changing an endpoint, build, then run `npm run api` and commit both files, so API changes show up as diffs. `npm run api` runs `openapi-typescript` through `npx`, pinned together with TypeScript 5, because it needs TypeScript 5 while the project uses TypeScript 7.
+
+In the front end only `web/src/ui/` imports the UI SDK (`@ui-sdk/*`); screens use those wrappers. The SDK is in beta, so its versions in `package.json` are pinned exactly.
 
 In Development the household password is `chores` and the API key is `dev-api-key` (see `src/Chores.Api/appsettings.Development.json`). The login cookie is marked secure, which browsers accept over plain HTTP only on `localhost`.
 
