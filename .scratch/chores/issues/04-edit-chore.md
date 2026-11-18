@@ -10,7 +10,7 @@ Blocked by: 02
 
 ## UI
 
-- Tapping an Overview row opens the Chore form at `/chores/{id}`, filled in, reusing the create form. Saving returns to the Overview.
+- Tapping an Overview row opens the Chore form at the `/chores/$id` route (typed numeric param), filled in, reusing the create form. Its loader prefetches the Chore through TanStack Query. Saving returns to the Overview.
 - Last done is not editable here; Completions are how it changes.
 
 ## Acceptance

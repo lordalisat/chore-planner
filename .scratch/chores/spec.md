@@ -34,7 +34,7 @@ From the PWA, the household can see what needs doing ordered by Urgency, tick Ch
 - React + Vite + TypeScript PWA as today, plus:
   - **UI SDK** (`@ui-sdk/react`, `@ui-sdk/core`) for interactive parts (dialog, select, date picker, menu, toast, field). It is beta and churns daily, so versions are pinned exactly (no `^`), and only components in `web/src/ui/` import `@ui-sdk/*`; screens use those wrappers.
   - **Tailwind v4** via `@tailwindcss/vite`, mobile-first, with tokens for the existing theme green `#2f6f4f` and cream `#f4f1ea`.
-  - **TanStack Query** for all API calls; **React Router** for screens; **no form library**: controlled state plus the UI SDK Field, with errors from the API's validation problems.
+  - **TanStack Query** for all API calls; **TanStack Router** for screens, with code-based routes in one `router.tsx` (no file-based routing or generated route tree), loaders prefetching through TanStack Query, and a `beforeLoad` session check redirecting to the login; **no form library**: controlled state plus the UI SDK Field, with errors from the API's validation problems.
 - **No live push (SSE) in v1.** Queries refetch when the app regains focus and after every mutation the device makes; the 409 guard covers two devices acting at once.
 - **Undo instead of confirmation** for Complete, Skip and archiving: a toast for a few seconds. Completions are undone with `DELETE /api/chores/{id}/completions/{completionId}` (the Domain's `RemoveCompletion`).
 - **Shell:** the Overview is the home screen; a floating **+** opens the new-Chore form; tapping a row opens it for editing; a small menu holds Areas and Log out. No tab bar.
