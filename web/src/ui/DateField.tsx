@@ -1,4 +1,18 @@
-import { DatePicker, DatePickerClear, DatePickerContent, DatePickerInput, DatePickerTrigger } from '@ui-sdk/react/date-picker'
+import {
+  CalendarDay,
+  CalendarGrid,
+  CalendarHeading,
+  CalendarNext,
+  CalendarPrevious,
+  CalendarWeekday,
+  CalendarWeekdays,
+  CalendarWeeks,
+  DatePicker,
+  DatePickerClear,
+  DatePickerContent,
+  DatePickerInput,
+  DatePickerTrigger,
+} from '@ui-sdk/react/date-picker'
 import { Field, FieldError, FieldLabel } from '@ui-sdk/react/field'
 
 /** A labelled, clearable date as the API writes it ("2026-11-18"); weeks start on Monday. */
@@ -27,7 +41,26 @@ export function DateField({
             <CalendarIcon />
           </DatePickerTrigger>
         </div>
-        <DatePickerContent className="rounded-lg border border-black/10 bg-white p-3 shadow-lg [&_[data-selected]]:bg-brand [&_[data-selected]]:text-white [&_[data-today]]:font-bold" />
+        <DatePickerContent sideOffset={4} className="rounded-lg border border-black/10 bg-white p-3 text-ink shadow-lg">
+          <div className="mb-2 flex items-center">
+            <CalendarPrevious className="rounded-md px-3 py-1 text-lg hover:bg-cream">‹</CalendarPrevious>
+            <CalendarHeading className="flex-1 text-center font-semibold" />
+            <CalendarNext className="rounded-md px-3 py-1 text-lg hover:bg-cream">›</CalendarNext>
+          </div>
+          <CalendarGrid className="border-collapse">
+            <CalendarWeekdays>
+              {(index) => <CalendarWeekday index={index} className="size-10 text-xs font-medium text-ink/60" />}
+            </CalendarWeekdays>
+            <CalendarWeeks>
+              {(cell) => (
+                <CalendarDay
+                  value={cell.date}
+                  className="size-10 cursor-pointer rounded-full text-center hover:bg-cream data-outside:text-ink/30 data-today:font-bold data-today:text-brand data-selected:bg-brand data-selected:text-white"
+                />
+              )}
+            </CalendarWeeks>
+          </CalendarGrid>
+        </DatePickerContent>
       </DatePicker>
       {error && (
         <FieldError match className="text-sm text-red-700">

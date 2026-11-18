@@ -7,6 +7,7 @@ import { DateField } from '../ui/DateField.tsx'
 import { NumberField } from '../ui/NumberField.tsx'
 import { SegmentedField } from '../ui/SegmentedField.tsx'
 import { SelectField, type Option } from '../ui/SelectField.tsx'
+import { SwitchField } from '../ui/SwitchField.tsx'
 import { TextField } from '../ui/TextField.tsx'
 import { toast } from '../ui/toast.ts'
 import { unreachableMessage } from './Unreachable.tsx'
@@ -49,6 +50,8 @@ export function ChoreForm({ onDone }: { onDone: () => void }) {
   const [count, setCount] = useState<number | null>(1)
   const [unit, setUnit] = useState<Unit>('Week')
   const [preferredDay, setPreferredDay] = useState<PreferredDay | null>(null)
+  // Off is all year; the months are kept while off, so switching back on restores them
+  const [seasonal, setSeasonal] = useState(false)
   const [seasonFrom, setSeasonFrom] = useState<string | null>(null)
   const [seasonTo, setSeasonTo] = useState<string | null>(null)
   const [importance, setImportance] = useState<Importance>('Normal')
@@ -84,8 +87,8 @@ export function ChoreForm({ onDone }: { onDone: () => void }) {
   function submit(event: FormEvent, another = false) {
     event.preventDefault()
     // A Season needs both months; the API can only judge a whole one
-    if ((seasonFrom === null) !== (seasonTo === null)) {
-      setErrors({ season: ['Pick both months, or neither for all year.'] })
+    if (seasonal && (seasonFrom === null || seasonTo === null)) {
+      setErrors({ season: ['Pick the months the Season runs from and to.'] })
       return
     }
     setErrors({})
@@ -95,7 +98,7 @@ export function ChoreForm({ onDone }: { onDone: () => void }) {
         name,
         interval: { count: count ?? 0, unit },
         preferredDay,
-        season: seasonFrom && seasonTo ? { fromMonth: Number(seasonFrom), toMonth: Number(seasonTo) } : null,
+        season: seasonal && seasonFrom && seasonTo ? { fromMonth: Number(seasonFrom), toMonth: Number(seasonTo) } : null,
         importance,
         effort,
         lastDone,
@@ -121,11 +124,19 @@ export function ChoreForm({ onDone }: { onDone: () => void }) {
         placeholder="Any day"
         error={errors.preferredDay?.[0]}
       />
-      <div className="flex flex-col gap-1">
-        <div className="flex gap-2">
-          <SelectField label="Season from" options={months} value={seasonFrom} onValueChange={setSeasonFrom} placeholder="All year" invalid={!!errors.season} className="flex-1" />
-          <SelectField label="Season to" options={months} value={seasonTo} onValueChange={setSeasonTo} placeholder="All year" invalid={!!errors.season} className="flex-1" />
-        </div>
+      <div className="flex flex-col gap-2">
+        <SwitchField
+          label="Seasonal"
+          description={seasonal ? 'Only due between these months' : 'Due all year'}
+          checked={seasonal}
+          onCheckedChange={setSeasonal}
+        />
+        {seasonal && (
+          <div className="flex gap-2">
+            <SelectField label="Season from" options={months} value={seasonFrom} onValueChange={setSeasonFrom} placeholder="Month" invalid={!!errors.season} className="flex-1" />
+            <SelectField label="Season to" options={months} value={seasonTo} onValueChange={setSeasonTo} placeholder="Month" invalid={!!errors.season} className="flex-1" />
+          </div>
+        )}
         {errors.season && <p className="text-sm text-red-700">{errors.season[0]}</p>}
       </div>
       <SegmentedField label="Importance" options={importances} value={importance} onValueChange={setImportance} />

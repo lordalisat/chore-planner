@@ -33,6 +33,7 @@ test('Save and add another keeps the Interval, Preferred Day and Season and star
   await userEvent.clear(screen.getByRole('textbox', { name: 'Every' }))
   await userEvent.type(screen.getByRole('textbox', { name: 'Every' }), '2')
   await pick('Preferred day', 'Tuesday')
+  await userEvent.click(screen.getByRole('switch', { name: 'Seasonal' }))
   await pick('Season from', 'April')
   await pick('Season to', 'October')
   await userEvent.type(screen.getByRole('textbox', { name: 'Effort in minutes' }), '20')
@@ -54,6 +55,21 @@ test('Save and add another keeps the Interval, Preferred Day and Season and star
   expect(screen.getByRole('combobox', { name: 'Season from' })).toHaveTextContent('April')
   expect(screen.getByRole('combobox', { name: 'Season to' })).toHaveTextContent('October')
   expect(screen.getByRole('textbox', { name: 'Effort in minutes' })).toHaveValue('')
+})
+
+test('switching Seasonal off makes a Chore all year again', async () => {
+  const fetch = stubApi({ '/api/chores/recurring': new Response('{}', { status: 201 }), '/api/chores': [] })
+  renderForm()
+  await userEvent.click(screen.getByRole('switch', { name: 'Seasonal' }))
+  await pick('Season from', 'April')
+  await pick('Season to', 'October')
+
+  await userEvent.click(screen.getByRole('switch', { name: 'Seasonal' }))
+  await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Dust{Enter}')
+
+  expect(screen.queryByRole('combobox', { name: 'Season from' })).not.toBeInTheDocument()
+  await expect.poll(() => fetch.mock.calls.length).toBe(1)
+  expect(JSON.parse(String(fetch.mock.calls[0]?.[1]?.body))).toMatchObject({ name: 'Dust', season: null })
 })
 
 test('a field the API rejects shows why', async () => {
