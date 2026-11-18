@@ -2,6 +2,8 @@ using Chores.Api.Data;
 using Chores.Domain;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Xunit;
 
 namespace Chores.Api.Tests;
@@ -103,6 +105,25 @@ public sealed class PersistenceTests : IDisposable
     }
 
     [Fact]
+    public void A_Preferred_Day_stored_as_a_number_survives_the_migration_to_text()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+        using ChoresDbContext db = NewContext(connection);
+        IMigrator migrator = db.GetService<IMigrator>();
+        migrator.Migrate("Initial");
+        db.Database.ExecuteSql($"""
+            INSERT INTO Chores (Name, CreatedOn, Importance, Kind, PreferredDay, Interval_Count, Interval_Unit)
+            VALUES ('Laundry', '2027-01-01', 1, 'Recurring', 2, 7, 0), ('Pay the rent', '2027-01-01', 1, 'Recurring', 8, 1, 2)
+            """);
+
+        migrator.Migrate();
+
+        Assert.Equal(DayOfWeek.Tuesday, db.Chores.OfType<RecurringChore>().Single(c => c.Name == "Laundry").PreferredDay);
+        Assert.Equal(new PreferredDay.LastOfMonth(), db.Chores.OfType<RecurringChore>().Single(c => c.Name == "Pay the rent").PreferredDay);
+    }
+
+    [Fact]
     public void A_finished_One_off_Chore_keeps_its_Due_Date()
     {
         var tap = new OneOffChore("Fix the leaking tap", new DateOnly(2027, 1, 1)) { DueDate = new DateOnly(2027, 1, 15) };
@@ -128,5 +149,8 @@ public sealed class PersistenceTests : IDisposable
         db.SaveChanges();
     }
 
-    private ChoresDbContext NewContext() => new(new DbContextOptionsBuilder<ChoresDbContext>().UseSqlite(_connection).Options);
+    private ChoresDbContext NewContext() => NewContext(_connection);
+
+    private static ChoresDbContext NewContext(SqliteConnection connection) =>
+        new(new DbContextOptionsBuilder<ChoresDbContext>().UseSqlite(connection).Options);
 }

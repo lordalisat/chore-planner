@@ -93,8 +93,8 @@ namespace Chores.Api.Data.Migrations
                     b.Property<DateOnly?>("PostponedTo")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("PreferredDay")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("PreferredDay")
+                        .HasColumnType("TEXT");
 
                     b.ComplexProperty(typeof(Dictionary<string, object>), "Interval", "Chores.Domain.RecurringChore.Interval#Interval", b1 =>
                         {

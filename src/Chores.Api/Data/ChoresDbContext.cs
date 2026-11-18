@@ -34,7 +34,7 @@ public sealed class ChoresDbContext(DbContextOptions<ChoresDbContext> options) :
         modelBuilder.Entity<RecurringChore>(chore =>
         {
             // EF never passes null to a converter
-            chore.Property(c => c.PreferredDay).HasConversion(day => ToCode(day!), code => FromCode(code));
+            chore.Property(c => c.PreferredDay).HasConversion(day => ToText(day!), text => FromText(text));
             chore.ComplexProperty(c => c.Interval, interval =>
             {
                 interval.Property(i => i.Count);
@@ -55,19 +55,19 @@ public sealed class ChoresDbContext(DbContextOptions<ChoresDbContext> options) :
         });
     }
 
-    // A Preferred Day is stored as its weekday's number, or 7 and 8 for the first and last of the month
-    private static int ToCode(PreferredDay day) => day switch
+    // A Preferred Day is stored as text, such as "Tuesday" or "LastOfMonth"
+    private static string ToText(PreferredDay day) => day switch
     {
-        PreferredDay.Weekday weekday => (int)weekday.Day,
-        PreferredDay.FirstOfMonth => 7,
-        PreferredDay.LastOfMonth => 8,
+        PreferredDay.Weekday weekday => weekday.Day.ToString(),
+        PreferredDay.FirstOfMonth => nameof(PreferredDay.FirstOfMonth),
+        PreferredDay.LastOfMonth => nameof(PreferredDay.LastOfMonth),
         _ => throw new ArgumentOutOfRangeException(nameof(day), day, null),
     };
 
-    private static PreferredDay FromCode(int code) => code switch
+    private static PreferredDay FromText(string text) => text switch
     {
-        7 => new PreferredDay.FirstOfMonth(),
-        8 => new PreferredDay.LastOfMonth(),
-        _ => (DayOfWeek)code,
+        nameof(PreferredDay.FirstOfMonth) => new PreferredDay.FirstOfMonth(),
+        nameof(PreferredDay.LastOfMonth) => new PreferredDay.LastOfMonth(),
+        _ => Enum.Parse<DayOfWeek>(text),
     };
 }
