@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Chores.Api.Tests;
 
@@ -11,6 +13,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     // PasswordHasher v3 format: PBKDF2-HMAC-SHA512, 100,000 iterations, salt 00..0f
     private const string PasswordHash = "AQAAAAIAAYagAAAAEAABAgMEBQYHCAkKCwwNDg8LJ1+nXP1HCEVtkGVQ8YRRub3RhgjMuQMQ6K7+XxmQVQ==";
     public const string IndexHtml = "<!doctype html><title>Chores test page</title>";
+    /// <summary>Today for the API under test: a Wednesday.</summary>
+    public static readonly DateOnly Today = new(2027, 3, 10);
 
     private readonly DirectoryInfo _webRoot = Directory.CreateTempSubdirectory("chores-wwwroot-");
 
@@ -25,6 +29,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Auth:PasswordHash", PasswordHash);
         // Development would layer the project's own wwwroot (a built front end, if any) over this web root
         builder.UseEnvironment("Testing");
+        builder.ConfigureTestServices(services => services.AddSingleton<TimeProvider>(new FixedClock(Today)));
     }
 
     /// <summary>A client authenticated the way AI tooling is, with the API key header.</summary>

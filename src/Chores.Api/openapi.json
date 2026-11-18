@@ -62,10 +62,348 @@
           }
         }
       }
+    },
+    "/api/chores": {
+      "get": {
+        "tags": [
+          "Chores.Api"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChoreDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/chores/recurring": {
+      "post": {
+        "tags": [
+          "Chores.Api"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRecurringChoreRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChoreDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AreaRefDto": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "ChoreDto": {
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "importance",
+          "effort",
+          "area",
+          "interval",
+          "preferredDay",
+          "season",
+          "dueDate",
+          "urgency",
+          "overdue",
+          "dormant",
+          "lastDone"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "kind": {
+            "enum": [
+              "Recurring",
+              "OneOff"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "importance": {
+            "$ref": "#/components/schemas/Importance"
+          },
+          "effort": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "area": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AreaRefDto"
+              }
+            ]
+          },
+          "interval": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IntervalDto"
+              }
+            ]
+          },
+          "preferredDay": {
+            "enum": [
+              "Sunday",
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday",
+              "FirstOfMonth",
+              "LastOfMonth",
+              null
+            ],
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "season": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SeasonDto"
+              }
+            ]
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "urgency": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "overdue": {
+            "type": "boolean"
+          },
+          "dormant": {
+            "type": "boolean"
+          },
+          "lastDone": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        }
+      },
+      "CreateRecurringChoreRequest": {
+        "required": [
+          "name",
+          "interval",
+          "preferredDay",
+          "season",
+          "importance",
+          "effort",
+          "lastDone"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "interval": {
+            "$ref": "#/components/schemas/IntervalDto"
+          },
+          "preferredDay": {
+            "enum": [
+              "Sunday",
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday",
+              "FirstOfMonth",
+              "LastOfMonth",
+              null
+            ],
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "season": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SeasonDto"
+              }
+            ]
+          },
+          "importance": {
+            "$ref": "#/components/schemas/Importance"
+          },
+          "effort": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "lastDone": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        }
+      },
+      "HttpValidationProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Importance": {
+        "enum": [
+          "Low",
+          "Normal",
+          "High"
+        ]
+      },
+      "IntervalDto": {
+        "required": [
+          "count",
+          "unit"
+        ],
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/IntervalUnit"
+          }
+        }
+      },
+      "IntervalUnit": {
+        "enum": [
+          "Day",
+          "Week",
+          "Month",
+          "Year"
+        ]
+      },
       "LoginRequest": {
         "required": [
           "password"
@@ -77,6 +415,23 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "SeasonDto": {
+        "required": [
+          "fromMonth",
+          "toMonth"
+        ],
+        "type": "object",
+        "properties": {
+          "fromMonth": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "toMonth": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       }
