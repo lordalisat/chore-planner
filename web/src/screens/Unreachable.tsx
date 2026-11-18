@@ -1,4 +1,4 @@
-import { unreachableMessage } from '../session.ts'
+export const unreachableMessage = "The server can't be reached right now. Try again later."
 
 export function Unreachable() {
   return (

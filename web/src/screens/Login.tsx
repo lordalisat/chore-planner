@@ -1,16 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useRouter } from '@tanstack/react-router'
+import { useRouter, useSearch } from '@tanstack/react-router'
 import { useState, type FormEvent } from 'react'
-import { api, ApiError } from '../api/client.ts'
-import { loginRoute } from '../router.tsx'
-import { sessionQuery, unreachableMessage } from '../session.ts'
+import { api, isUnauthorized } from '../api/client.ts'
+import { sessionQuery } from '../session.ts'
 import { TextField } from '../ui/TextField.tsx'
+import { unreachableMessage } from './Unreachable.tsx'
 
 export function Login() {
   const [password, setPassword] = useState('')
   const queryClient = useQueryClient()
   const router = useRouter()
-  const { redirect } = loginRoute.useSearch()
+  const { redirect } = useSearch({ from: '/login' })
   const login = useMutation({
     mutationFn: () => api('/api/login', 'post', { password }),
     onSuccess: () => {
@@ -46,7 +46,7 @@ export function Login() {
         </button>
         {login.error && (
           <p role="alert" className="text-red-700">
-            {login.error instanceof ApiError && login.error.status === 401 ? 'That password is not right.' : unreachableMessage}
+            {isUnauthorized(login.error) ? 'That password is not right.' : unreachableMessage}
           </p>
         )}
       </form>

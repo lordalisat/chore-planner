@@ -2,12 +2,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, Outlet, useLocation, useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { api } from '../api/client.ts'
-import { sessionQuery, unreachableMessage } from '../session.ts'
+import { sessionQuery } from '../session.ts'
 import { Menu } from '../ui/Menu.tsx'
 import { toast } from '../ui/toast.ts'
+import { unreachableMessage } from './Unreachable.tsx'
 
-// The screens besides the Overview; Areas (08) and All Chores (09) join here
-const screens: { to: '/'; label: string }[] = []
+// Links to the screens besides the Overview; Areas (08) and All Chores (09) join here
+const navLinks: { to: '/'; label: string }[] = []
 
 /** Header with navigation around every screen but the login: a menu on a phone, a top bar from md up. */
 export function Shell() {
@@ -34,9 +35,9 @@ export function Shell() {
             Chores
           </Link>
           <nav className="ml-auto hidden items-center gap-2 md:flex">
-            {screens.map((screen) => (
-              <Link key={screen.label} to={screen.to} className="rounded-lg px-3 py-2 hover:bg-white/10">
-                {screen.label}
+            {navLinks.map((link) => (
+              <Link key={link.label} to={link.to} className="rounded-lg px-3 py-2 hover:bg-white/10">
+                {link.label}
               </Link>
             ))}
             {/* Opens the new-Chore form from 02 on */}
@@ -52,7 +53,7 @@ export function Shell() {
               label="Menu"
               trigger={<MenuIcon />}
               entries={[
-                ...screens.map((screen) => ({ label: screen.label, onSelect: () => void navigate({ to: screen.to }) })),
+                ...navLinks.map((link) => ({ label: link.label, onSelect: () => void navigate({ to: link.to }) })),
                 { label: 'Log out', onSelect: () => logout.mutate() },
               ]}
             />

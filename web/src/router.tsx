@@ -26,12 +26,12 @@ const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   errorComponent: ({ error }) => (error instanceof TypeError ? <Unreachable /> : <ErrorComponent error={error} />),
 })
 
-export const loginRoute = createRoute({
+const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/login',
-  // Where to go once logged in
+  // Where to go once logged in; only a path in this app, never another site
   validateSearch: (search): { redirect?: string } => ({
-    redirect: typeof search.redirect === 'string' ? search.redirect : undefined,
+    redirect: typeof search.redirect === 'string' && /^\/(?!\/)/.test(search.redirect) ? search.redirect : undefined,
   }),
   beforeLoad: async ({ context }) => {
     if ((await context.queryClient.ensureQueryData(sessionQuery)) === 'authenticated') throw redirect({ to: '/' })

@@ -17,6 +17,9 @@ export class ApiError extends Error {
   }
 }
 
+/** The API answered 401: the household password is needed. */
+export const isUnauthorized = (error: unknown) => error instanceof ApiError && error.status === 401
+
 /**
  * Calls the API with the types from `schema.d.ts` (`npm run api`). Rejects with an ApiError when the API answers
  * other than 2xx, and with a TypeError when the server can't be reached.

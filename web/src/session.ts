@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query'
-import { api, ApiError } from './api/client.ts'
+import { api, isUnauthorized } from './api/client.ts'
 
 export type Session = 'authenticated' | 'anonymous'
 
@@ -11,13 +11,10 @@ export const sessionQuery = queryOptions({
       await api('/api/session', 'get')
       return 'authenticated'
     } catch (error) {
-      // Any 401 from the API means the household password is needed
-      if (error instanceof ApiError && error.status === 401) return 'anonymous'
+      if (isUnauthorized(error)) return 'anonymous'
       throw error
     }
   },
   // An unreachable server shows at once rather than after retries
   retry: false,
 })
-
-export const unreachableMessage = "The server can't be reached right now. Try again later."
