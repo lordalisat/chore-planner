@@ -20,17 +20,17 @@ public sealed record CreateRecurringChoreRequest(
     /// <param name="takenNames">The Names of the other Chores, which this one may not share.</param>
     public Result<RecurringChore> ToChore(DateOnly createdOn, IEnumerable<string> takenNames)
     {
-        var errors = new FieldErrors();
+        List<FieldError> errors = [];
         // Missing when the JSON leaves it out, whatever its type says
         string name = Name?.Trim() ?? "";
         if (name.Length == 0)
         {
-            errors.Add("name", "A Chore needs a name.");
+            errors.Add(new FieldError("name", "A Chore needs a name."));
         }
         // A Name tells Chores apart on the Overview
         else if (takenNames.FirstOrDefault(taken => string.Equals(taken.Trim(), name, StringComparison.CurrentCultureIgnoreCase)) is { } taken)
         {
-            errors.Add("name", $"There is already a Chore called {taken}.");
+            errors.Add(new FieldError("name", $"There is already a Chore called {taken}."));
         }
         Interval? interval = errors.Try("interval", "Every needs a whole number of at least 1.", () => Interval is { } given
             ? new Interval(given.Count, given.Unit)
@@ -38,17 +38,17 @@ public sealed record CreateRecurringChoreRequest(
         PreferredDay? preferredDay = null;
         if (PreferredDay is not null && !PreferredDayText.TryFromText(PreferredDay, out preferredDay))
         {
-            errors.Add("preferredDay", "That is not a day.");
+            errors.Add(new FieldError("preferredDay", "That is not a day."));
         }
         else if (interval is not null && preferredDay?.Allows(interval) == false)
         {
-            errors.Add("preferredDay", "The first or last of the month needs an Interval in months or years.");
+            errors.Add(new FieldError("preferredDay", "The first or last of the month needs an Interval in months or years."));
         }
         Season? season = Season is null
             ? null
             : errors.Try("season", "A Season runs between months 1 and 12.", () => new Season(Season.FromMonth, Season.ToMonth));
-        // Built only when nothing was wrong, so the Interval is there
-        return errors.ToResult(() =>
+        // Result only builds the Chore when nothing was wrong, so the Interval is there
+        return new Result<RecurringChore>(errors, () =>
         {
             var chore = new RecurringChore(name, interval!, createdOn)
             {
