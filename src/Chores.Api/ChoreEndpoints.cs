@@ -1,4 +1,5 @@
 using Chores.Api.Data;
+using Chores.Api.Dtos;
 using Chores.Domain;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;

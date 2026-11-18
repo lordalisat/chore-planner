@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 
-namespace Chores.Api;
+namespace Chores.Api.Dtos;
 
 /// <summary>What was wrong with which field of a request, keyed by its JSON name, for the form to show at that field.</summary>
 public sealed class FieldErrors

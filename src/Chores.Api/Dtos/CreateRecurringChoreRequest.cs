@@ -1,57 +1,6 @@
 using Chores.Domain;
 
-namespace Chores.Api;
-
-/// <summary>A Chore as the front end sees it, with its scheduling computed for today.</summary>
-/// <param name="Kind">"Recurring" or "OneOff".</param>
-/// <param name="PreferredDay">"Monday" to "Sunday", "FirstOfMonth" or "LastOfMonth".</param>
-/// <param name="Urgency">How pressing the Chore is today; null without a Due Date.</param>
-/// <param name="Dormant">Outside its Season; the Overview hides it.</param>
-public sealed record ChoreDto(
-    int Id,
-    string Kind,
-    string Name,
-    Importance Importance,
-    int? Effort,
-    AreaRefDto? Area,
-    IntervalDto? Interval,
-    string? PreferredDay,
-    SeasonDto? Season,
-    DateOnly? DueDate,
-    double? Urgency,
-    bool Overdue,
-    bool Dormant,
-    DateOnly? LastDone)
-{
-    /// <param name="idOf">The key of a Chore or Area, which the Domain does not hold.</param>
-    public static ChoreDto From(Chore chore, Func<object, int> idOf, TimeProvider clock)
-    {
-        var recurring = chore as RecurringChore;
-        return new ChoreDto(
-            idOf(chore),
-            recurring is null ? "OneOff" : "Recurring",
-            chore.Name,
-            chore.Importance,
-            chore.Effort,
-            chore.Area is null ? null : new AreaRefDto(idOf(chore.Area), chore.Area.Name),
-            recurring is null ? null : new IntervalDto(recurring.Interval.Count, recurring.Interval.Unit),
-            recurring?.PreferredDay is { } day ? PreferredDayText.ToText(day) : null,
-            recurring?.Season is { } season ? new SeasonDto(season.FromMonth, season.ToMonth) : null,
-            recurring?.DueDate ?? (chore as OneOffChore)?.DueDate,
-            chore.Urgency(clock),
-            chore.IsOverdue(clock),
-            recurring?.IsDormant(clock) ?? false,
-            chore.LastDone);
-    }
-}
-
-public sealed record IntervalDto(int Count, IntervalUnit Unit);
-
-/// <param name="FromMonth">1 to 12, January to December.</param>
-/// <param name="ToMonth">1 to 12; before FromMonth when the Season wraps the year.</param>
-public sealed record SeasonDto(int FromMonth, int ToMonth);
-
-public sealed record AreaRefDto(int Id, string Name);
+namespace Chores.Api.Dtos;
 
 /// <summary>A new Recurring Chore; defaults apply to properties the JSON leaves out.</summary>
 /// <param name="LastDone">When moving over from elsewhere: the Due Date then follows from it, not from today.</param>
