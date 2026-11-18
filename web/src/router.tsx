@@ -9,6 +9,7 @@ import {
   type RouterHistory,
 } from '@tanstack/react-router'
 import { ApiError } from './api/client.ts'
+import { choresQuery } from './chores.ts'
 import { Login } from './screens/Login.tsx'
 import { Overview } from './screens/Overview.tsx'
 import { Shell } from './screens/Shell.tsx'
@@ -60,6 +61,7 @@ const authenticatedRoute = createRoute({
 const overviewRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/',
+  loader: ({ context }) => context.queryClient.ensureQueryData(choresQuery),
   component: Overview,
 })
 

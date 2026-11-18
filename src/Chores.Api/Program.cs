@@ -1,4 +1,6 @@
 using System.Reflection;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using Chores.Api;
 using Chores.Api.Data;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -12,7 +14,29 @@ if (args is ["hash-password"])
 }
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options => options.AddSchemaTransformer((schema, context, _) =>
+{
+    // Text in the DTOs, but only these texts
+    IEnumerable<JsonNode?>? texts = context.JsonPropertyInfo?.Name switch
+    {
+        "preferredDay" => [.. PreferredDayText.All.Select(text => (JsonNode)text), null],
+        "kind" => ["Recurring", "OneOff"],
+        _ => null,
+    };
+    if (texts is not null)
+    {
+        schema.Enum = [.. texts!];
+    }
+    return Task.CompletedTask;
+}));
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    // Enums such as Importance travel as their names, like "High"
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    // Numbers are numbers, so OpenAPI doesn't document them as "number or string"
+    options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
+});
+builder.Services.AddSingleton(TimeProvider.System);
 
 // A file under data/ by default, the directory a Docker volume mounts on
 string databasePath = Path.GetFullPath(builder.Configuration["Database:Path"] ?? "data/chores.db");
@@ -47,6 +71,7 @@ app.MapOpenApi();
 RouteGroupBuilder api = app.MapGroup("/api").RequireAuthorization();
 api.MapGet("/health", () => TypedResults.Ok()).AllowAnonymous();
 api.MapAuthEndpoints();
+api.MapChoreEndpoints();
 // Keeps unknown API paths out of the front-end fallback below
 api.MapFallback(() => TypedResults.NotFound()).ExcludeFromDescription();
 

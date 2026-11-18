@@ -29,8 +29,11 @@ public abstract record PreferredDay
         return date.DayNumber - before.DayNumber < after.DayNumber - date.DayNumber ? before : after;
     }
 
+    /// <summary>A day of the week, which only an Interval in weeks, months or years allows.</summary>
     public sealed record Weekday(DayOfWeek Day) : PreferredDay
     {
+        public override bool Allows(Interval interval) => interval.Unit is not IntervalUnit.Day;
+
         public override DateOnly OnOrAfter(DateOnly date) => date.AddDays(((int)Day - (int)date.DayOfWeek + 7) % 7);
 
         public override DateOnly OnOrBefore(DateOnly date) => date.AddDays(-(((int)date.DayOfWeek - (int)Day + 7) % 7));

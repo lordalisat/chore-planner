@@ -100,15 +100,8 @@ public sealed class RecurringChore(string name, Interval interval, DateOnly crea
     private DateOnly DueAfter(DateOnly lastDone)
     {
         DateOnly due = Interval.AddTo(lastDone);
-        if (PreferredDay is { } preferred)
-        {
-            due = preferred.NearestTo(due);
-            if (due <= lastDone)
-            {
-                due = preferred.OnOrAfter(lastDone.AddDays(1));
-            }
-        }
-        return due;
+        // Every Preferred Day needs an Interval long enough that its nearest one still falls after Last Done
+        return PreferredDay is { } preferred ? preferred.NearestTo(due) : due;
     }
 
     private static void EnsureAllowed(Interval interval, PreferredDay? preferredDay)

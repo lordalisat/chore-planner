@@ -40,6 +40,8 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     proxy: { '/api': 'http://localhost:5080' },
+    // Podman's bind mount on macOS passes no file events into the devcontainer, so Vite would never see edits
+    watch: { usePolling: true },
   },
   test: {
     environment: 'jsdom',

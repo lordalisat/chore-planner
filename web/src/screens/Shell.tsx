@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, Outlet, useNavigate, useRouter } from '@tanstack/react-router'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { api } from '../api/client.ts'
 import { sessionQuery } from '../session.ts'
+import { Dialog } from '../ui/Dialog.tsx'
 import { Menu } from '../ui/Menu.tsx'
 import { toast } from '../ui/toast.ts'
+import { ChoreForm } from './ChoreForm.tsx'
 import { unreachableMessage } from './Unreachable.tsx'
 
 // Links to the screens besides the Overview; Areas (08) and All Chores (09) join here
@@ -15,6 +17,7 @@ export function Shell() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const router = useRouter()
+  const [creating, setCreating] = useState(false)
   // Refetched on focus, so a session ended elsewhere sends this device to the login. The route guard does the
   // redirect, once; navigating from here would rerun on every location change until the Shell unmounts.
   const { data: session } = useQuery(sessionQuery)
@@ -41,8 +44,7 @@ export function Shell() {
                 {link.label}
               </Link>
             ))}
-            {/* Opens the new-Chore form from 02 on */}
-            <button type="button" className="rounded-lg bg-cream px-3 py-2 font-semibold text-brand hover:bg-white">
+            <button type="button" onClick={() => setCreating(true)} className="rounded-lg bg-cream px-3 py-2 font-semibold text-brand hover:bg-white">
               New Chore
             </button>
             <button type="button" onClick={() => logout.mutate()} className="rounded-lg px-3 py-2 hover:bg-white/10">
@@ -64,14 +66,18 @@ export function Shell() {
       <main className="mx-auto max-w-3xl px-4 py-6">
         <Outlet />
       </main>
-      {/* Opens the new-Chore form from 02 on */}
       <button
         type="button"
         aria-label="New Chore"
+        onClick={() => setCreating(true)}
         className="fixed right-4 bottom-6 flex size-14 items-center justify-center rounded-full bg-brand text-3xl text-white shadow-lg md:hidden"
       >
         +
       </button>
+      <Dialog open={creating} onOpenChange={setCreating} title="New Chore">
+        {/* Mounted only while open, so each new Chore starts from an empty form */}
+        {creating && <ChoreForm onDone={() => setCreating(false)} />}
+      </Dialog>
     </div>
   )
 }
