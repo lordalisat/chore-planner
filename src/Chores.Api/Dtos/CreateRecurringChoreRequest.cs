@@ -14,12 +14,13 @@ public sealed record CreateRecurringChoreRequest(
     DateOnly? LastDone = null)
 {
     /// <summary>
-    /// The Chore this asks for, or null with what is wrong in <paramref name="errors"/>. The Domain decides what is
-    /// valid; each rejection is reported at the field the form shows it on.
+    /// The Chore this asks for, or what is wrong with which field. The Domain decides what is valid; each rejection
+    /// is reported at the field the form shows it on.
     /// </summary>
     /// <param name="takenNames">The Names of the other Chores, which this one may not share.</param>
-    public RecurringChore? ToChore(DateOnly createdOn, IEnumerable<string> takenNames, FieldErrors errors)
+    public Result<RecurringChore> ToChore(DateOnly createdOn, IEnumerable<string> takenNames)
     {
+        var errors = new FieldErrors();
         // Missing when the JSON leaves it out, whatever its type says
         string name = Name?.Trim() ?? "";
         if (name.Length == 0)
@@ -46,22 +47,21 @@ public sealed record CreateRecurringChoreRequest(
         Season? season = Season is null
             ? null
             : errors.Try("season", "A Season runs between months 1 and 12.", () => new Season(Season.FromMonth, Season.ToMonth));
-        if (errors.Any)
+        // Built only when nothing was wrong, so the Interval is there
+        return errors.ToResult(() =>
         {
-            return null;
-        }
-
-        var chore = new RecurringChore(name, interval!, createdOn)
-        {
-            PreferredDay = preferredDay,
-            Season = season,
-            Importance = Importance,
-            Effort = Effort,
-        };
-        if (LastDone is { } lastDone)
-        {
-            chore.Complete(lastDone);
-        }
-        return chore;
+            var chore = new RecurringChore(name, interval!, createdOn)
+            {
+                PreferredDay = preferredDay,
+                Season = season,
+                Importance = Importance,
+                Effort = Effort,
+            };
+            if (LastDone is { } lastDone)
+            {
+                chore.Complete(lastDone);
+            }
+            return chore;
+        });
     }
 }

@@ -1,13 +1,9 @@
-using Microsoft.AspNetCore.Http.HttpResults;
-
 namespace Chores.Api.Dtos;
 
-/// <summary>What was wrong with which field of a request, keyed by its JSON name, for the form to show at that field.</summary>
+/// <summary>Collects what is wrong with which field while a request validates itself, ending in a <see cref="Result{T}"/>.</summary>
 public sealed class FieldErrors
 {
     private readonly Dictionary<string, string[]> _errors = [];
-
-    public bool Any => _errors.Count > 0;
 
     public void Add(string field, string message) => _errors[field] = [message];
 
@@ -25,5 +21,7 @@ public sealed class FieldErrors
         }
     }
 
-    public ValidationProblem ToProblem() => TypedResults.ValidationProblem(_errors);
+    /// <summary>The errors so far, or, when there are none, what <paramref name="build"/> makes.</summary>
+    public Result<T> ToResult<T>(Func<T> build) where T : class =>
+        _errors.Count > 0 ? Result<T>.Invalid(_errors) : Result<T>.Valid(build());
 }

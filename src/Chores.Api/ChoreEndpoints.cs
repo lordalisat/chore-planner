@@ -22,11 +22,11 @@ public static class ChoreEndpoints
         chores.MapPost("/recurring", async Task<Results<Created<ChoreDto>, ValidationProblem>> (
             CreateRecurringChoreRequest request, ChoresDbContext db, TimeProvider clock) =>
         {
-            var errors = new FieldErrors();
             List<string> takenNames = await db.Chores.Select(c => c.Name).ToListAsync();
-            if (request.ToChore(clock.Today(), takenNames, errors) is not { } chore)
+            Result<RecurringChore> result = request.ToChore(clock.Today(), takenNames);
+            if (result.Value is not { } chore)
             {
-                return errors.ToProblem();
+                return result.ToProblem();
             }
 
             db.Add(chore);
