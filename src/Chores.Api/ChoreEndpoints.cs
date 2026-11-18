@@ -23,9 +23,15 @@ public static class ChoreEndpoints
         {
             // The Domain decides what is valid; each rejection is reported at the field the form shows it on
             var errors = new Dictionary<string, string[]>();
-            if (string.IsNullOrWhiteSpace(request.Name))
+            string name = request.Name?.Trim() ?? "";
+            if (name.Length == 0)
             {
                 errors["name"] = ["A Chore needs a name."];
+            }
+            // A Name tells Chores apart on the Overview; SQLite's lower() covers ASCII, enough for a household's names
+            else if (await db.Chores.Where(c => c.Name.ToLower() == name.ToLower()).Select(c => c.Name).FirstOrDefaultAsync() is { } taken)
+            {
+                errors["name"] = [$"There is already a Chore called {taken}."];
             }
             // Missing when the JSON leaves it out, whatever its type says
             Interval? interval = OrFieldError("interval", "Every needs a whole number of at least 1.", () => request.Interval is { } given
@@ -48,7 +54,7 @@ public static class ChoreEndpoints
                 return TypedResults.ValidationProblem(errors);
             }
 
-            var chore = new RecurringChore(request.Name.Trim(), interval!, clock.Today())
+            var chore = new RecurringChore(name, interval!, clock.Today())
             {
                 PreferredDay = preferredDay,
                 Season = season,

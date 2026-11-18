@@ -121,6 +121,20 @@ public class ChoreTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.True(problem.GetProperty("errors").TryGetProperty("name", out _));
     }
 
+    [Fact]
+    public async Task Two_Chores_cannot_share_a_Name()
+    {
+        await Create(new { name = "Vacuum the stairs", interval = new { count = 1, unit = "Week" } });
+
+        HttpResponseMessage response = await Create(new { name = " vacuum the STAIRS ", interval = new { count = 2, unit = "Week" } });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        JsonElement problem = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+        Assert.Equal(["name"], problem.GetProperty("errors").EnumerateObject().Select(e => e.Name));
+        Assert.Single((await _client.GetFromJsonAsync<JsonElement>("/api/chores", TestContext.Current.CancellationToken)).EnumerateArray(),
+            c => c.GetProperty("name").GetString()!.Equals("Vacuum the stairs", StringComparison.OrdinalIgnoreCase));
+    }
+
     [Theory]
     [InlineData("GET", "/api/chores")]
     [InlineData("POST", "/api/chores/recurring")]
