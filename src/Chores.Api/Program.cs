@@ -1,3 +1,4 @@
+using System.Reflection;
 using Chores.Api;
 using Chores.Api.Data;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -15,6 +16,11 @@ builder.Services.AddOpenApi();
 
 // A file under data/ by default, the directory a Docker volume mounts on
 string databasePath = Path.GetFullPath(builder.Configuration["Database:Path"] ?? "data/chores.db");
+// The build runs this app to write openapi.json, from the project directory; keep its database and cookie keys out of the repo
+if (Assembly.GetEntryAssembly()?.GetName().Name == "GetDocument.Insider")
+{
+    databasePath = Path.Combine(Path.GetTempPath(), "chores-openapi", "chores.db");
+}
 builder.Services.AddDbContext<ChoresDbContext>(options => options.UseSqlite($"Data Source={databasePath}"));
 builder.Services.AddHouseholdAuth(new DirectoryInfo(Path.Combine(Path.GetDirectoryName(databasePath)!, "keys")));
 // HTTPS ends at the home server's reverse proxy, whose address inside Docker isn't known up front, so any proxy is trusted

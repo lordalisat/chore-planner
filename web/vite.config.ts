@@ -1,3 +1,5 @@
+/// <reference types="vitest/config" />
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -6,6 +8,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig({
   plugins: [
     react(),
+    tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon-180x180.png'],
@@ -37,5 +40,9 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     proxy: { '/api': 'http://localhost:5080' },
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['src/test-setup.ts'],
   },
 })

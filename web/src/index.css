@@ -1,13 +1,17 @@
-:root {
-  color-scheme: light dark;
-  font-family: system-ui, sans-serif;
-  line-height: 1.5;
+/* Declared first so the UI SDK's few behaviour styles lose to ours */
+@layer ui-sdk;
+
+@import 'tailwindcss';
+
+@theme {
+  --color-brand: #2f6f4f;
+  --color-cream: #f4f1ea;
+  --color-ink: #1f2a24;
+  --font-sans: system-ui, sans-serif;
 }
 
-body {
-  margin: 0;
-}
-
-main {
-  padding: 1rem;
+@layer base {
+  body {
+    @apply bg-cream text-ink antialiased;
+  }
 }
