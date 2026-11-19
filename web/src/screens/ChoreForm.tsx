@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState, type FormEvent } from 'react'
 import { api, ApiError, type FieldErrors } from '../api/client.ts'
 import type { components } from '../api/schema'
-import { choresQuery } from '../chores.ts'
+import { choresQuery, type Chore } from '../chores.ts'
 import { DateField } from '../ui/DateField.tsx'
 import { NumberField } from '../ui/NumberField.tsx'
 import { SegmentedField } from '../ui/SegmentedField.tsx'
@@ -13,6 +13,7 @@ import { toast } from '../ui/toast.ts'
 import { unreachableMessage } from './Unreachable.tsx'
 
 type Request = components['schemas']['CreateRecurringChoreRequest']
+type EditRequest = components['schemas']['EditChoreRequest']
 type Unit = Request['interval']['unit']
 type PreferredDay = NonNullable<Request['preferredDay']>
 type Importance = NonNullable<Request['importance']>
@@ -46,19 +47,19 @@ function preferredDaysFor(unit: Unit): Option<PreferredDay>[] {
   return [...(unit === 'Day' ? [] : weekdays), ...(unit === 'Month' || unit === 'Year' ? daysInMonth : [])]
 }
 
-/** Creates a Recurring Chore; `onDone` closes it. */
-export function ChoreForm({ onDone }: { onDone: () => void }) {
+/** Creates a Recurring Chore, or edits the given `chore`; `onDone` closes it. */
+export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void }) {
   const queryClient = useQueryClient()
-  const [name, setName] = useState('')
-  const [count, setCount] = useState<number | null>(1)
-  const [unit, setUnit] = useState<Unit>('Week')
-  const [preferredDay, setPreferredDay] = useState<PreferredDay | null>(null)
+  const [name, setName] = useState(chore?.name ?? '')
+  const [count, setCount] = useState<number | null>(chore?.interval?.count ?? 1)
+  const [unit, setUnit] = useState<Unit>(chore?.interval?.unit ?? 'Week')
+  const [preferredDay, setPreferredDay] = useState<PreferredDay | null>(chore?.preferredDay ?? null)
   // Off is all year; the months are kept while off, so switching back on restores them
-  const [seasonal, setSeasonal] = useState(false)
-  const [seasonFrom, setSeasonFrom] = useState<string | null>(null)
-  const [seasonTo, setSeasonTo] = useState<string | null>(null)
-  const [importance, setImportance] = useState<Importance>('Normal')
-  const [effort, setEffort] = useState<number | null>(null)
+  const [seasonal, setSeasonal] = useState(!!chore?.season)
+  const [seasonFrom, setSeasonFrom] = useState<string | null>(chore?.season ? String(chore.season.fromMonth) : null)
+  const [seasonTo, setSeasonTo] = useState<string | null>(chore?.season ? String(chore.season.toMonth) : null)
+  const [importance, setImportance] = useState<Importance>(chore?.importance ?? 'Normal')
+  const [effort, setEffort] = useState<number | null>(chore?.effort ?? null)
   const [lastDone, setLastDone] = useState<string | null>(null)
   const [errors, setErrors] = useState<FieldErrors>({})
   const nameInput = useRef<HTMLInputElement>(null)
@@ -70,8 +71,12 @@ export function ChoreForm({ onDone }: { onDone: () => void }) {
     if (!preferredDaysFor(next).some((day) => day.value === preferredDay)) setPreferredDay(null)
   }
 
-  const create = useMutation({
-    mutationFn: ({ request }: { request: Request; another: boolean }) => api('/api/chores/recurring', 'post', request),
+  const save = useMutation({
+    mutationFn: ({ request }: { request: Request; another: boolean }) => {
+      if (!chore) return api('/api/chores/recurring', 'post', request)
+      const { lastDone: _, ...edit } = request
+      return api('/api/chores/{id}', 'put', edit satisfies EditRequest, { id: chore.id })
+    },
     onSuccess: (_, { request, another }) => {
       void queryClient.invalidateQueries({ queryKey: choresQuery.queryKey })
       if (!another) return onDone()
@@ -97,7 +102,7 @@ export function ChoreForm({ onDone }: { onDone: () => void }) {
       return
     }
     setErrors({})
-    create.mutate({
+    save.mutate({
       another,
       request: {
         name,
@@ -149,23 +154,26 @@ export function ChoreForm({ onDone }: { onDone: () => void }) {
       </div>
       <SegmentedField label="Importance" options={importances} value={importance} onValueChange={setImportance} />
       <NumberField label="Effort in minutes" min={0} value={effort} onValueChange={setEffort} error={errors.effort?.[0]} />
-      <DateField label="Last done" value={lastDone} onValueChange={setLastDone} error={errors.lastDone?.[0]} />
+      {/* Once a Chore exists, its Completions are what change Last done */}
+      {!chore && <DateField label="Last done" value={lastDone} onValueChange={setLastDone} error={errors.lastDone?.[0]} />}
       <div className="flex flex-wrap gap-2">
         <button
           type="submit"
-          disabled={create.isPending}
+          disabled={save.isPending}
           className="flex-1 rounded-lg bg-brand px-4 py-2 font-semibold text-white hover:bg-brand/90 disabled:opacity-60"
         >
           Save
         </button>
-        <button
-          type="button"
-          disabled={create.isPending}
-          onClick={(event) => submit(event, true)}
-          className="flex-1 rounded-lg border border-brand px-4 py-2 font-semibold text-brand hover:bg-brand/5 disabled:opacity-60"
-        >
-          Save and add another
-        </button>
+        {!chore && (
+          <button
+            type="button"
+            disabled={save.isPending}
+            onClick={(event) => submit(event, true)}
+            className="flex-1 rounded-lg border border-brand px-4 py-2 font-semibold text-brand hover:bg-brand/5 disabled:opacity-60"
+          >
+            Save and add another
+          </button>
+        )}
       </div>
     </form>
   )

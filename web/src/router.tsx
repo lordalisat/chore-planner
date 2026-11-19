@@ -4,12 +4,14 @@ import {
   createRoute,
   createRouter,
   ErrorComponent,
+  notFound,
   Outlet,
   redirect,
   type RouterHistory,
 } from '@tanstack/react-router'
 import { ApiError } from './api/client.ts'
-import { choresQuery } from './chores.ts'
+import { choreQuery, choresQuery } from './chores.ts'
+import { ChoreNotFound, EditChore } from './screens/EditChore.tsx'
 import { Login } from './screens/Login.tsx'
 import { Overview } from './screens/Overview.tsx'
 import { Shell } from './screens/Shell.tsx'
@@ -65,7 +67,23 @@ const overviewRoute = createRoute({
   component: Overview,
 })
 
-const routeTree = rootRoute.addChildren([loginRoute, authenticatedRoute.addChildren([overviewRoute])])
+const choreRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/chores/$id',
+  params: { parse: ({ id }) => ({ id: Number(id) }), stringify: ({ id }) => ({ id: String(id) }) },
+  loader: async ({ context, params: { id } }) => {
+    if (!Number.isInteger(id)) throw notFound()
+    try {
+      await context.queryClient.ensureQueryData(choreQuery(id))
+    } catch (error) {
+      throw error instanceof ApiError && error.status === 404 ? notFound() : error
+    }
+  },
+  component: EditChore,
+  notFoundComponent: ChoreNotFound,
+})
+
+const routeTree = rootRoute.addChildren([loginRoute, authenticatedRoute.addChildren([overviewRoute, choreRoute])])
 
 /** The app's screens; `history` defaults to the browser's. */
 export function createAppRouter(queryClient: QueryClient, history?: RouterHistory) {
