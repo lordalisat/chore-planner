@@ -21,17 +21,7 @@ public sealed record CreateRecurringChoreRequest(
     public Result<RecurringChore> ToChore(DateOnly createdOn, IEnumerable<string> takenNames)
     {
         List<FieldError> errors = [];
-        // Missing when the JSON leaves it out, whatever its type says
-        string name = Name?.Trim() ?? "";
-        if (name.Length == 0)
-        {
-            errors.Add(new FieldError("name", "A Chore needs a name."));
-        }
-        // A Name tells Chores apart on the Overview
-        else if (takenNames.FirstOrDefault(taken => string.Equals(taken.Trim(), name, StringComparison.CurrentCultureIgnoreCase)) is { } taken)
-        {
-            errors.Add(new FieldError("name", $"There is already a Chore called {taken}."));
-        }
+        string name = errors.CheckName(Name, takenNames);
         Interval? interval = errors.Try("interval", "Every needs a whole number of at least 1.", () => Interval is { } given
             ? new Interval(given.Count, given.Unit)
             : throw new ArgumentNullException(nameof(Interval)));
