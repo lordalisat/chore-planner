@@ -44,6 +44,9 @@ namespace Chores.Api.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateOnly?>("ArchivedOn")
+                        .HasColumnType("TEXT");
+
                     b.Property<int?>("AreaId")
                         .HasColumnType("INTEGER");
 

@@ -6,16 +6,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Chores.Api;
 
-/// <summary>Reading and creating Chores; scheduling is computed here with the server clock, never by the front end.</summary>
+/// <summary>Reading, creating and deleting Chores; scheduling is computed here with the server clock, never by the front end.</summary>
 public static class ChoreEndpoints
 {
     public static void MapChoreEndpoints(this RouteGroupBuilder api)
     {
         RouteGroupBuilder chores = api.MapGroup("/chores");
 
-        chores.MapGet("/", async (ChoresDbContext db, TimeProvider clock) =>
+        // Archived Chores only when asked for, and then only those
+        chores.MapGet("/", async (ChoresDbContext db, TimeProvider clock, bool archived = false) =>
         {
-            List<Chore> all = await db.Chores.Include(c => c.Area).ToListAsync();
+            IQueryable<Chore> query = archived ? db.Chores.IgnoreQueryFilters().Where(c => c.ArchivedOn != null) : db.Chores;
+            List<Chore> all = await query.Include(c => c.Area).ToListAsync();
             return TypedResults.Ok(all.Select(chore => ChoreDto.From(chore, entity => IdOf(db, entity), clock)).ToList());
         });
 
@@ -33,6 +35,40 @@ public static class ChoreEndpoints
             await db.SaveChangesAsync();
             // No address yet: there is no endpoint for one Chore
             return TypedResults.Created((string?)null, ChoreDto.From(chore, entity => IdOf(db, entity), clock));
+        });
+
+        // Keeps the history of a Chore that has any; an Archived Chore is not found, so it is never removed for good
+        chores.MapDelete("/{id:int}", async Task<Results<Ok<DeleteChoreResponse>, NotFound>> (int id, ChoresDbContext db, TimeProvider clock) =>
+        {
+            if (await db.Chores.SingleOrDefaultAsync(c => EF.Property<int>(c, "Id") == id) is not { } chore)
+            {
+                return TypedResults.NotFound();
+            }
+
+            bool archive = chore.Completions.Count > 0;
+            if (archive)
+            {
+                chore.Archive(clock.Today());
+            }
+            else
+            {
+                db.Remove(chore);
+            }
+            await db.SaveChangesAsync();
+            return TypedResults.Ok(new DeleteChoreResponse(archive));
+        });
+
+        chores.MapPost("/{id:int}/restore", async Task<Results<Ok<ChoreDto>, NotFound>> (int id, ChoresDbContext db, TimeProvider clock) =>
+        {
+            if (await db.Chores.IgnoreQueryFilters().Include(c => c.Area)
+                    .SingleOrDefaultAsync(c => EF.Property<int>(c, "Id") == id && c.ArchivedOn != null) is not { } chore)
+            {
+                return TypedResults.NotFound();
+            }
+
+            chore.Restore();
+            await db.SaveChangesAsync();
+            return TypedResults.Ok(ChoreDto.From(chore, entity => IdOf(db, entity), clock));
         });
     }
 

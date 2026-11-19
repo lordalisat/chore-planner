@@ -20,6 +20,9 @@ public sealed class ChoresDbContext(DbContextOptions<ChoresDbContext> options) :
             chore.HasDiscriminator<string>("Kind")
                 .HasValue<RecurringChore>("Recurring")
                 .HasValue<OneOffChore>("OneOff");
+            chore.Property(c => c.ArchivedOn);
+            // Archived Chores are read-only history, so every query leaves them out unless it calls IgnoreQueryFilters
+            chore.HasQueryFilter(c => c.ArchivedOn == null);
             chore.HasOne(c => c.Area).WithMany().HasForeignKey("AreaId");
             // A Skip is a Completion with Skipped set, so done and skipped share the table
             chore.OwnsMany(c => c.Completions, completion =>

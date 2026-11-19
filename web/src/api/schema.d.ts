@@ -149,7 +149,9 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    archived?: boolean;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -223,6 +225,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chores/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DeleteChoreResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chores/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ChoreDto"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -254,6 +344,10 @@ export interface components {
             dormant: boolean;
             /** Format: date */
             lastDone: null | string;
+            /** Format: int32 */
+            completionCount: number;
+            /** Format: date */
+            archivedOn: null | string;
         };
         CreateRecurringChoreRequest: {
             name: string;
@@ -266,6 +360,9 @@ export interface components {
             effort?: null | number;
             /** Format: date */
             lastDone?: null | string;
+        };
+        DeleteChoreResponse: {
+            archived: boolean;
         };
         HttpValidationProblemDetails: {
             type?: null | string;

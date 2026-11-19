@@ -68,6 +68,16 @@
         "tags": [
           "Chores.Api"
         ],
+        "parameters": [
+          {
+            "name": "archived",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -123,6 +133,72 @@
           }
         }
       }
+    },
+    "/api/chores/{id}": {
+      "delete": {
+        "tags": [
+          "Chores.Api"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteChoreResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/api/chores/{id}/restore": {
+      "post": {
+        "tags": [
+          "Chores.Api"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChoreDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -158,7 +234,9 @@
           "urgency",
           "overdue",
           "dormant",
-          "lastDone"
+          "lastDone",
+          "completionCount",
+          "archivedOn"
         ],
         "type": "object",
         "properties": {
@@ -260,6 +338,17 @@
               "string"
             ],
             "format": "date"
+          },
+          "completionCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "archivedOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
           }
         }
       },
@@ -320,6 +409,17 @@
               "string"
             ],
             "format": "date"
+          }
+        }
+      },
+      "DeleteChoreResponse": {
+        "required": [
+          "archived"
+        ],
+        "type": "object",
+        "properties": {
+          "archived": {
+            "type": "boolean"
           }
         }
       },
