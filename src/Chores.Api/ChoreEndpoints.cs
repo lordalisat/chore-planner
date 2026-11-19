@@ -133,6 +133,51 @@ public static class ChoreEndpoints
                 IdOf(db, completed.Completions[^1]), ChoreDto.From(completed, entity => IdOf(db, entity), clock)));
         });
 
+        chores.MapPost("/{id:int}/skip", async Task<Results<Ok<RecordedCompletionDto>, NotFound, Conflict, ValidationProblem>> (
+            int id, SkipChoreRequest request, ChoresDbContext db, TimeProvider clock) =>
+        {
+            if (await Find(db, id) is not { } chore)
+            {
+                return TypedResults.NotFound();
+            }
+            if (!IsCurrent(chore, request.DueDate))
+            {
+                return TypedResults.Conflict();
+            }
+
+            Result<Chore> result = request.SkipOn(chore, clock.Today());
+            if (result.Value is not { } skipped)
+            {
+                return result.ToProblem();
+            }
+
+            await db.SaveChangesAsync();
+            return TypedResults.Ok(new RecordedCompletionDto(
+                IdOf(db, skipped.Completions[^1]), ChoreDto.From(skipped, entity => IdOf(db, entity), clock)));
+        });
+
+        chores.MapPost("/{id:int}/postpone", async Task<Results<Ok<ChoreDto>, NotFound, Conflict, ValidationProblem>> (
+            int id, PostponeChoreRequest request, ChoresDbContext db, TimeProvider clock) =>
+        {
+            if (await Find(db, id) is not { } chore)
+            {
+                return TypedResults.NotFound();
+            }
+            if (!IsCurrent(chore, request.DueDate))
+            {
+                return TypedResults.Conflict();
+            }
+
+            Result<Chore> result = request.PostponeOn(chore, clock.Today());
+            if (result.Value is not { } postponed)
+            {
+                return result.ToProblem();
+            }
+
+            await db.SaveChangesAsync();
+            return TypedResults.Ok(ChoreDto.From(postponed, entity => IdOf(db, entity), clock));
+        });
+
         // Undo for a Completion, done or skipped
         chores.MapDelete("/{id:int}/completions/{completionId:int}", async Task<Results<Ok<ChoreDto>, NotFound>> (
             int id, int completionId, ChoresDbContext db, TimeProvider clock) =>
