@@ -95,6 +95,18 @@ test('All Chores is in the top navigation', async () => {
   expect(router.state.location.pathname).toBe('/chores')
 })
 
+test('the Overview is in the top navigation too, and the screen you are on is marked', async () => {
+  stubApi({ '/api/session': 204, '/api/chores': [laundry] })
+  const router = renderAt('/chores')
+
+  expect(await screen.findByRole('link', { name: 'All Chores' })).toHaveAttribute('aria-current', 'page')
+  await userEvent.click(screen.getByRole('link', { name: 'Overview' }))
+
+  await expect.poll(() => router.state.location.pathname).toBe('/')
+  expect(screen.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page')
+  expect(screen.getByRole('link', { name: 'All Chores' })).not.toHaveAttribute('aria-current')
+})
+
 test('every Chore that is not Archived is listed, Dormant and finished ones marked', async () => {
   stubApi({ '/api/session': 204, '/api/chores': [laundry, lawn, mirror] })
   renderAt('/chores')

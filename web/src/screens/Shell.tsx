@@ -9,8 +9,9 @@ import { toast } from '../ui/toast.ts'
 import { ChoreForm } from './ChoreForm.tsx'
 import { unreachableMessage } from './Unreachable.tsx'
 
-// Links to the screens besides the Overview
-const navLinks: { to: '/chores' | '/areas'; label: string }[] = [
+// Every screen in the navigation; the Overview only counts as current on itself, not on the screens below it
+const navLinks: { to: '/' | '/chores' | '/areas'; label: string; exact?: boolean }[] = [
+  { to: '/', label: 'Overview', exact: true },
   { to: '/chores', label: 'All Chores' },
   { to: '/areas', label: 'Areas' },
 ]
@@ -44,7 +45,12 @@ export function Shell() {
           </Link>
           <nav className="ml-auto hidden items-center gap-2 md:flex">
             {navLinks.map((link) => (
-              <Link key={link.label} to={link.to} className="rounded-lg px-3 py-2 hover:bg-white/10">
+              <Link
+                key={link.label}
+                to={link.to}
+                activeOptions={{ exact: link.exact ?? false }}
+                className="rounded-lg px-3 py-2 hover:bg-white/10 data-[status=active]:bg-white/15 data-[status=active]:font-semibold"
+              >
                 {link.label}
               </Link>
             ))}
