@@ -1,7 +1,8 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState, type FormEvent } from 'react'
 import { api, ApiError, type FieldErrors } from '../api/client.ts'
 import type { components } from '../api/schema'
+import { areasQuery } from '../areas.ts'
 import { choresQuery, type Chore } from '../chores.ts'
 import { DateField } from '../ui/DateField.tsx'
 import { NumberField } from '../ui/NumberField.tsx'
@@ -72,6 +73,11 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
   const [seasonTo, setSeasonTo] = useState<string | null>(chore?.season ? String(chore.season.toMonth) : null)
   const [importance, setImportance] = useState<Importance>(chore?.importance ?? 'Normal')
   const [effort, setEffort] = useState<number | null>(chore?.effort ?? null)
+  // The list only takes text, so the id travels as one
+  const [areaId, setAreaId] = useState<string | null>(chore?.area ? String(chore.area.id) : null)
+  // The Chore's own Area until the list has come, so its name shows from the start
+  const { data: areas = chore?.area ? [chore.area] : [] } = useQuery(areasQuery)
+  const areaOptions: Option<string>[] = areas.map((area) => ({ value: String(area.id), label: area.name }))
   const [lastDone, setLastDone] = useState<string | null>(null)
   const [dueDate, setDueDate] = useState<string | null>(chore?.kind === 'OneOff' ? (chore.dueDate ?? null) : null)
   const [errors, setErrors] = useState<FieldErrors>({})
@@ -115,9 +121,10 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
 
   function submit(event: FormEvent, another = false) {
     event.preventDefault()
+    const area = areaId === null ? null : Number(areaId)
     if (kind === 'OneOff') {
       setErrors({})
-      save.mutate({ another, kind, request: { name, dueDate, importance, effort } })
+      save.mutate({ another, kind, request: { name, dueDate, importance, effort, areaId: area } })
       return
     }
     // A Season needs both months; the API can only judge a whole one
@@ -137,6 +144,7 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
         importance,
         effort,
         lastDone,
+        areaId: area,
       },
     })
   }
@@ -186,7 +194,8 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
           </div>
         </>
       )}
-      <SegmentedField label="Importance" options={importances} value={importance} onValueChange={setImportance} />
+      <SelectField label="Area" options={areaOptions} value={areaId} onValueChange={setAreaId} noneLabel="No Area" error={errors.areaId?.[0]} />
+      <SegmentedField label="Importance"options={importances} value={importance} onValueChange={setImportance} />
       <NumberField label="Effort in minutes" min={0} value={effort} onValueChange={setEffort} error={errors.effort?.[0]} />
       {kind === 'Recurring' && !chore && (
         <DateField label="Last done" value={lastDone} onValueChange={setLastDone} error={errors.lastDone?.[0]} />

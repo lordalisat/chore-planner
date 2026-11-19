@@ -72,12 +72,15 @@ test('tapping a Chore on the Overview opens it filled in', async () => {
 })
 
 test('saving an edited Chore sends its fields and returns to the Overview', async () => {
+  const kitchenLaundry: Chore = { ...laundry, area: { id: 3, name: 'Kitchen' } }
   const fetch = stubApi({
     '/api/session': 204,
-    '/api/chores': [laundry],
-    '/api/chores/7': (init) => Response.json(init?.method === 'PUT' ? { ...laundry, preferredDay: 'Saturday' } : laundry),
+    '/api/chores': [kitchenLaundry],
+    '/api/chores/7': (init) => Response.json(init?.method === 'PUT' ? { ...kitchenLaundry, preferredDay: 'Saturday' } : kitchenLaundry),
+    '/api/areas': [{ id: 3, name: 'Kitchen', parentId: null, choreCount: 1 }],
   })
   const router = renderAt('/chores/7')
+  expect(await screen.findByRole('combobox', { name: 'Area' })).toHaveTextContent('Kitchen')
   await userEvent.click(await screen.findByRole('combobox', { name: 'Preferred day' }))
   await userEvent.click(await screen.findByRole('option', { name: 'Saturday' }))
 
@@ -92,6 +95,7 @@ test('saving an edited Chore sends its fields and returns to the Overview', asyn
     season: { fromMonth: 4, toMonth: 10 },
     importance: 'High',
     effort: 30,
+    areaId: 3,
   })
 })
 
@@ -117,6 +121,7 @@ test('a One-off Chore stays one and keeps its Due Date', async () => {
     dueDate: '2027-03-20',
     importance: 'Normal',
     effort: null,
+    areaId: null,
   })
 })
 

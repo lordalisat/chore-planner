@@ -55,3 +55,18 @@ test('One-off Chores without a Due Date wait under Anytime; finished ones are go
   expect(within(anytime!).getAllByRole('listitem').map((row) => row.querySelector('span')?.textContent)).toEqual(['Fix leaking tap'])
   expect(screen.queryByText('Hang the mirror')).not.toBeInTheDocument()
 })
+
+test('a row shows the Area its Chore belongs to', async () => {
+  stubApi({
+    '/api/session': 204,
+    '/api/chores': [
+      chore('Clean the fridge', { kind: 'Recurring', dueDate: '2027-03-16', urgency: 0, area: { id: 3, name: 'Kitchen' } }),
+    ],
+  })
+
+  const queryClient = new QueryClient()
+  render(<App queryClient={queryClient} router={createAppRouter(queryClient, createMemoryHistory())} />)
+
+  const row = await screen.findByRole('listitem')
+  expect(within(row).getByText('Kitchen')).toBeVisible()
+})

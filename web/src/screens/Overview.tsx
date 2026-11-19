@@ -53,6 +53,7 @@ function ChoreRow({ chore, today }: { chore: Chore; today: string }) {
         }`}
       >
         <span className="flex-1 font-medium">{chore.name}</span>
+        {chore.area && <span className="text-sm text-ink/60">{chore.area.name}</span>}
         {chore.effort != null && <span className="text-sm text-ink/60">{chore.effort} min</span>}
         {chore.dueDate && (
           <span className={`text-sm ${chore.overdue ? 'font-semibold text-red-700' : 'text-ink/70'}`}>
