@@ -39,10 +39,11 @@ const kindName = ({ kind }: Chore) => (kind === 'OneOff' ? 'One-off' : 'Recurrin
 const daysPerUnit = { Day: 1, Week: 7, Month: 30, Year: 365 }
 const importanceRank = { Low: 0, Normal: 1, High: 2 }
 
-type Column = 'Name' | 'Kind' | 'Interval' | 'Season' | 'Importance' | 'Effort' | 'Due'
-// What each column sorts by; null is blank, which sorts last either way
+type Column = 'Name' | 'Area' | 'Kind' | 'Interval' | 'Season' | 'Importance' | 'Effort' | 'Due'
+// What each column sorts by, in the order they show; null is blank, which sorts last either way
 const sortKeys: Record<Column, (chore: Chore) => string | number | null> = {
   Name: (chore) => chore.name,
+  Area: ({ area }) => area?.name ?? null,
   Kind: kindName,
   Interval: ({ interval }) => (interval ? interval.count * daysPerUnit[interval.unit] : null),
   Season: ({ season }) => season?.fromMonth ?? null,
@@ -166,7 +167,7 @@ function ActiveChores() {
                 {chore.dueDate && <span className="text-sm text-ink/70">{relativeDate(chore.dueDate, now)}</span>}
               </span>
               <span className="text-sm text-ink/60">
-                {[kindName(chore), schedule(chore), seasonName(chore)].filter(Boolean).join(' · ')}
+                {[chore.area?.name, kindName(chore), schedule(chore), seasonName(chore)].filter(Boolean).join(' · ')}
               </span>
             </Link>
           </li>
@@ -201,6 +202,7 @@ function ActiveChores() {
                 </Link>{' '}
                 <Marks chore={chore} />
               </td>
+              <td className="px-3 py-2">{chore.area?.name}</td>
               <td className="px-3 py-2">{kindName(chore)}</td>
               <td className="px-3 py-2">{schedule(chore)}</td>
               <td className="px-3 py-2">{seasonName(chore)}</td>
@@ -239,6 +241,7 @@ function ArchivedChores() {
       <thead className="border-b border-black/10 text-ink/70">
         <tr>
           <th className="px-3 py-2 font-semibold">Name</th>
+          <th className="px-3 py-2 font-semibold">Area</th>
           <th className="px-3 py-2 font-semibold">Archived</th>
           <th className="px-3 py-2">
             <span className="sr-only">Actions</span>
@@ -251,6 +254,7 @@ function ArchivedChores() {
           .map((chore) => (
             <tr key={chore.id} className="border-b border-black/5 last:border-0">
               <td className="px-3 py-2 font-medium">{chore.name}</td>
+              <td className="px-3 py-2">{chore.area?.name}</td>
               <td className="px-3 py-2">{chore.archivedOn && longDate(chore.archivedOn)}</td>
               <td className="px-3 py-2 text-right">
                 <button

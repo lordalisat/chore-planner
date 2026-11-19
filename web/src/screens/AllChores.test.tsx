@@ -33,6 +33,7 @@ function chore(id: number, name: string, details: Partial<Chore> = {}): Chore {
 
 const laundry = chore(1, 'Laundry', {
   kind: 'Recurring',
+  area: { id: 1, name: 'Utility room' },
   importance: 'High',
   effort: 30,
   interval: { count: 1, unit: 'Week' },
@@ -41,6 +42,7 @@ const laundry = chore(1, 'Laundry', {
 })
 const lawn = chore(2, 'Mow the lawn', {
   kind: 'Recurring',
+  area: { id: 2, name: 'Garden' },
   importance: 'Low',
   effort: 45,
   interval: { count: 2, unit: 'Week' },
@@ -48,7 +50,7 @@ const lawn = chore(2, 'Mow the lawn', {
   dueDate: '2027-04-06',
   dormant: true,
 })
-const mirror = chore(3, 'Hang the mirror', { effort: 15, dueDate: '2027-03-08', finished: true })
+const mirror = chore(3, 'Hang the mirror', { area: { id: 3, name: 'Hall' }, effort: 15, dueDate: '2027-03-08', finished: true })
 const gutters = chore(4, 'Clean the gutters', {
   kind: 'Recurring',
   effort: 120,
@@ -93,6 +95,7 @@ test('every Chore that is not Archived is listed, Dormant and finished ones mark
   expect(lawnRow).toHaveTextContent('Apr – Oct')
   expect(lawnRow).toHaveTextContent('Low')
   expect(lawnRow).toHaveTextContent('45 min')
+  expect(lawnRow).toHaveTextContent('Garden')
   expect(within(t).getByRole('row', { name: /Laundry/ })).toHaveTextContent('every week on Tuesday')
   expect(within(t).getByRole('row', { name: /Hang the mirror/ })).toHaveTextContent('Done')
 })
@@ -106,6 +109,7 @@ test.each([
   ['Importance', ['Mow the lawn', 'Clean the gutters', 'Hang the mirror', 'Laundry'], ['Laundry', 'Clean the gutters', 'Hang the mirror', 'Mow the lawn']],
   ['Effort', ['Hang the mirror', 'Laundry', 'Mow the lawn', 'Clean the gutters'], ['Clean the gutters', 'Mow the lawn', 'Laundry', 'Hang the mirror']],
   ['Due', ['Hang the mirror', 'Laundry', 'Mow the lawn', 'Clean the gutters'], ['Clean the gutters', 'Mow the lawn', 'Laundry', 'Hang the mirror']],
+  ['Area', ['Mow the lawn', 'Hang the mirror', 'Laundry', 'Clean the gutters'], ['Laundry', 'Hang the mirror', 'Mow the lawn', 'Clean the gutters']],
 ])('sorting by %s, then the other way round', async (column, ascending, descending) => {
   stubApi({ '/api/session': 204, '/api/chores': [laundry, lawn, mirror, gutters] })
   renderAt('/chores')
@@ -182,7 +186,12 @@ test('new Chores are entered beside the list, one after another', async () => {
 })
 
 test('Archived Chores show their archive date and Restore, and cannot be edited', async () => {
-  const bins = chore(5, 'Take out the bins', { kind: 'Recurring', archivedOn: '2027-03-08', completionCount: 3 })
+  const bins = chore(5, 'Take out the bins', {
+    kind: 'Recurring',
+    area: { id: 4, name: 'Driveway' },
+    archivedOn: '2027-03-08',
+    completionCount: 3,
+  })
   let archived = [bins]
   const fetch = stubApi({
     '/api/session': 204,
@@ -201,6 +210,7 @@ test('Archived Chores show their archive date and Restore, and cannot be edited'
   const t = await screen.findByRole('table', { name: 'Archived Chores' })
   const row = within(t).getByRole('row', { name: /Take out the bins/ })
   expect(row).toHaveTextContent('8 Mar 2027')
+  expect(row).toHaveTextContent('Driveway')
   expect(within(t).queryByRole('link')).not.toBeInTheDocument()
   expect(screen.queryByText('Laundry')).not.toBeInTheDocument()
 
