@@ -56,6 +56,7 @@ test('deleting a Chore that was done before archives it at once and offers Undo'
   await expect.poll(() => onDeleted.mock.calls.length).toBe(1)
   expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
   expect(requests(fetch)).toContain('DELETE /api/chores/7')
+  expect(await screen.findByText('Archived Laundry')).toBeInTheDocument()
   await userEvent.click(await screen.findByRole('button', { name: 'Undo' }))
   await expect.poll(() => requests(fetch)).toContain('POST /api/chores/7/restore')
 })
@@ -73,6 +74,7 @@ test('deleting a Chore never done asks first, since it is gone for good', async 
 
   await expect.poll(() => onDeleted.mock.calls.length).toBe(1)
   expect(requests(fetch)).toContain('DELETE /api/chores/8')
+  expect(await screen.findByText('Deleted Clean the oven')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument()
 })
 

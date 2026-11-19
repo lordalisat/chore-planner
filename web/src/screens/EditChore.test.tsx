@@ -45,6 +45,8 @@ const tap: Chore = {
   completionCount: 0,
 }
 
+const fresh: Chore = { ...tap, id: 8, name: 'Clean the oven', dueDate: null }
+
 function renderAt(url: string) {
   const queryClient = new QueryClient()
   const router = createAppRouter(queryClient, createMemoryHistory({ initialEntries: [url] }))
@@ -139,6 +141,27 @@ test('deleting a Chore from its screen returns to the Overview', async () => {
 
   await expect.poll(() => router.state.location.pathname).toBe('/')
   expect(fetch.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(true)
+})
+
+test('a deleted Chore is gone when opened again', async () => {
+  let deleted = false
+  stubApi({
+    '/api/session': 204,
+    '/api/chores': () => Response.json(deleted ? [] : [fresh]),
+    '/api/chores/8': (init) => {
+      if (init?.method !== 'DELETE') return deleted ? new Response(null, { status: 404 }) : Response.json(fresh)
+      deleted = true
+      return Response.json({ archived: false })
+    },
+  })
+  const router = renderAt('/chores/8')
+  await userEvent.click(await screen.findByRole('button', { name: 'Delete' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Delete for good' }))
+  await expect.poll(() => router.state.location.pathname).toBe('/')
+
+  await router.navigate({ to: '/chores/$id', params: { id: 8 } })
+
+  expect(await screen.findByText('That Chore is gone.')).toBeVisible()
 })
 
 test('an unknown Chore is not found', async () => {

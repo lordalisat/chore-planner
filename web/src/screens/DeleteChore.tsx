@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { api } from '../api/client.ts'
-import { choresQuery, type Chore } from '../chores.ts'
+import { choreQuery, choresQuery, type Chore } from '../chores.ts'
 import { ConfirmDialog } from '../ui/ConfirmDialog.tsx'
 import { toast } from '../ui/toast.ts'
 import { unreachableMessage } from './Unreachable.tsx'
@@ -20,9 +20,11 @@ export function DeleteChore({ chore, onDeleted }: { chore: Chore; onDeleted: () 
     onSuccess: ({ archived }) => {
       void refetch()
       onDeleted()
+      // Refetching would only find it gone, while reopening it should say so rather than show it from the cache
+      queryClient.removeQueries({ queryKey: choreQuery(chore.id).queryKey, exact: true })
       // Outlives this component, which onDeleted unmounts
       toast({
-        title: `Deleted ${chore.name}`,
+        title: `${archived ? 'Archived' : 'Deleted'} ${chore.name}`,
         ...(archived && {
           action: {
             label: 'Undo',
