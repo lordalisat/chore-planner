@@ -120,6 +120,25 @@ public class CompletionTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Completing_or_undoing_for_an_Archived_Chore_is_not_found()
+    {
+        int id = await CreateWeekly("Oil the gate");
+        HttpResponseMessage completed = await Complete(id, new { dueDate = "2027-03-10" });
+        int completionId = (await Read(completed)).GetProperty("completionId").GetInt32();
+        // Has a Completion, so deleting it Archives it
+        (await _client.DeleteAsync($"/api/chores/{id}", TestContext.Current.CancellationToken)).EnsureSuccessStatusCode();
+
+        HttpResponseMessage complete = await Complete(id, new { dueDate = "2027-03-17" });
+        HttpResponseMessage undo = await _client.DeleteAsync($"/api/chores/{id}/completions/{completionId}", TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, complete.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, undo.StatusCode);
+        JsonElement chores = await _client.GetFromJsonAsync<JsonElement>("/api/chores?archived=true", TestContext.Current.CancellationToken);
+        JsonElement archived = Assert.Single(chores.EnumerateArray(), c => c.GetProperty("id").GetInt32() == id);
+        Assert.Equal(1, archived.GetProperty("completionCount").GetInt32());
+    }
+
     [Theory]
     [InlineData("POST", "/api/chores/1/complete")]
     [InlineData("DELETE", "/api/chores/1/completions/1")]
