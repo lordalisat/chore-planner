@@ -89,8 +89,6 @@ const filterClass =
 export function AllChores() {
   const { archived, chore } = route.useSearch()
   const open = !archived && chore !== undefined
-  const wide = useMediaQuery(fromLg)
-
   return (
     <div className={open ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_28rem] lg:items-start lg:gap-6' : ''}>
       <section className={`flex-col gap-4 ${open ? 'hidden lg:flex' : 'flex'}`}>
@@ -104,16 +102,6 @@ export function AllChores() {
               Archived
             </Link>
           </nav>
-          {/* Below lg the Shell's New Chore opens the form */}
-          {!archived && wide && (
-            <Link
-              to="/chores"
-              search={{ chore: 'new' }}
-              className="rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand/90"
-            >
-              New Chore
-            </Link>
-          )}
         </div>
         {archived ? <ArchivedChores /> : <ActiveChores />}
       </section>

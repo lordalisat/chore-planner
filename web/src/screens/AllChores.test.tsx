@@ -222,8 +222,11 @@ test('new Chores are entered beside the list, one after another', async () => {
   const router = renderAt('/chores')
   await table()
 
-  await userEvent.click(screen.getByRole('link', { name: 'New Chore' }))
+  // The header's New Chore is the only one; here it opens the form beside the list, not a dialog
+  expect(screen.queryByRole('link', { name: 'New Chore' })).not.toBeInTheDocument()
+  await userEvent.click(screen.getAllByRole('button', { name: 'New Chore' })[0]!)
   expect(router.state.location.search).toEqual({ chore: 'new' })
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   await userEvent.click(await screen.findByRole('radio', { name: 'One-off' }))
   for (const name of ['Fix the tap', 'Hang the mirror']) {
     await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), name)

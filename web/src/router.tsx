@@ -74,7 +74,7 @@ const allChoresRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/chores',
   // A desktop setup screen: a wide table, with the Chore form beside it
-  staticData: { wide: true },
+  staticData: { wide: true, newChoreBeside: true },
   // Active Chores unless asked for the Archived ones, with the Chore open beside them, or a new one
   validateSearch: (search): { archived?: true; chore?: number | 'new' } => ({
     ...(search.archived === true && { archived: true }),
@@ -128,5 +128,7 @@ declare module '@tanstack/react-router' {
   interface StaticDataRouteOption {
     /** The Shell lets the screen use the full width of a desktop browser, not a centered column. */
     wide?: boolean
+    /** From lg up, the Shell's New Chore opens the form beside this screen's list (`?chore=new`), not in a dialog. */
+    newChoreBeside?: boolean
   }
 }

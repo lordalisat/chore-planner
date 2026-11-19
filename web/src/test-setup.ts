@@ -13,6 +13,9 @@ globalThis.ResizeObserver ??= class {
   unobserve() {}
   disconnect() {}
 }
+// jsdom has no media queries; a test is narrower than every breakpoint unless it stubs matchMedia itself
+window.matchMedia ??= (query: string) =>
+  ({ matches: false, media: query, addEventListener: () => {}, removeEventListener: () => {} }) as unknown as MediaQueryList
 document.head.append(Object.assign(document.createElement('style'), { textContent: '[popover] { display: block !important }' }))
 
 afterEach(() => {
