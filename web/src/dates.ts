@@ -23,3 +23,9 @@ export function relativeDate(date: string, from: string): string {
   const d = parse(date)
   return `${dayNames[d.getUTCDay()]} ${d.getUTCDate()} ${monthNames[d.getUTCMonth()]}`
 }
+
+/** A date in full, such as "8 Mar 2027". */
+export function longDate(date: string): string {
+  const d = parse(date)
+  return `${d.getUTCDate()} ${monthNames[d.getUTCMonth()]} ${d.getUTCFullYear()}`
+}

@@ -10,7 +10,8 @@ import {
   type RouterHistory,
 } from '@tanstack/react-router'
 import { ApiError } from './api/client.ts'
-import { choreQuery, choresQuery } from './chores.ts'
+import { archivedChoresQuery, choreQuery, choresQuery } from './chores.ts'
+import { AllChores } from './screens/AllChores.tsx'
 import { ChoreNotFound, EditChore } from './screens/EditChore.tsx'
 import { Login } from './screens/Login.tsx'
 import { Overview } from './screens/Overview.tsx'
@@ -67,6 +68,20 @@ const overviewRoute = createRoute({
   component: Overview,
 })
 
+const allChoresRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/chores',
+  // Active Chores unless asked for the Archived ones, with the Chore open beside them, or a new one
+  validateSearch: (search): { archived?: true; chore?: number | 'new' } => ({
+    ...(search.archived === true && { archived: true }),
+    ...((search.chore === 'new' || Number.isInteger(search.chore)) && { chore: search.chore as number | 'new' }),
+  }),
+  loaderDeps: ({ search: { archived } }) => ({ archived }),
+  loader: ({ context, deps: { archived } }) =>
+    context.queryClient.ensureQueryData(archived ? archivedChoresQuery : choresQuery),
+  component: AllChores,
+})
+
 const choreRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/chores/$id',
@@ -83,7 +98,7 @@ const choreRoute = createRoute({
   notFoundComponent: ChoreNotFound,
 })
 
-const routeTree = rootRoute.addChildren([loginRoute, authenticatedRoute.addChildren([overviewRoute, choreRoute])])
+const routeTree = rootRoute.addChildren([loginRoute, authenticatedRoute.addChildren([overviewRoute, allChoresRoute, choreRoute])])
 
 /** The app's screens; `history` defaults to the browser's. */
 export function createAppRouter(queryClient: QueryClient, history?: RouterHistory) {
