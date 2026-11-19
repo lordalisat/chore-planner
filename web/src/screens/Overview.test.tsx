@@ -68,13 +68,12 @@ test('One-off Chores without a Due Date wait under Anytime; finished ones are go
 
   renderOverview()
 
-  await screen.findByText('Laundry')
+  await screen.findByText('Take out the bins')
   // Leaving out the toasts' list
   const [main, anytime] = screen.getAllByRole('list').filter((list) => list.tagName === 'UL')
   expect(within(main!).getAllByRole('listitem').map((row) => row.querySelector('span')?.textContent)).toEqual([
     'Take out the bins',
     'Book the plumber',
-    'Laundry',
   ])
   expect(screen.getByRole('heading', { name: 'Anytime' })).toBeVisible()
   expect(within(anytime!).getAllByRole('listitem').map((row) => row.querySelector('span')?.textContent)).toEqual(['Fix leaking tap'])
@@ -85,7 +84,7 @@ test('a row shows the Area its Chore belongs to', async () => {
   stubApi({
     '/api/session': 204,
     '/api/chores': [
-      chore('Clean the fridge', { kind: 'Recurring', dueDate: '2027-03-16', urgency: 0, area: { id: 3, name: 'Kitchen' } }),
+      chore('Clean the fridge', { kind: 'Recurring', dueDate: '2027-03-16', urgency: 0.25, area: { id: 3, name: 'Kitchen' } }),
     ],
   })
 
@@ -243,8 +242,8 @@ test('Chores equally urgent go by Due Date, earliest first', async () => {
   stubApi({
     '/api/session': 204,
     '/api/chores': [
-      chore('Laundry', { kind: 'Recurring', dueDate: '2027-03-20', urgency: 0 }),
-      chore('Clean vacuum water', { kind: 'Recurring', dueDate: '2027-03-15', urgency: 0 }),
+      chore('Laundry', { kind: 'Recurring', dueDate: '2027-03-12', urgency: 0.5 }),
+      chore('Clean vacuum water', { kind: 'Recurring', dueDate: '2027-03-11', urgency: 0.5 }),
     ],
   })
   renderOverview()
@@ -270,8 +269,45 @@ test('each row is coloured by how urgent its Chore is', async () => {
   renderOverview()
 
   const band = async (name: string) => (await screen.findByText(name)).closest('li')!.dataset.urgency
+  await userEvent.click(await screen.findByRole('button', { name: /^Later/ }))
   expect(await band('Not yet')).toBe('none')
   expect(await band('Coming up')).toBe('soon')
   expect(await band('Due')).toBe('due')
   expect(await band('Pressing')).toBe('pressing')
+})
+
+test('Chores not urgent yet wait under Later, folded away, below Anytime', async () => {
+  stubApi({
+    '/api/session': 204,
+    '/api/chores': [
+      chore('Laundry', { kind: 'Recurring', dueDate: '2027-03-20', urgency: 0 }),
+      chore('Fix leaking tap', { urgency: 0.5 }),
+      chore('Clean vacuum water', { kind: 'Recurring', dueDate: '2027-03-15', urgency: 0 }),
+      chore('Take out the bins', { kind: 'Recurring', dueDate: '2027-03-09', urgency: 1.25 }),
+    ],
+  })
+  renderOverview()
+
+  await screen.findByText('Take out the bins')
+  const headings = screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)
+  expect(headings).toEqual(['Anytime', expect.stringMatching(/Later \(2\)/)])
+  const later = screen.getByRole('button', { name: 'Later (2)' })
+  expect(later).toHaveAttribute('aria-expanded', 'false')
+  expect(screen.queryByText('Laundry')).not.toBeInTheDocument()
+
+  await userEvent.click(later)
+
+  const section = screen.getByRole('region', { name: /^Later/ })
+  expect(within(section).getAllByRole('listitem').map((row) => row.querySelector('span')?.textContent)).toEqual([
+    'Clean vacuum water',
+    'Laundry',
+  ])
+})
+
+test('with only Later Chores, the Overview says nothing needs doing yet', async () => {
+  stubApi({ '/api/session': 204, '/api/chores': [chore('Laundry', { kind: 'Recurring', dueDate: '2027-03-20', urgency: 0 })] })
+  renderOverview()
+
+  expect(await screen.findByText('Nothing needs doing yet.')).toBeVisible()
+  expect(screen.getByRole('button', { name: 'Later (1)' })).toBeVisible()
 })

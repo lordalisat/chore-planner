@@ -25,8 +25,11 @@ export function Overview() {
     .filter((chore) => !chore.dormant && !chore.finished)
     // Equally urgent ones go by Due Date, earliest first
     .sort((a, b) => (b.urgency ?? -1) - (a.urgency ?? -1) || (a.dueDate ?? '').localeCompare(b.dueDate ?? ''))
-  const scheduled = shown.filter((chore) => chore.dueDate)
+  // Needing attention now; One-off Chores without a Due Date; and the rest, not urgent yet, folded away under Later
+  const now = shown.filter((chore) => chore.dueDate && chore.urgency)
   const anytime = shown.filter((chore) => !chore.dueDate)
+  const later = shown.filter((chore) => chore.dueDate && !chore.urgency)
+  const [showLater, setShowLater] = useState(false)
 
   if (shown.length === 0) {
     return <p className="py-12 text-center text-ink/70">Nothing to do yet. Add a Chore to get started.</p>
@@ -45,11 +48,24 @@ export function Overview() {
   )
   return (
     <div className="flex flex-col gap-6">
-      {scheduled.length > 0 && list(scheduled)}
+      {now.length > 0 ? list(now) : <p className="py-6 text-center text-ink/70">Nothing needs doing yet.</p>}
       {anytime.length > 0 && (
         <section className="flex flex-col gap-2">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-ink/60">Anytime</h2>
           {list(anytime)}
+        </section>
+      )}
+      {later.length > 0 && (
+        <section aria-labelledby="later" className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-ink/60">
+            <button id="later" type="button" aria-expanded={showLater} onClick={() => setShowLater(!showLater)} className="flex items-center gap-1 uppercase hover:text-ink">
+              <span aria-hidden className={`inline-block transition-transform ${showLater ? 'rotate-90' : ''}`}>
+                ›
+              </span>
+              Later ({later.length})
+            </button>
+          </h2>
+          {showLater && <div className="opacity-75">{list(later)}</div>}
         </section>
       )}
       <Dialog open={doneOn !== null} onOpenChange={(open) => !open && setDoneOn(null)} title={`When was ${doneOn?.name ?? ''} done?`}>

@@ -19,7 +19,7 @@ const laundry: Chore = {
   preferredDay: 'Tuesday',
   season: { fromMonth: 4, toMonth: 10 },
   dueDate: '2027-03-16',
-  urgency: 0,
+  urgency: 0.5,
   overdue: false,
   dormant: false,
   finished: false,
