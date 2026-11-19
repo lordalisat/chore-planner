@@ -17,7 +17,10 @@ import { unreachableMessage } from './Unreachable.tsx'
 export function Overview() {
   const { data: chores } = useSuspenseQuery(choresQuery)
   const complete = useComplete()
+  const skip = useSkip()
+  const postpone = usePostpone()
   const [doneOn, setDoneOn] = useState<Chore | null>(null)
+  const [postponing, setPostponing] = useState<Chore | null>(null)
   const shown = chores
     .filter((chore) => !chore.dormant && !chore.finished)
     .sort((a, b) => (b.urgency ?? -1) - (a.urgency ?? -1))
@@ -28,7 +31,14 @@ export function Overview() {
     return <p className="py-12 text-center text-ink/70">Nothing to do yet. Add a Chore to get started.</p>
   }
   const list = (chores: Chore[]) => (
-    <ChoreList chores={chores} today={today()} onDone={(chore) => complete.mutate({ chore })} onDoneOn={setDoneOn} />
+    <ChoreList
+      chores={chores}
+      today={today()}
+      onDone={(chore) => complete.mutate({ chore })}
+      onDoneOn={setDoneOn}
+      onSkip={(chore) => skip.mutate(chore)}
+      onPostpone={setPostponing}
+    />
   )
   return (
     <div className="flex flex-col gap-6">
@@ -43,11 +53,19 @@ export function Overview() {
         {/* Mounted only while open, so each starts on today */}
         {doneOn && <DoneOnForm chore={doneOn} onDone={() => setDoneOn(null)} complete={complete} />}
       </Dialog>
+      <Dialog open={postponing !== null} onOpenChange={(open) => !open && setPostponing(null)} title={`Postpone ${postponing?.name ?? ''}`}>
+        {postponing && <PostponeForm chore={postponing} onDone={() => setPostponing(null)} postpone={postpone} />}
+      </Dialog>
     </div>
   )
 }
 
-type RowActions = { onDone: (chore: Chore) => void; onDoneOn: (chore: Chore) => void }
+type RowActions = {
+  onDone: (chore: Chore) => void
+  onDoneOn: (chore: Chore) => void
+  onSkip: (chore: Chore) => void
+  onPostpone: (chore: Chore) => void
+}
 
 function ChoreList({ chores, today, ...actions }: { chores: Chore[]; today: string } & RowActions) {
   return (
@@ -59,7 +77,7 @@ function ChoreList({ chores, today, ...actions }: { chores: Chore[]; today: stri
   )
 }
 
-function ChoreRow({ chore, today, onDone, onDoneOn }: { chore: Chore; today: string } & RowActions) {
+function ChoreRow({ chore, today, onDone, onDoneOn, onSkip, onPostpone }: { chore: Chore; today: string } & RowActions) {
   return (
     <li
       className={`flex items-center gap-3 rounded-lg border-l-4 bg-white py-2 pr-2 pl-4 shadow-sm hover:shadow-md ${
@@ -79,7 +97,16 @@ function ChoreRow({ chore, today, onDone, onDoneOn }: { chore: Chore; today: str
       <button type="button" onClick={() => onDone(chore)} className="rounded-lg bg-brand px-3 py-1.5 font-semibold text-white hover:bg-brand/90">
         Done
       </button>
-      <Menu label={`More for ${chore.name}`} trigger="⋯" entries={[{ label: 'Done on…', onSelect: () => onDoneOn(chore) }]} />
+      <Menu
+        label={`More for ${chore.name}`}
+        trigger="⋯"
+        entries={[
+          { label: 'Done on…', onSelect: () => onDoneOn(chore) },
+          // Only a Recurring Chore has a next Due Date to move on to
+          ...(chore.kind === 'Recurring' ? [{ label: 'Skip', onSelect: () => onSkip(chore) }] : []),
+          { label: 'Postpone…', onSelect: () => onPostpone(chore) },
+        ]}
+      />
     </li>
   )
 }
@@ -112,20 +139,40 @@ function DoneOnForm({ chore, onDone, complete }: { chore: Chore; onDone: () => v
   )
 }
 
+function PostponeForm({ chore, onDone, postpone }: { chore: Chore; onDone: () => void; postpone: ReturnType<typeof usePostpone> }) {
+  const [to, setTo] = useState<string | null>(null)
+  const [error, setError] = useState<string>()
+
+  function submit(event: FormEvent) {
+    event.preventDefault()
+    if (!to) return setError('Pick the day to postpone to.')
+    postpone.mutate(
+      { chore, to },
+      {
+        onSuccess: onDone,
+        // A validation problem stays open at the date; anything else was already toasted
+        onError: (failure) => (failure instanceof ApiError && failure.status === 400 ? setError(failure.errors.to?.[0]) : onDone()),
+      },
+    )
+  }
+
+  return (
+    <form onSubmit={submit} className="flex flex-col gap-4">
+      <DateField label="Postpone to" value={to} onValueChange={setTo} error={error} />
+      <button type="submit" className="rounded-lg bg-brand px-4 py-2 font-semibold text-white hover:bg-brand/90">
+        Save
+      </button>
+    </form>
+  )
+}
+
 /**
  * Completes a Chore for the Due Date this device showed, today unless another date is given, then offers Undo. When
  * someone else acted first the API refuses, and the list is fetched again to show what they did.
  */
 function useComplete() {
-  const queryClient = useQueryClient()
-  const refetch = () => queryClient.invalidateQueries({ queryKey: choresQuery.queryKey })
-
-  const undo = useMutation({
-    mutationFn: ({ choreId, completionId }: { choreId: number; completionId: number }) =>
-      api('/api/chores/{id}/completions/{completionId}', 'delete', { id: choreId, completionId }),
-    onError: () => toast(unreachableMessage),
-    onSettled: refetch,
-  })
+  const refetch = useRefetch()
+  const undo = useUndo()
 
   return useMutation({
     mutationFn: ({ chore, date }: { chore: Chore; date?: string }) =>
@@ -135,11 +182,59 @@ function useComplete() {
         title: `Done: ${chore.name}`,
         action: { label: 'Undo', onAction: () => undo.mutateAsync({ choreId: chore.id, completionId }) },
       }),
-    onError: (error) => {
-      if (error instanceof ApiError && error.status === 409) toast('Already done by someone else')
-      // A validation problem shows at its field, in the form that sent it
-      else if (!(error instanceof ApiError && error.status === 400)) toast(unreachableMessage)
-    },
+    onError: failed('Already done by someone else'),
     onSettled: refetch,
   })
+}
+
+/** Skips a Recurring Chore's Due Date this device showed, then offers Undo, like Complete. */
+function useSkip() {
+  const refetch = useRefetch()
+  const undo = useUndo()
+
+  return useMutation({
+    mutationFn: (chore: Chore) => api('/api/chores/{id}/skip', 'post', { dueDate: chore.dueDate }, { id: chore.id }),
+    onSuccess: ({ completionId }, chore) =>
+      toast({
+        title: `Skipped: ${chore.name}`,
+        action: { label: 'Undo', onAction: () => undo.mutateAsync({ choreId: chore.id, completionId }) },
+      }),
+    onError: failed('Someone else got to it first'),
+    onSettled: refetch,
+  })
+}
+
+/** Sets a Chore's Due Date by hand; no Undo, as postponing again puts a mistake right. */
+function usePostpone() {
+  const refetch = useRefetch()
+
+  return useMutation({
+    mutationFn: ({ chore, to }: { chore: Chore; to: string }) =>
+      api('/api/chores/{id}/postpone', 'post', { dueDate: chore.dueDate, to }, { id: chore.id }),
+    onError: failed('Someone else got to it first'),
+    onSettled: refetch,
+  })
+}
+
+/** Removes a Completion, done or skipped. */
+function useUndo() {
+  const refetch = useRefetch()
+  return useMutation({
+    mutationFn: ({ choreId, completionId }: { choreId: number; completionId: number }) =>
+      api('/api/chores/{id}/completions/{completionId}', 'delete', { id: choreId, completionId }),
+    onError: () => toast(unreachableMessage),
+    onSettled: refetch,
+  })
+}
+
+function useRefetch() {
+  const queryClient = useQueryClient()
+  return () => queryClient.invalidateQueries({ queryKey: choresQuery.queryKey })
+}
+
+/** Toasts why a command failed: `conflict` when someone else acted first (409), or that the server can't be reached. */
+const failed = (conflict: string) => (error: Error) => {
+  if (error instanceof ApiError && error.status === 409) toast(conflict)
+  // A validation problem shows at its field, in the form that sent it
+  else if (!(error instanceof ApiError && error.status === 400)) toast(unreachableMessage)
 }

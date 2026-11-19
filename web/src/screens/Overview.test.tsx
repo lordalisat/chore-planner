@@ -130,3 +130,71 @@ test('Done on… records the Completion on the day picked', async () => {
   ])
   expect(router.state.location.pathname).toBe('/')
 })
+
+test('Skip moves a Recurring Chore on for the Due Date shown, and Undo takes it back', async () => {
+  const fetch = stubApi({
+    '/api/session': 204,
+    '/api/chores': [laundry],
+    '/api/chores/7/skip': { completionId: 32, chore: { ...laundry, dueDate: '2027-03-16' } },
+    '/api/chores/7/completions/32': laundry,
+  })
+  renderOverview()
+
+  await userEvent.click(await screen.findByRole('button', { name: 'More for Laundry' }))
+  await userEvent.click(await screen.findByRole('menuitem', { name: 'Skip' }))
+  expect(await screen.findByText('Skipped: Laundry')).toBeInTheDocument()
+  await userEvent.click(await screen.findByRole('button', { name: 'Undo' }))
+
+  await expect.poll(() => commands(fetch)).toEqual([
+    { path: '/api/chores/7/skip', method: 'POST', body: { dueDate: '2027-03-09' } },
+    { path: '/api/chores/7/completions/32', method: 'DELETE', body: undefined },
+  ])
+})
+
+test('a One-off Chore cannot be skipped', async () => {
+  stubApi({ '/api/session': 204, '/api/chores': [chore('Book the plumber', { dueDate: '2027-03-12', urgency: 0.5 })] })
+  renderOverview()
+
+  await userEvent.click(await screen.findByRole('button', { name: 'More for Book the plumber' }))
+
+  expect(await screen.findByRole('menuitem', { name: 'Postpone…' })).toBeInTheDocument()
+  expect(screen.queryByRole('menuitem', { name: 'Skip' })).not.toBeInTheDocument()
+})
+
+test('Postpone… sets the Due Date to the day picked', async () => {
+  const fetch = stubApi({
+    '/api/session': 204,
+    '/api/chores': [laundry],
+    '/api/chores/7/postpone': { ...laundry, dueDate: '2027-03-13' },
+  })
+  renderOverview()
+
+  await userEvent.click(await screen.findByRole('button', { name: 'More for Laundry' }))
+  await userEvent.click(await screen.findByRole('menuitem', { name: 'Postpone…' }))
+  await userEvent.type(await screen.findByRole('textbox', { name: 'Postpone to' }), '13/03/2027')
+  await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+  await expect.poll(() => commands(fetch)).toEqual([
+    { path: '/api/chores/7/postpone', method: 'POST', body: { dueDate: '2027-03-09', to: '2027-03-13' } },
+  ])
+  await expect.poll(() => screen.queryByRole('textbox', { name: 'Postpone to' })).toBeNull()
+})
+
+test('Postpone… to a day that is not after today says so at the date', async () => {
+  stubApi({
+    '/api/session': 204,
+    '/api/chores': [laundry],
+    '/api/chores/7/postpone': Response.json(
+      { errors: { to: ['A Chore can only be postponed to a day after today.'] } },
+      { status: 400, headers: { 'Content-Type': 'application/problem+json' } },
+    ),
+  })
+  renderOverview()
+
+  await userEvent.click(await screen.findByRole('button', { name: 'More for Laundry' }))
+  await userEvent.click(await screen.findByRole('menuitem', { name: 'Postpone…' }))
+  await userEvent.type(await screen.findByRole('textbox', { name: 'Postpone to' }), '01/03/2027')
+  await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+  expect(await screen.findByText('A Chore can only be postponed to a day after today.')).toBeInTheDocument()
+})
