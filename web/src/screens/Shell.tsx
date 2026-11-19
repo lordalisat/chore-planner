@@ -39,7 +39,8 @@ export function Shell() {
   return (
     <div className="min-h-dvh">
       <header className="bg-brand text-white">
-        <div className={`mx-auto flex items-center gap-2 px-4 py-2 ${wide ? 'max-w-7xl' : 'max-w-3xl'}`}>
+        {/* One width on every screen, so the navigation stays put; only the content below narrows */}
+        <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-2">
           <Link to="/" className="py-2 text-lg font-semibold">
             Chores
           </Link>
@@ -49,7 +50,7 @@ export function Shell() {
                 key={link.label}
                 to={link.to}
                 activeOptions={{ exact: link.exact ?? false }}
-                className="rounded-lg px-3 py-2 hover:bg-white/10 data-[status=active]:bg-white/15 data-[status=active]:font-semibold"
+                className="rounded-lg px-3 py-2 hover:bg-white/10 data-[status=active]:bg-white/20"
               >
                 {link.label}
               </Link>
