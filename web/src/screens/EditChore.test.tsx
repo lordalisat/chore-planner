@@ -54,12 +54,12 @@ function renderAt(url: string) {
   return router
 }
 
-test('Edit in a Chore\'s menu on the Overview opens it filled in', async () => {
+test('Edit on an expanded Overview row opens the Chore filled in', async () => {
   stubApi({ '/api/session': 204, '/api/chores': [laundry], '/api/chores/7': laundry })
   const router = renderAt('/')
 
-  await userEvent.click(await screen.findByRole('button', { name: 'More for Laundry' }))
-  await userEvent.click(await screen.findByRole('menuitem', { name: 'Edit' }))
+  await userEvent.click(await screen.findByRole('button', { name: /^Laundry/, expanded: false }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Edit' }))
 
   expect(await screen.findByRole('textbox', { name: 'Name' })).toHaveValue('Laundry')
   expect(router.state.location.pathname).toBe('/chores/7')

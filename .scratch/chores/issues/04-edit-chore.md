@@ -10,7 +10,7 @@ Blocked by: 02
 
 ## UI
 
-- **Edit** in an Overview row's ⋯ menu opens the Chore form at the `/chores/$id` route (typed numeric param), filled in, reusing the create form. Its loader prefetches the Chore through TanStack Query. Saving returns to the Overview.
+- **Edit**, among the actions an Overview row shows when tapped, opens the Chore form at the `/chores/$id` route (typed numeric param), filled in, reusing the create form. Its loader prefetches the Chore through TanStack Query. Saving returns to the Overview.
 - Last done is not editable here; Completions are how it changes.
 
 ## Acceptance
@@ -21,3 +21,4 @@ Blocked by: 02
 ## Comments
 
 - 2026-11-19, hand check: tapping the whole row to edit felt odd next to its actions. The row now opens nothing; Edit moved into the row's ⋯ menu, and Done became a round check on the left.
+- 2026-11-19, hand check: the ⋯ menu was too small a target. Tapping a row now expands it to show Done on…, Skip, Postpone… and Edit as buttons; the ⋯ menu is gone.

@@ -133,8 +133,8 @@ test('Done on… records the Completion on the day picked', async () => {
   })
   const router = renderOverview()
 
-  await userEvent.click(await screen.findByRole('button', { name: 'More for Laundry' }))
-  await userEvent.click(await screen.findByRole('menuitem', { name: 'Done on…' }))
+  await userEvent.click(await screen.findByRole('button', { name: /^Laundry/, expanded: false }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Done on…' }))
   const date = await screen.findByRole('textbox', { name: 'Done on' })
   await userEvent.clear(date)
   await userEvent.type(date, '08/03/2027')
@@ -155,8 +155,8 @@ test('Skip moves a Recurring Chore on for the Due Date shown, and Undo takes it 
   })
   renderOverview()
 
-  await userEvent.click(await screen.findByRole('button', { name: 'More for Laundry' }))
-  await userEvent.click(await screen.findByRole('menuitem', { name: 'Skip' }))
+  await userEvent.click(await screen.findByRole('button', { name: /^Laundry/, expanded: false }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Skip' }))
   expect(await screen.findByText('Skipped: Laundry')).toBeInTheDocument()
   await userEvent.click(await screen.findByRole('button', { name: 'Undo' }))
 
@@ -170,10 +170,10 @@ test('a One-off Chore cannot be skipped', async () => {
   stubApi({ '/api/session': 204, '/api/chores': [chore('Book the plumber', { dueDate: '2027-03-12', urgency: 0.5 })] })
   renderOverview()
 
-  await userEvent.click(await screen.findByRole('button', { name: 'More for Book the plumber' }))
+  await userEvent.click(await screen.findByRole('button', { name: /^Book the plumber/, expanded: false }))
 
-  expect(await screen.findByRole('menuitem', { name: 'Postpone…' })).toBeInTheDocument()
-  expect(screen.queryByRole('menuitem', { name: 'Skip' })).not.toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Postpone…' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Skip' })).not.toBeInTheDocument()
 })
 
 test('Postpone… sets the Due Date to the day picked', async () => {
@@ -184,8 +184,8 @@ test('Postpone… sets the Due Date to the day picked', async () => {
   })
   renderOverview()
 
-  await userEvent.click(await screen.findByRole('button', { name: 'More for Laundry' }))
-  await userEvent.click(await screen.findByRole('menuitem', { name: 'Postpone…' }))
+  await userEvent.click(await screen.findByRole('button', { name: /^Laundry/, expanded: false }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Postpone…' }))
   await userEvent.type(await screen.findByRole('textbox', { name: 'Postpone to' }), '13/03/2027')
   await userEvent.click(screen.getByRole('button', { name: 'Save' }))
 
@@ -206,23 +206,35 @@ test('Postpone… to a day that is not after today says so at the date', async (
   })
   renderOverview()
 
-  await userEvent.click(await screen.findByRole('button', { name: 'More for Laundry' }))
-  await userEvent.click(await screen.findByRole('menuitem', { name: 'Postpone…' }))
+  await userEvent.click(await screen.findByRole('button', { name: /^Laundry/, expanded: false }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Postpone…' }))
   await userEvent.type(await screen.findByRole('textbox', { name: 'Postpone to' }), '01/03/2027')
   await userEvent.click(screen.getByRole('button', { name: 'Save' }))
 
   expect(await screen.findByText('A Chore can only be postponed to a day after today.')).toBeInTheDocument()
 })
 
-test('a row is no link; Edit in its menu opens the Chore', async () => {
+test('tapping a row shows its actions and opens no screen; Edit opens the Chore', async () => {
   stubApi({ '/api/session': 204, '/api/chores': [laundry], '/api/chores/7': laundry, '/api/areas': [] })
   const router = renderOverview()
 
   const row = (await screen.findByText('Laundry')).closest('li')!
   expect(within(row).queryByRole('link')).toBeNull()
 
-  await userEvent.click(screen.getByRole('button', { name: 'More for Laundry' }))
-  await userEvent.click(await screen.findByRole('menuitem', { name: 'Edit' }))
+  await userEvent.click(screen.getByRole('button', { name: /^Laundry/, expanded: false }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Edit' }))
 
   await expect.poll(() => router.state.location.pathname).toBe('/chores/7')
+})
+
+test('tapping an expanded row again folds its actions away', async () => {
+  stubApi({ '/api/session': 204, '/api/chores': [laundry] })
+  const router = renderOverview()
+
+  await userEvent.click(await screen.findByRole('button', { name: /^Laundry/, expanded: false }))
+  expect(await screen.findByRole('button', { name: 'Postpone…' })).toBeVisible()
+  expect(router.state.location.pathname).toBe('/')
+
+  await userEvent.click(screen.getByRole('button', { name: /^Laundry/, expanded: true }))
+  expect(screen.queryByRole('button', { name: 'Postpone…' })).not.toBeInTheDocument()
 })
