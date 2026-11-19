@@ -1,6 +1,6 @@
 # Areas
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 04
 
 ## API

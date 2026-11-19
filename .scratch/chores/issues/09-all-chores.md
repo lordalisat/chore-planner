@@ -1,6 +1,6 @@
 # All Chores screen
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 04, 07
 
 The setup screen, mainly used from a desktop browser: every Chore in one place, including the ones the Overview hides. It also closes a gap: Dormant Chores are hidden from the Overview, so without this screen they can't be opened outside their Season.

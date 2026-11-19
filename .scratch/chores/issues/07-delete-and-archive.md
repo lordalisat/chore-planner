@@ -1,6 +1,6 @@
 # Deleting Chores: Archive or hard delete
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 02
 
 Keep history: a Chore with Completions is Archived rather than removed (see `spec.md`, Deleting).
