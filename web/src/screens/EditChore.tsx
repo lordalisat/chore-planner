@@ -1,21 +1,33 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
+import { getRouteApi, Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { choreQuery, type Chore } from '../chores.ts'
 import { ChoreForm } from './ChoreForm.tsx'
 import { DeleteChore } from './DeleteChore.tsx'
 
 const route = getRouteApi('/authenticated/chores/$id')
 
-/** The Chore form, filled in with a Chore; saving or deleting it returns to the Overview. */
+/**
+ * The Chore form, filled in with a Chore. Back, saving and deleting return to the screen it was opened from, or to
+ * the Overview when it was opened directly.
+ */
 export function EditChore() {
   const { id } = route.useParams()
   const { data: chore } = useSuspenseQuery(choreQuery(id))
   const navigate = useNavigate()
+  const router = useRouter()
+  // Asked when leaving rather than through useCanGoBack, which would rerender this screen on its way out after a
+  // delete and fetch the deleted Chore back into the cache
+  const leave = () => (router.history.canGoBack() ? router.history.back() : void navigate({ to: '/' }))
 
   return (
     <section className="mx-auto flex max-w-lg flex-col gap-4">
-      <h1 className="text-xl font-semibold text-brand">Edit Chore</h1>
-      <ChoreEditor chore={chore} onDone={() => void navigate({ to: '/' })} />
+      <div className="flex items-center gap-2">
+        <button type="button" onClick={leave} className="-ml-2 rounded-lg px-2 py-1 font-medium text-brand hover:bg-brand/10">
+          <span aria-hidden>← </span>Back
+        </button>
+        <h1 className="text-xl font-semibold text-brand">Edit Chore</h1>
+      </div>
+      <ChoreEditor chore={chore} onDone={leave} />
     </section>
   )
 }

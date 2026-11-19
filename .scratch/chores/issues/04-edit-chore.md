@@ -10,7 +10,7 @@ Blocked by: 02
 
 ## UI
 
-- **Edit**, among the actions an Overview row shows when tapped, opens the Chore form at the `/chores/$id` route (typed numeric param), filled in, reusing the create form. Its loader prefetches the Chore through TanStack Query. Saving returns to the Overview.
+- **Edit**, among the actions an Overview row shows when tapped, opens the Chore form at the `/chores/$id` route (typed numeric param), filled in, reusing the create form. Its loader prefetches the Chore through TanStack Query. A Back button at the top, saving and deleting all return to the screen it was opened from (the Overview when opened directly).
 - Last done is not editable here; Completions are how it changes.
 
 ## Acceptance

@@ -171,3 +171,34 @@ test('an unknown Chore is not found', async () => {
 
   expect(await screen.findByText('That Chore is gone.')).toBeVisible()
 })
+
+test('Back returns to the screen the Chore was opened from', async () => {
+  stubApi({ '/api/session': 204, '/api/chores': [laundry], '/api/chores/7': laundry, '/api/areas': [] })
+  // Narrower than lg, so All Chores opens a Chore on its own screen
+  const router = renderAt('/chores')
+
+  await userEvent.click(await screen.findByRole('link', { name: /Laundry/ }))
+  await expect.poll(() => router.state.location.pathname).toBe('/chores/7')
+  await userEvent.click(await screen.findByRole('button', { name: 'Back' }))
+
+  await expect.poll(() => router.state.location.pathname).toBe('/chores')
+})
+
+test('Back goes to the Overview when the Chore was opened directly', async () => {
+  stubApi({ '/api/session': 204, '/api/chores': [laundry], '/api/chores/7': laundry, '/api/areas': [] })
+  const router = renderAt('/chores/7')
+
+  await userEvent.click(await screen.findByRole('button', { name: 'Back' }))
+
+  await expect.poll(() => router.state.location.pathname).toBe('/')
+})
+
+test('saving returns to the screen the Chore was opened from', async () => {
+  stubApi({ '/api/session': 204, '/api/chores': [laundry], '/api/chores/7': laundry, '/api/areas': [] })
+  const router = renderAt('/chores')
+
+  await userEvent.click(await screen.findByRole('link', { name: /Laundry/ }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Save' }))
+
+  await expect.poll(() => router.state.location.pathname).toBe('/chores')
+})
