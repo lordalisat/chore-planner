@@ -223,6 +223,115 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chores/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CompleteChoreRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RecordedCompletionDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chores/{id}/completions/{completionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                    completionId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ChoreDto"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -252,8 +361,15 @@ export interface components {
             urgency: null | number;
             overdue: boolean;
             dormant: boolean;
+            finished: boolean;
             /** Format: date */
             lastDone: null | string;
+        };
+        CompleteChoreRequest: {
+            /** Format: date */
+            dueDate: null | string;
+            /** Format: date */
+            date?: null | string;
         };
         CreateRecurringChoreRequest: {
             name: string;
@@ -289,6 +405,11 @@ export interface components {
         IntervalUnit: "Day" | "Week" | "Month" | "Year";
         LoginRequest: {
             password: null | string;
+        };
+        RecordedCompletionDto: {
+            /** Format: int32 */
+            completionId: number;
+            chore: components["schemas"]["ChoreDto"];
         };
         SeasonDto: {
             /** Format: int32 */

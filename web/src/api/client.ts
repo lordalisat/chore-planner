@@ -26,6 +26,14 @@ export class ApiError extends Error {
 export const isUnauthorized = (error: unknown) => error instanceof ApiError && error.status === 401
 
 /**
+ * A path with its parameters filled in, such as `at('/api/chores/{id}/complete', { id: 7 })`; typed as the template, so
+ * `api` still knows what the path takes and answers.
+ */
+export function at<P extends keyof paths>(path: P, params: Record<string, string | number>): P {
+  return path.replace(/\{(\w+)\}/g, (_, name: string) => encodeURIComponent(String(params[name]))) as P
+}
+
+/**
  * Calls the API with the types from `schema.d.ts` (`npm run api`). Rejects with an ApiError when the API answers
  * other than 2xx, and with a TypeError when the server can't be reached.
  */
