@@ -34,6 +34,21 @@ public static class ChoreEndpoints
             // No address yet: there is no endpoint for one Chore
             return TypedResults.Created((string?)null, ChoreDto.From(chore, entity => IdOf(db, entity), clock));
         });
+
+        chores.MapPost("/one-off", async Task<Results<Created<ChoreDto>, ValidationProblem>> (
+            CreateOneOffChoreRequest request, ChoresDbContext db, TimeProvider clock) =>
+        {
+            List<string> takenNames = await db.Chores.Select(c => c.Name).ToListAsync();
+            Result<OneOffChore> result = request.ToChore(clock.Today(), takenNames);
+            if (result.Value is not { } chore)
+            {
+                return result.ToProblem();
+            }
+
+            db.Add(chore);
+            await db.SaveChangesAsync();
+            return TypedResults.Created((string?)null, ChoreDto.From(chore, entity => IdOf(db, entity), clock));
+        });
     }
 
     // Keys are shadow properties, see ChoresDbContext

@@ -7,6 +7,7 @@ namespace Chores.Api.Dtos;
 /// <param name="PreferredDay">"Monday" to "Sunday", "FirstOfMonth" or "LastOfMonth".</param>
 /// <param name="Urgency">How pressing the Chore is today; null without a Due Date.</param>
 /// <param name="Dormant">Outside its Season; the Overview hides it.</param>
+/// <param name="Finished">A One-off Chore that was completed; the Overview hides it.</param>
 public sealed record ChoreDto(
     int Id,
     string Kind,
@@ -21,6 +22,7 @@ public sealed record ChoreDto(
     double? Urgency,
     bool Overdue,
     bool Dormant,
+    bool Finished,
     DateOnly? LastDone)
 {
     /// <param name="idOf">The key of a Chore or Area, which the Domain does not hold.</param>
@@ -41,6 +43,7 @@ public sealed record ChoreDto(
             chore.Urgency(clock),
             chore.IsOverdue(clock),
             recurring?.IsDormant(clock) ?? false,
+            (chore as OneOffChore)?.IsFinished ?? false,
             chore.LastDone);
     }
 }

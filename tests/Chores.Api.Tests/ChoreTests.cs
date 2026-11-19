@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Chores.Api.Data;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Chores.Api.Tests;
@@ -136,9 +138,80 @@ public class ChoreTests(ApiFactory factory) : IClassFixture<ApiFactory>
             c => c.GetProperty("name").GetString()!.Equals("Vacuum the stairs", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public async Task A_One_off_Chore_with_a_Due_Date_is_scheduled_by_it()
+    {
+        HttpResponseMessage response = await CreateOneOff(new
+        {
+            name = "Fix leaking tap",
+            dueDate = "2027-03-12",
+            importance = "High",
+            effort = 45,
+        });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        JsonElement created = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+        JsonElement tap = await Listed("Fix leaking tap");
+        Assert.Equal(tap.GetProperty("id").GetInt32(), created.GetProperty("id").GetInt32());
+        Assert.Equal("OneOff", tap.GetProperty("kind").GetString());
+        Assert.Equal("High", tap.GetProperty("importance").GetString());
+        Assert.Equal(45, tap.GetProperty("effort").GetInt32());
+        Assert.Equal(JsonValueKind.Null, tap.GetProperty("interval").ValueKind);
+        Assert.Equal("2027-03-12", tap.GetProperty("dueDate").GetString());
+        // Two days before due is 0.5, times 1.5 for High Importance
+        Assert.Equal(0.75, tap.GetProperty("urgency").GetDouble());
+        Assert.False(tap.GetProperty("overdue").GetBoolean());
+        Assert.False(tap.GetProperty("finished").GetBoolean());
+    }
+
+    [Fact]
+    public async Task A_One_off_Chore_without_a_Due_Date_can_be_done_any_time()
+    {
+        HttpResponseMessage response = await CreateOneOff(new { name = "Sort the photos" });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        JsonElement photos = await Listed("Sort the photos");
+        Assert.Equal("Normal", photos.GetProperty("importance").GetString());
+        Assert.Equal(JsonValueKind.Null, photos.GetProperty("dueDate").ValueKind);
+        Assert.False(photos.GetProperty("overdue").GetBoolean());
+        // Counts as two days before due
+        Assert.Equal(0.5, photos.GetProperty("urgency").GetDouble());
+    }
+
+    [Fact]
+    public async Task A_finished_One_off_Chore_is_still_listed()
+    {
+        await CreateOneOff(new { name = "Hang the mirror", dueDate = "2027-03-08" });
+        // There is no endpoint to complete a Chore yet
+        using (IServiceScope scope = factory.Services.CreateScope())
+        {
+            ChoresDbContext db = scope.ServiceProvider.GetRequiredService<ChoresDbContext>();
+            db.Chores.Single(c => c.Name == "Hang the mirror").Complete(new DateOnly(2027, 3, 9));
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        JsonElement mirror = await Listed("Hang the mirror");
+        Assert.True(mirror.GetProperty("finished").GetBoolean());
+        Assert.False(mirror.GetProperty("overdue").GetBoolean());
+        Assert.Equal("2027-03-09", mirror.GetProperty("lastDone").GetString());
+    }
+
+    [Fact]
+    public async Task A_One_off_Chore_cannot_take_the_Name_of_another_Chore()
+    {
+        await Create(new { name = "Clean the windows", interval = new { count = 3, unit = "Month" } });
+
+        HttpResponseMessage response = await CreateOneOff(new { name = "clean the windows" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        JsonElement problem = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+        Assert.Equal(["name"], problem.GetProperty("errors").EnumerateObject().Select(e => e.Name));
+    }
+
     [Theory]
     [InlineData("GET", "/api/chores")]
     [InlineData("POST", "/api/chores/recurring")]
+    [InlineData("POST", "/api/chores/one-off")]
     public async Task Chores_need_the_household_password(string method, string path)
     {
         HttpResponseMessage response = await factory.CreateBrowserClient().SendAsync(
@@ -150,6 +223,9 @@ public class ChoreTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
     private Task<HttpResponseMessage> Create(object chore) =>
         _client.PostAsJsonAsync("/api/chores/recurring", chore, TestContext.Current.CancellationToken);
+
+    private Task<HttpResponseMessage> CreateOneOff(object chore) =>
+        _client.PostAsJsonAsync("/api/chores/one-off", chore, TestContext.Current.CancellationToken);
 
     private async Task<JsonElement> Listed(string name)
     {
