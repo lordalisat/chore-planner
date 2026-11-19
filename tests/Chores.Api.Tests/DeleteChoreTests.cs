@@ -97,6 +97,23 @@ public class DeleteChoreTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task An_Archived_Chore_cannot_be_read_or_edited()
+    {
+        int id = await Create("Sweep the chimney", lastDone: "2027-03-01");
+        await _client.DeleteAsync($"/api/chores/{id}", TestContext.Current.CancellationToken);
+
+        HttpResponseMessage read = await _client.GetAsync($"/api/chores/{id}", TestContext.Current.CancellationToken);
+        HttpResponseMessage edit = await _client.PutAsJsonAsync(
+            $"/api/chores/{id}", new { name = "Sweep the chimney", interval = new { count = 2, unit = "Week" } },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, read.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, edit.StatusCode);
+        JsonElement archived = Assert.Single(await Chores("/api/chores?archived=true"), c => c.GetProperty("id").GetInt32() == id);
+        Assert.Equal(1, archived.GetProperty("interval").GetProperty("count").GetInt32());
+    }
+
+    [Fact]
     public async Task Deleting_an_unknown_Chore_is_not_found()
     {
         HttpResponseMessage response = await _client.DeleteAsync("/api/chores/999999", TestContext.Current.CancellationToken);

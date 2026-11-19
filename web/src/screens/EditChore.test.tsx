@@ -120,6 +120,20 @@ test('a One-off Chore stays one and keeps its Due Date', async () => {
   })
 })
 
+test('deleting a Chore from its screen returns to the Overview', async () => {
+  const fetch = stubApi({
+    '/api/session': 204,
+    '/api/chores': [laundry],
+    '/api/chores/7': (init) => Response.json(init?.method === 'DELETE' ? { archived: true } : laundry),
+  })
+  const router = renderAt('/chores/7')
+
+  await userEvent.click(await screen.findByRole('button', { name: 'Delete' }))
+
+  await expect.poll(() => router.state.location.pathname).toBe('/')
+  expect(fetch.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(true)
+})
+
 test('an unknown Chore is not found', async () => {
   stubApi({ '/api/session': 204, '/api/chores': [], '/api/chores/8': 404 })
   renderAt('/chores/8')
