@@ -104,14 +104,14 @@ test('Done records a Completion today for the Due Date shown, and Undo takes it 
   })
   const router = renderOverview()
 
-  await userEvent.click(await screen.findByRole('button', { name: 'Done' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Mark Laundry done' }))
   await userEvent.click(await screen.findByRole('button', { name: 'Undo' }))
 
   await expect.poll(() => commands(fetch)).toEqual([
     { path: '/api/chores/7/complete', method: 'POST', body: { dueDate: '2027-03-09' } },
     { path: '/api/chores/7/completions/31', method: 'DELETE', body: undefined },
   ])
-  // Done sits beside the row's link, so it stays on the Overview
+  // Done never leaves the Overview
   expect(router.state.location.pathname).toBe('/')
 })
 
@@ -119,7 +119,7 @@ test('when someone else did it first, the list is fetched again and says so', as
   const fetch = stubApi({ '/api/session': 204, '/api/chores': [laundry], '/api/chores/7/complete': 409 })
   renderOverview()
 
-  await userEvent.click(await screen.findByRole('button', { name: 'Done' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Mark Laundry done' }))
 
   expect(await screen.findByText('Already done by someone else')).toBeInTheDocument()
   await expect.poll(() => fetch.mock.calls.filter(([path]) => path === '/api/chores')).toHaveLength(2)
@@ -212,4 +212,17 @@ test('Postpone… to a day that is not after today says so at the date', async (
   await userEvent.click(screen.getByRole('button', { name: 'Save' }))
 
   expect(await screen.findByText('A Chore can only be postponed to a day after today.')).toBeInTheDocument()
+})
+
+test('a row is no link; Edit in its menu opens the Chore', async () => {
+  stubApi({ '/api/session': 204, '/api/chores': [laundry], '/api/chores/7': laundry, '/api/areas': [] })
+  const router = renderOverview()
+
+  const row = (await screen.findByText('Laundry')).closest('li')!
+  expect(within(row).queryByRole('link')).toBeNull()
+
+  await userEvent.click(screen.getByRole('button', { name: 'More for Laundry' }))
+  await userEvent.click(await screen.findByRole('menuitem', { name: 'Edit' }))
+
+  await expect.poll(() => router.state.location.pathname).toBe('/chores/7')
 })

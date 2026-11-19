@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { useState, type FormEvent } from 'react'
 import { api, ApiError } from '../api/client.ts'
 import { choresQuery, type Chore } from '../chores.ts'
@@ -96,26 +96,35 @@ function ChoreList({ chores, today, ...actions }: { chores: Chore[]; today: stri
 }
 
 function ChoreRow({ chore, today, onDone, onDoneOn, onSkip, onPostpone }: { chore: Chore; today: string } & RowActions) {
+  const navigate = useNavigate()
+  const details = [chore.area?.name, chore.effort != null ? `${chore.effort} min` : null].filter(Boolean).join(' · ')
   return (
     <li
-      className={`flex items-center gap-3 rounded-lg border-l-4 bg-white py-2 pr-2 pl-4 shadow-sm hover:shadow-md ${
+      className={`flex items-center gap-3 rounded-lg border-l-4 bg-white py-2 pr-1 pl-3 shadow-sm ${
         chore.overdue ? 'border-red-700' : 'border-transparent'
       }`}
     >
-      {/* Only the Chore itself opens its edit screen; Done and the menu sit beside the link, not in it */}
-      <Link to="/chores/$id" params={{ id: chore.id }} className="flex flex-1 items-baseline gap-3 py-1">
-        <span className="flex-1 font-medium">{chore.name}</span>
-        {chore.area && <span className="text-sm text-ink/60">{chore.area.name}</span>}
-        {chore.effort != null && <span className="text-sm text-ink/60">{chore.effort} min</span>}
+      <button
+        type="button"
+        aria-label={`Mark ${chore.name} done`}
+        onClick={() => onDone(chore)}
+        className="group grid size-7 shrink-0 place-items-center rounded-full border-2 border-brand text-brand hover:bg-brand hover:text-white"
+      >
+        <svg viewBox="0 0 16 16" aria-hidden className="size-4 opacity-0 group-hover:opacity-100">
+          <path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-baseline gap-3">
+          <span className="flex-1 truncate font-medium">{chore.name}</span>
+          {details && <span className="text-sm text-ink/60">{details}</span>}
+        </div>
         {chore.dueDate && (
           <span className={`text-sm ${chore.overdue ? 'font-semibold text-red-700' : 'text-ink/70'}`}>
             {relativeDate(chore.dueDate, today)}
           </span>
         )}
-      </Link>
-      <button type="button" onClick={() => onDone(chore)} className="rounded-lg bg-brand px-3 py-1.5 font-semibold text-white hover:bg-brand/90">
-        Done
-      </button>
+      </div>
       <Menu
         label={`More for ${chore.name}`}
         trigger="⋯"
@@ -124,6 +133,7 @@ function ChoreRow({ chore, today, onDone, onDoneOn, onSkip, onPostpone }: { chor
           // Only a Recurring Chore has a next Due Date to move on to
           ...(chore.canSkip ? [{ label: 'Skip', onSelect: () => onSkip(chore) }] : []),
           { label: 'Postpone…', onSelect: () => onPostpone(chore) },
+          { label: 'Edit', onSelect: () => void navigate({ to: '/chores/$id', params: { id: chore.id } }) },
         ]}
       />
     </li>
