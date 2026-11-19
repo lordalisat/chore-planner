@@ -3,7 +3,7 @@ import { useRef, useState, type FormEvent } from 'react'
 import { api, ApiError, type FieldErrors } from '../api/client.ts'
 import type { components } from '../api/schema'
 import { areasQuery } from '../areas.ts'
-import { choresQuery, type Chore } from '../chores.ts'
+import { choresQuery, kindLabels, unitLabels, type Chore, type Unit } from '../chores.ts'
 import { DateField } from '../ui/DateField.tsx'
 import { NumberField } from '../ui/NumberField.tsx'
 import { SegmentedField } from '../ui/SegmentedField.tsx'
@@ -17,7 +17,6 @@ type RecurringRequest = components['schemas']['CreateRecurringChoreRequest']
 type OneOffRequest = components['schemas']['CreateOneOffChoreRequest']
 type EditRequest = components['schemas']['EditChoreRequest']
 type Kind = components['schemas']['ChoreDto']['kind']
-type Unit = RecurringRequest['interval']['unit']
 type PreferredDay = NonNullable<RecurringRequest['preferredDay']>
 type Importance = NonNullable<RecurringRequest['importance']>
 type Submission = { another: boolean } & (
@@ -25,17 +24,8 @@ type Submission = { another: boolean } & (
   | { kind: 'OneOff'; request: OneOffRequest }
 )
 
-const kinds: Option<Kind>[] = [
-  { value: 'Recurring', label: 'Recurring' },
-  { value: 'OneOff', label: 'One-off' },
-]
-
-const units: Option<Unit>[] = [
-  { value: 'Day', label: 'days' },
-  { value: 'Week', label: 'weeks' },
-  { value: 'Month', label: 'months' },
-  { value: 'Year', label: 'years' },
-]
+const kinds: Option<Kind>[] = (['Recurring', 'OneOff'] as const).map((kind) => ({ value: kind, label: kindLabels[kind] }))
+const units: Option<Unit>[] = (['Day', 'Week', 'Month', 'Year'] as const).map((unit) => ({ value: unit, label: unitLabels[unit] }))
 const weekdays: Option<PreferredDay>[] = (
   ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const
 ).map((day) => ({ value: day, label: day }))

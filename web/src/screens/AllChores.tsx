@@ -2,8 +2,8 @@ import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-q
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import { useState, type ReactNode } from 'react'
 import { api, ApiError } from '../api/client.ts'
-import { archivedChoresQuery, choresQuery, type Chore } from '../chores.ts'
-import { longDate, relativeDate, today } from '../dates.ts'
+import { archivedChoresQuery, choresQuery, kindLabels, unitLabels, type Chore, type Unit } from '../chores.ts'
+import { longDate, monthNames, relativeDate, today } from '../dates.ts'
 import { toast } from '../ui/toast.ts'
 import { fromLg, useMediaQuery } from '../ui/useMediaQuery.ts'
 import { ChoreForm } from './ChoreForm.tsx'
@@ -12,8 +12,6 @@ import { unreachableMessage } from './Unreachable.tsx'
 
 const route = getRouteApi('/authenticated/chores')
 
-const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-const unitNames = { Day: 'day', Week: 'week', Month: 'month', Year: 'year' }
 const preferredDayNames: Record<NonNullable<Chore['preferredDay']>, string> = {
   Monday: 'Monday',
   Tuesday: 'Tuesday',
@@ -29,24 +27,26 @@ const preferredDayNames: Record<NonNullable<Chore['preferredDay']>, string> = {
 /** "every 2 weeks on Tuesday", or nothing for a One-off Chore. */
 function schedule({ interval, preferredDay }: Chore) {
   if (!interval) return ''
-  const unit = unitNames[interval.unit]
-  const every = interval.count === 1 ? `every ${unit}` : `every ${interval.count} ${unit}s`
+  const units = unitLabels[interval.unit]
+  const every = interval.count === 1 ? `every ${units.slice(0, -1)}` : `every ${interval.count} ${units}`
   return preferredDay ? `${every} on ${preferredDayNames[preferredDay]}` : every
 }
 
 const seasonName = ({ season }: Chore) =>
   season ? `${monthNames[season.fromMonth - 1]} – ${monthNames[season.toMonth - 1]}` : ''
-const kindName = ({ kind }: Chore) => (kind === 'OneOff' ? 'One-off' : 'Recurring')
-const daysPerUnit = { Day: 1, Week: 7, Month: 30, Year: 365 }
+const kindName = ({ kind }: Chore) => kindLabels[kind]
+const unitRank: Record<Unit, number> = { Day: 0, Week: 1, Month: 2, Year: 3 }
 const importanceRank = { Low: 0, Normal: 1, High: 2 }
 
 type Column = 'Name' | 'Area' | 'Kind' | 'Interval' | 'Season' | 'Importance' | 'Effort' | 'Due'
+type SortKey = string | number | [number, number] | null
 // What each column sorts by, in the order they show; null is blank, which sorts last either way
-const sortKeys: Record<Column, (chore: Chore) => string | number | null> = {
+const sortKeys: Record<Column, (chore: Chore) => SortKey> = {
   Name: (chore) => chore.name,
   Area: ({ area }) => area?.name ?? null,
   Kind: kindName,
-  Interval: ({ interval }) => (interval ? interval.count * daysPerUnit[interval.unit] : null),
+  // By unit, then count: a month has no fixed number of days
+  Interval: ({ interval }) => (interval ? [unitRank[interval.unit], interval.count] : null),
   Season: ({ season }) => season?.fromMonth ?? null,
   Importance: ({ importance }) => importanceRank[importance],
   Effort: ({ effort }) => effort,
@@ -56,16 +56,24 @@ const columns = Object.keys(sortKeys) as Column[]
 
 type Sort = { column: Column; descending: boolean }
 
+// Two keys of the same column, so of the same type
+function compare(x: NonNullable<SortKey>, y: NonNullable<SortKey>): number {
+  if (typeof x === 'string') return x.localeCompare(y as string)
+  if (typeof x === 'number') return x - (y as number)
+  const [first, second] = y as [number, number]
+  return x[0] - first || x[1] - second
+}
+
 // Ties go by Name
 function sortChores(chores: Chore[], { column, descending }: Sort) {
   const key = sortKeys[column]
   return [...chores].sort((a, b) => {
     const [x, y] = [key(a), key(b)]
-    if (x !== y) {
-      if (x === null) return 1
-      if (y === null) return -1
-      const order = typeof x === 'string' ? x.localeCompare(String(y)) : x - Number(y)
-      return descending ? -order : order
+    if (x === null || y === null) {
+      if (x !== y) return x === null ? 1 : -1
+    } else {
+      const order = compare(x, y)
+      if (order !== 0) return descending ? -order : order
     }
     return a.name.localeCompare(b.name)
   })

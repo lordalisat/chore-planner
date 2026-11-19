@@ -2,7 +2,8 @@
 // is shorter or longer than another
 
 const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+/** Short month names, January first. */
+export const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const msPerDay = 24 * 60 * 60 * 1000
 
 const parse = (date: string) => new Date(`${date}T00:00:00Z`)

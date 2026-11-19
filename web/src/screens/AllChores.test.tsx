@@ -138,6 +138,18 @@ test.each([
   expect(within(t).getByRole('columnheader', { name: column })).toHaveAttribute('aria-sort', 'descending')
 })
 
+test('Intervals sort by unit, then count, since a month has no fixed number of days', async () => {
+  const plants = chore(5, 'Water the plants', { kind: 'Recurring', interval: { count: 40, unit: 'Day' } })
+  const sheets = chore(6, 'Change the sheets', { kind: 'Recurring', interval: { count: 1, unit: 'Month' } })
+  stubApi({ '/api/session': 204, '/api/chores': [sheets, laundry, plants] })
+  renderAt('/chores')
+  const t = await table()
+
+  await userEvent.click(within(t).getByRole('button', { name: 'Interval' }))
+
+  expect(names(t)).toEqual(['Water the plants', 'Laundry', 'Change the sheets'])
+})
+
 test('clicking through Chores opens each beside the list, and saving one stays on the list', async () => {
   const fetch = stubApi({
     '/api/session': 204,
