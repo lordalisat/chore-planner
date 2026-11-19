@@ -38,7 +38,7 @@ const kindName = ({ kind }: Chore) => kindLabels[kind]
 const unitRank: Record<Unit, number> = { Day: 0, Week: 1, Month: 2, Year: 3 }
 const importanceRank = { Low: 0, Normal: 1, High: 2 }
 
-type Column = 'Name' | 'Area' | 'Kind' | 'Interval' | 'Season' | 'Importance' | 'Effort' | 'Due'
+type Column = 'Name' | 'Area' | 'Kind' | 'Interval' | 'Season' | 'Importance' | 'Effort' | 'Due' | 'Urgency'
 type SortKey = string | number | [number, number] | null
 // What each column sorts by, in the order they show; null is blank, which sorts last either way
 const sortKeys: Record<Column, (chore: Chore) => SortKey> = {
@@ -51,6 +51,7 @@ const sortKeys: Record<Column, (chore: Chore) => SortKey> = {
   Importance: ({ importance }) => importanceRank[importance],
   Effort: ({ effort }) => effort,
   Due: ({ dueDate }) => dueDate,
+  Urgency: ({ urgency }) => urgency,
 }
 const columns = Object.keys(sortKeys) as Column[]
 
@@ -205,6 +206,7 @@ function ActiveChores() {
               <td className="px-3 py-2">{chore.importance}</td>
               <td className="px-3 py-2">{chore.effort != null && `${chore.effort} min`}</td>
               <td className="px-3 py-2">{chore.dueDate && relativeDate(chore.dueDate, now)}</td>
+              <td className="px-3 py-2 tabular-nums">{chore.urgency != null && Number(chore.urgency.toFixed(2))}</td>
             </tr>
           ))}
         </tbody>

@@ -40,6 +40,7 @@ const laundry = chore(1, 'Laundry', {
   interval: { count: 1, unit: 'Week' },
   preferredDay: 'Tuesday',
   dueDate: '2027-03-16',
+  urgency: 1.5,
 })
 const lawn = chore(2, 'Mow the lawn', {
   kind: 'Recurring',
@@ -58,6 +59,7 @@ const gutters = chore(4, 'Clean the gutters', {
   interval: { count: 6, unit: 'Month' },
   preferredDay: 'FirstOfMonth',
   dueDate: '2027-09-01',
+  urgency: 0,
 })
 
 // jsdom has no layout, so the lg breakpoint is whatever a test says; from lg up unless it says otherwise
@@ -134,6 +136,8 @@ test('every Chore that is not Archived is listed, Dormant and finished ones mark
   expect(lawnRow).toHaveTextContent('45 min')
   expect(lawnRow).toHaveTextContent('Garden')
   expect(within(t).getByRole('row', { name: /Laundry/ })).toHaveTextContent('every week on Tuesday')
+  expect(within(t).getByRole('columnheader', { name: /Urgency/ })).toBeVisible()
+  expect(within(t).getByRole('row', { name: /Laundry/ })).toHaveTextContent('1.5')
   expect(within(t).getByRole('row', { name: /Hang the mirror/ })).toHaveTextContent('Done')
 })
 
@@ -147,6 +151,7 @@ test.each([
   ['Effort', ['Hang the mirror', 'Laundry', 'Mow the lawn', 'Clean the gutters'], ['Clean the gutters', 'Mow the lawn', 'Laundry', 'Hang the mirror']],
   ['Due', ['Hang the mirror', 'Laundry', 'Mow the lawn', 'Clean the gutters'], ['Clean the gutters', 'Mow the lawn', 'Laundry', 'Hang the mirror']],
   ['Area', ['Mow the lawn', 'Hang the mirror', 'Laundry', 'Clean the gutters'], ['Laundry', 'Hang the mirror', 'Mow the lawn', 'Clean the gutters']],
+  ['Urgency', ['Clean the gutters', 'Laundry', 'Hang the mirror', 'Mow the lawn'], ['Laundry', 'Clean the gutters', 'Hang the mirror', 'Mow the lawn']],
 ])('sorting by %s, then the other way round', async (column, ascending, descending) => {
   stubApi({ '/api/session': 204, '/api/chores': [laundry, lawn, mirror, gutters] })
   renderAt('/chores')

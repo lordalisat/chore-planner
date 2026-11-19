@@ -238,3 +238,40 @@ test('tapping an expanded row again folds its actions away', async () => {
   await userEvent.click(screen.getByRole('button', { name: /^Laundry/, expanded: true }))
   expect(screen.queryByRole('button', { name: 'Postpone…' })).not.toBeInTheDocument()
 })
+
+test('Chores equally urgent go by Due Date, earliest first', async () => {
+  stubApi({
+    '/api/session': 204,
+    '/api/chores': [
+      chore('Laundry', { kind: 'Recurring', dueDate: '2027-03-20', urgency: 0 }),
+      chore('Clean vacuum water', { kind: 'Recurring', dueDate: '2027-03-15', urgency: 0 }),
+    ],
+  })
+  renderOverview()
+
+  await screen.findByText('Laundry')
+  const [main] = screen.getAllByRole('list').filter((list) => list.tagName === 'UL')
+  expect(within(main!).getAllByRole('listitem').map((row) => row.querySelector('span')?.textContent)).toEqual([
+    'Clean vacuum water',
+    'Laundry',
+  ])
+})
+
+test('each row is coloured by how urgent its Chore is', async () => {
+  stubApi({
+    '/api/session': 204,
+    '/api/chores': [
+      chore('Not yet', { dueDate: '2027-03-30', urgency: 0 }),
+      chore('Coming up', { dueDate: '2027-03-11', urgency: 0.5 }),
+      chore('Due', { dueDate: '2027-03-09', urgency: 1.25 }),
+      chore('Pressing', { dueDate: '2027-03-05', urgency: 2.25, overdue: true }),
+    ],
+  })
+  renderOverview()
+
+  const band = async (name: string) => (await screen.findByText(name)).closest('li')!.dataset.urgency
+  expect(await band('Not yet')).toBe('none')
+  expect(await band('Coming up')).toBe('soon')
+  expect(await band('Due')).toBe('due')
+  expect(await band('Pressing')).toBe('pressing')
+})

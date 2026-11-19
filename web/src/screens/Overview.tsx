@@ -2,7 +2,7 @@ import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-q
 import { useNavigate } from '@tanstack/react-router'
 import { useState, type FormEvent } from 'react'
 import { api, ApiError } from '../api/client.ts'
-import { choresQuery, type Chore } from '../chores.ts'
+import { choresQuery, urgencyBand, type Chore, type UrgencyBand } from '../chores.ts'
 import { relativeDate, today } from '../dates.ts'
 import { DateField } from '../ui/DateField.tsx'
 import { Dialog } from '../ui/Dialog.tsx'
@@ -23,7 +23,8 @@ export function Overview() {
   const [expanded, setExpanded] = useState<number | null>(null)
   const shown = chores
     .filter((chore) => !chore.dormant && !chore.finished)
-    .sort((a, b) => (b.urgency ?? -1) - (a.urgency ?? -1))
+    // Equally urgent ones go by Due Date, earliest first
+    .sort((a, b) => (b.urgency ?? -1) - (a.urgency ?? -1) || (a.dueDate ?? '').localeCompare(b.dueDate ?? ''))
   const scheduled = shown.filter((chore) => chore.dueDate)
   const anytime = shown.filter((chore) => !chore.dueDate)
 
@@ -108,19 +109,26 @@ function ChoreList({ chores, today, expanded, onExpand, ...actions }: ListProps)
   )
 }
 
+// The row's left edge warms up as its Chore gets more urgent
+const bandBorder: Record<UrgencyBand, string> = {
+  none: 'border-transparent',
+  soon: 'border-amber-400',
+  due: 'border-orange-500',
+  pressing: 'border-red-700',
+}
+
 type RowProps = { chore: Chore; today: string; open: boolean; onToggle: () => void; onClose: () => void } & RowActions
 
 function ChoreRow({ chore, today, open, onToggle, onClose, onDone, onDoneOn, onSkip, onPostpone }: RowProps) {
   const navigate = useNavigate()
+  const band = urgencyBand(chore.urgency)
   const details = [chore.area?.name, chore.effort != null ? `${chore.effort} min` : null].filter(Boolean).join(' · ')
   const act = (action: (chore: Chore) => void) => () => {
     onClose()
     action(chore)
   }
   return (
-    <li
-      className={`rounded-lg border-l-4 bg-white shadow-sm ${chore.overdue ? 'border-red-700' : 'border-transparent'}`}
-    >
+    <li data-urgency={band} className={`rounded-lg border-l-4 bg-white shadow-sm ${bandBorder[band]}`}>
       <div className="flex items-center gap-3 py-2 pr-3 pl-3">
         <button
           type="button"

@@ -29,3 +29,11 @@ export const archivedChoresQuery = queryOptions({
   queryKey: [...choresQuery.queryKey, 'archived'],
   queryFn: () => api('/api/chores', 'get', { archived: true }),
 })
+
+/** How a Chore's Urgency reads at a glance: nothing yet, coming up, about due, or pressing. */
+export type UrgencyBand = 'none' | 'soon' | 'due' | 'pressing'
+
+export function urgencyBand(urgency: number | null): UrgencyBand {
+  if (!urgency) return 'none'
+  return urgency < 1 ? 'soon' : urgency < 2 ? 'due' : 'pressing'
+}

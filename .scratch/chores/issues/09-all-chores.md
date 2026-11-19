@@ -13,7 +13,7 @@ Nothing new: `GET /api/chores` (02, 03) already returns Dormant Chores, finished
 
 - **All Chores** at `/chores`, from the menu or top navigation.
 - A filter: **Active** (default, every Chore that isn't Archived) or **Archived**.
-- Active rows show Name, kind, Interval and Preferred Day, Season, Area (see 08), Importance, Effort and Due Date, with Dormant and finished Chores marked. On a phone: a plain list of rows. From the `md` breakpoint up: a table sortable by each column (sorted on the client).
+- Active rows show Name, kind, Interval and Preferred Day, Season, Area (see 08), Importance, Effort, Due Date and Urgency, with Dormant and finished Chores marked. On a phone: a plain list of rows. From the `md` breakpoint up: a table sortable by each column (sorted on the client).
 - Tapping or clicking an Active row opens the Chore form (04). From the `lg` breakpoint up, the form opens **beside the list** (list left, form right), so you can click through Chores without leaving the list; the selected Chore is in the URL (for example `/chores/$id` rendered inside this layout, or a search param) so reloading keeps it. Below `lg`, the form opens as its own screen, as in 04.
 - Creating from this screen at `lg` and up opens the empty form in the same side panel; "Save and add another" (02) works there too.
 - Archived rows are **read-only**: Name, Area and the date archived, and one action, **Restore** (`POST /api/chores/{id}/restore`), after which the Chore is back under Active. No editing and no permanent delete.
