@@ -57,6 +57,22 @@ public static class ChoreEndpoints
             await db.SaveChangesAsync();
             return TypedResults.Ok(ChoreDto.From(chore, entity => IdOf(db, entity), clock));
         });
+
+        chores.MapPost("/one-off", async Task<Results<Created<ChoreDto>, ValidationProblem>> (
+            CreateOneOffChoreRequest request, ChoresDbContext db, TimeProvider clock) =>
+        {
+            List<string> takenNames = await db.Chores.Select(c => c.Name).ToListAsync();
+            Result<OneOffChore> result = request.ToChore(clock.Today(), takenNames);
+            if (result.Value is not { } chore)
+            {
+                return result.ToProblem();
+            }
+
+            db.Add(chore);
+            await db.SaveChangesAsync();
+            ChoreDto created = ChoreDto.From(chore, entity => IdOf(db, entity), clock);
+            return TypedResults.Created($"/api/chores/{created.Id}", created);
+        });
     }
 
     private static Task<Chore?> Find(ChoresDbContext db, int id) =>

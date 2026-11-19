@@ -20,9 +20,9 @@ public sealed record EditChoreRequest(
     public Result<Chore> ApplyTo(Chore chore, IEnumerable<string> takenNames)
     {
         List<FieldError> errors = [];
-        string name = errors.ValidName(Name, takenNames);
+        string name = errors.CheckName(Name, takenNames);
         (Interval? interval, PreferredDay? preferredDay, Season? season) = chore is RecurringChore
-            ? errors.ValidSchedule(Interval, PreferredDay, Season)
+            ? errors.CheckSchedule(Interval, PreferredDay, Season)
             : default;
         // Result only changes the Chore when nothing was wrong
         return new Result<Chore>(errors, () =>

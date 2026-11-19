@@ -21,8 +21,8 @@ public sealed record CreateRecurringChoreRequest(
     public Result<RecurringChore> ToChore(DateOnly createdOn, IEnumerable<string> takenNames)
     {
         List<FieldError> errors = [];
-        string name = errors.ValidName(Name, takenNames);
-        (Interval? interval, PreferredDay? preferredDay, Season? season) = errors.ValidSchedule(Interval, PreferredDay, Season);
+        string name = errors.CheckName(Name, takenNames);
+        (Interval? interval, PreferredDay? preferredDay, Season? season) = errors.CheckSchedule(Interval, PreferredDay, Season);
         // Result only builds the Chore when nothing was wrong, so the Interval is there
         return new Result<RecurringChore>(errors, () =>
         {

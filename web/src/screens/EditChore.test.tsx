@@ -22,7 +22,22 @@ const laundry: Chore = {
   urgency: 0,
   overdue: false,
   dormant: false,
+  finished: false,
   lastDone: '2027-03-09',
+}
+
+const tap: Chore = {
+  ...laundry,
+  id: 9,
+  kind: 'OneOff',
+  name: 'Fix the tap',
+  importance: 'Normal',
+  effort: null,
+  interval: null,
+  preferredDay: null,
+  season: null,
+  dueDate: '2027-03-20',
+  lastDone: null,
 }
 
 function renderAt(url: string) {
@@ -74,6 +89,31 @@ test('saving an edited Chore sends its fields and returns to the Overview', asyn
     season: { fromMonth: 4, toMonth: 10 },
     importance: 'High',
     effort: 30,
+  })
+})
+
+test('a One-off Chore stays one and keeps its Due Date', async () => {
+  const fetch = stubApi({
+    '/api/session': 204,
+    '/api/chores': [tap],
+    '/api/chores/9': (init) => Response.json(init?.method === 'PUT' ? { ...tap, name: 'Fix the kitchen tap' } : tap),
+  })
+  const router = renderAt('/chores/9')
+  const name = await screen.findByRole('textbox', { name: 'Name' })
+
+  expect(screen.queryByRole('radiogroup', { name: 'Kind' })).not.toBeInTheDocument()
+  expect(screen.queryByText('Kind')).not.toBeInTheDocument()
+  expect(screen.queryByRole('textbox', { name: 'Every' })).not.toBeInTheDocument()
+  await userEvent.clear(name)
+  await userEvent.type(name, 'Fix the kitchen tap{Enter}')
+
+  await expect.poll(() => router.state.location.pathname).toBe('/')
+  const put = fetch.mock.calls.find(([, init]) => init?.method === 'PUT')
+  expect(JSON.parse(String(put?.[1]?.body))).toEqual({
+    name: 'Fix the kitchen tap',
+    dueDate: '2027-03-20',
+    importance: 'Normal',
+    effort: null,
   })
 })
 

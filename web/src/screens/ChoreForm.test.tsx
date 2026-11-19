@@ -120,6 +120,29 @@ test('Any day clears a picked Preferred Day', async () => {
   expect(JSON.parse(String(fetch.mock.calls[0]?.[1]?.body))).toMatchObject({ name: 'Dust', preferredDay: null })
 })
 
+test('a One-off Chore asks only for a Name, Due Date, Importance and Effort', async () => {
+  const fetch = stubApi({ '/api/chores/one-off': new Response('{}', { status: 201 }), '/api/chores': [] })
+  renderForm()
+
+  await userEvent.click(screen.getByRole('radio', { name: 'One-off' }))
+  await userEvent.type(screen.getByRole('textbox', { name: 'Effort in minutes' }), '15')
+  await userEvent.click(screen.getByRole('radio', { name: 'High' }))
+  await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Fix leaking tap{Enter}')
+
+  expect(screen.queryByRole('textbox', { name: 'Every' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('switch', { name: 'Seasonal' })).not.toBeInTheDocument()
+  expect(screen.queryByText('Last done')).not.toBeInTheDocument()
+  expect(screen.getByText('Due date')).toBeVisible()
+  await expect.poll(() => fetch.mock.calls.length).toBe(1)
+  expect(fetch.mock.calls[0]?.[0]).toBe('/api/chores/one-off')
+  expect(JSON.parse(String(fetch.mock.calls[0]?.[1]?.body))).toEqual({
+    name: 'Fix leaking tap',
+    dueDate: null,
+    importance: 'High',
+    effort: 15,
+  })
+})
+
 test('the first and last of the month are only offered for an Interval in months or years', async () => {
   renderForm()
 
