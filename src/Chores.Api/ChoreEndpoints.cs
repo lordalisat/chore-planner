@@ -30,7 +30,7 @@ public static class ChoreEndpoints
             CreateRecurringChoreRequest request, ChoresDbContext db, TimeProvider clock) =>
         {
             List<string> takenNames = await db.Chores.Select(c => c.Name).ToListAsync();
-            Result<RecurringChore> result = request.ToChore(clock.Today(), takenNames);
+            Result<RecurringChore> result = request.ToChore(clock.Today(), takenNames, await FindArea(db, request.AreaId));
             if (result.Value is not { } chore)
             {
                 return result.ToProblem();
@@ -50,7 +50,7 @@ public static class ChoreEndpoints
                 return TypedResults.NotFound();
             }
             List<string> takenNames = await db.Chores.Where(c => EF.Property<int>(c, "Id") != id).Select(c => c.Name).ToListAsync();
-            Result<Chore> result = request.ApplyTo(chore, takenNames);
+            Result<Chore> result = request.ApplyTo(chore, takenNames, await FindArea(db, request.AreaId));
             if (result.Value is null)
             {
                 return result.ToProblem();
@@ -64,7 +64,7 @@ public static class ChoreEndpoints
             CreateOneOffChoreRequest request, ChoresDbContext db, TimeProvider clock) =>
         {
             List<string> takenNames = await db.Chores.Select(c => c.Name).ToListAsync();
-            Result<OneOffChore> result = request.ToChore(clock.Today(), takenNames);
+            Result<OneOffChore> result = request.ToChore(clock.Today(), takenNames, await FindArea(db, request.AreaId));
             if (result.Value is not { } chore)
             {
                 return result.ToProblem();
@@ -113,6 +113,8 @@ public static class ChoreEndpoints
 
     private static Task<Chore?> Find(ChoresDbContext db, int id) =>
         db.Chores.Include(c => c.Area).SingleOrDefaultAsync(c => EF.Property<int>(c, "Id") == id);
+
+    private static async Task<Area?> FindArea(ChoresDbContext db, int? id) => id is { } areaId ? await db.Areas.FindAsync(areaId) : null;
 
     // Keys are shadow properties, see ChoresDbContext
     private static int IdOf(ChoresDbContext db, object entity) => (int)db.Entry(entity).Property("Id").CurrentValue!;

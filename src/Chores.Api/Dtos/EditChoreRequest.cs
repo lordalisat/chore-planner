@@ -13,14 +13,17 @@ public sealed record EditChoreRequest(
     SeasonDto? Season = null,
     DateOnly? DueDate = null,
     Importance Importance = Importance.Normal,
-    int? Effort = null)
+    int? Effort = null,
+    int? AreaId = null)
 {
     /// <summary>The Chore with these values, or what is wrong with which field, leaving the Chore as it was.</summary>
     /// <param name="takenNames">The Names of the other Chores, which this one may not share.</param>
-    public Result<Chore> ApplyTo(Chore chore, IEnumerable<string> takenNames)
+    /// <param name="area">The Area <see cref="AreaId"/> names; null when there is no such Area.</param>
+    public Result<Chore> ApplyTo(Chore chore, IEnumerable<string> takenNames, Area? area)
     {
         List<FieldError> errors = [];
         string name = errors.CheckName(Name, takenNames);
+        errors.CheckArea(AreaId, area);
         (Interval? interval, PreferredDay? preferredDay, Season? season) = chore is RecurringChore
             ? errors.CheckSchedule(Interval, PreferredDay, Season)
             : default;
@@ -30,6 +33,7 @@ public sealed record EditChoreRequest(
             chore.Name = name;
             chore.Importance = Importance;
             chore.Effort = Effort;
+            chore.Area = area;
             switch (chore)
             {
                 case RecurringChore recurring:

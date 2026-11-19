@@ -22,16 +22,19 @@ public sealed class Area
     public Area? Parent
     {
         get => _parent;
-        set
+        set => _parent = CanSitInside(value) ? value : throw new ArgumentException("An Area cannot sit inside itself.", nameof(value));
+    }
+
+    /// <summary>Whether this Area can have the given parent: not when that is this Area or one inside it.</summary>
+    public bool CanSitInside(Area? parent)
+    {
+        for (Area? ancestor = parent; ancestor is not null; ancestor = ancestor.Parent)
         {
-            for (Area? ancestor = value; ancestor is not null; ancestor = ancestor.Parent)
+            if (ancestor == this)
             {
-                if (ancestor == this)
-                {
-                    throw new ArgumentException("An Area cannot sit inside itself.", nameof(value));
-                }
+                return false;
             }
-            _parent = value;
         }
+        return true;
     }
 }

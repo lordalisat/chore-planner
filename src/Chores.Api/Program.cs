@@ -72,6 +72,7 @@ RouteGroupBuilder api = app.MapGroup("/api").RequireAuthorization();
 api.MapGet("/health", () => TypedResults.Ok()).AllowAnonymous();
 api.MapAuthEndpoints();
 api.MapChoreEndpoints();
+api.MapAreaEndpoints();
 // Keeps unknown API paths out of the front-end fallback below
 api.MapFallback(() => TypedResults.NotFound()).ExcludeFromDescription();
 

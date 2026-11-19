@@ -39,6 +39,16 @@ public static class FieldErrorList
         return trimmed;
     }
 
+    /// <summary>Adds at "areaId" when the request names an Area that was not found.</summary>
+    /// <param name="area">The Area found for <paramref name="areaId"/>, if any.</param>
+    public static void CheckArea(this List<FieldError> errors, int? areaId, Area? area)
+    {
+        if (areaId is not null && area is null)
+        {
+            errors.Add(new FieldError("areaId", "That Area does not exist."));
+        }
+    }
+
     /// <summary>
     /// The Interval, Preferred Day and Season of a Recurring Chore; the Domain decides which combinations are valid.
     /// </summary>
