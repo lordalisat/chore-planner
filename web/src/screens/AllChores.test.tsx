@@ -83,7 +83,7 @@ const names = (t: HTMLElement) =>
   within(t)
     .getAllByRole('row')
     .slice(1)
-    .map((row) => within(row).getAllByRole('cell')[0]!.querySelector('a')?.textContent)
+    .map((row) => within(row).getAllByRole('cell')[0]!.querySelector('span')?.textContent)
 
 test('All Chores is in the top navigation', async () => {
   stubApi({ '/api/session': 204, '/api/chores': [laundry] })
@@ -184,12 +184,12 @@ test('clicking through Chores opens each beside the list, and saving one stays o
   const router = renderAt('/chores')
   const t = await table()
 
-  await userEvent.click(within(t).getByRole('link', { name: 'Laundry' }))
+  await userEvent.click(within(t).getByRole('row', { name: /Laundry/ }))
   expect(await screen.findByRole('textbox', { name: 'Name' })).toHaveValue('Laundry')
   expect(router.state.location.search).toEqual({ chore: 1 })
 
   // A Dormant Chore can be edited too
-  await userEvent.click(within(t).getByRole('link', { name: 'Mow the lawn' }))
+  await userEvent.click(within(t).getByRole('row', { name: /Mow the lawn/ }))
   const effort = await screen.findByRole('textbox', { name: 'Effort in minutes' })
   expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Mow the lawn')
   await userEvent.clear(effort)
@@ -208,7 +208,7 @@ test('below lg a Chore opens on its own screen, and new ones come from the Shell
   stubApi({ '/api/session': 204, '/api/chores': [laundry, lawn], '/api/chores/1': laundry })
   const router = renderAt('/chores')
 
-  await userEvent.click(within(await table()).getByRole('link', { name: 'Laundry' }))
+  await userEvent.click(within(await table()).getByRole('row', { name: /Laundry/ }))
 
   expect(await screen.findByRole('textbox', { name: 'Name' })).toHaveValue('Laundry')
   expect(router.state.location.pathname).toBe('/chores/1')
@@ -224,6 +224,18 @@ test('clicking anywhere on a row opens its Chore, not only on its name', async (
 
   const row = within(await table()).getByRole('row', { name: /Mow the lawn/ })
   await userEvent.click(within(row).getAllByRole('cell')[2]!)
+
+  await expect.poll(() => router.state.location.search).toEqual({ chore: lawn.id })
+  // The row is the one thing to click; its name is no separate link
+  expect(within(row).queryByRole('link')).not.toBeInTheDocument()
+})
+
+test('a row opens its Chore from the keyboard too', async () => {
+  stubApi({ '/api/session': 204, '/api/chores': [laundry, lawn] })
+  const router = renderAt('/chores')
+
+  within(await table()).getByRole('row', { name: /Mow the lawn/ }).focus()
+  await userEvent.keyboard('{Enter}')
 
   await expect.poll(() => router.state.location.search).toEqual({ chore: lawn.id })
 })

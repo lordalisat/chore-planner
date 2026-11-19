@@ -141,6 +141,7 @@ function ActiveChores() {
   const { data: chores } = useSuspenseQuery(choresQuery)
   const [sort, setSort] = useState<Sort>({ column: 'Name', descending: false })
   const sorted = sortChores(chores, sort)
+  const openChore = useOpenChore()
   const now = today()
 
   if (chores.length === 0) return <p className="py-12 text-center text-ink/70">No Chores yet.</p>
@@ -187,16 +188,14 @@ function ActiveChores() {
           {sorted.map((chore) => (
             <tr
               key={chore.id}
-              // The whole row opens the Chore through its name's link, which keyboards and screen readers still use
-              onClick={(event) => {
-                if (!(event.target as Element).closest('a')) event.currentTarget.querySelector('a')?.click()
-              }}
-              className="cursor-pointer border-b border-black/5 last:border-0 hover:bg-brand/5"
+              // The row is what opens the Chore, by mouse or by Enter once tabbed to
+              tabIndex={0}
+              onClick={() => openChore(chore.id)}
+              onKeyDown={(event) => event.key === 'Enter' && openChore(chore.id)}
+              className="cursor-pointer border-b border-black/5 last:border-0 hover:bg-brand/5 focus-visible:bg-brand/5 focus-visible:outline-2 focus-visible:outline-brand"
             >
               <td className="px-3 py-2">
-                <ChoreLink chore={chore} className="font-medium hover:underline">
-                  {chore.name}
-                </ChoreLink>{' '}
+                <span className="font-medium">{chore.name}</span>{' '}
                 <Marks chore={chore} />
               </td>
               <td className="px-3 py-2">{chore.area?.name}</td>
@@ -215,6 +214,14 @@ function ActiveChores() {
 }
 
 /** Opens a Chore beside the list from lg up, and on its own screen below. */
+function useOpenChore() {
+  const navigate = useNavigate()
+  const wide = useMediaQuery(fromLg)
+  return (id: number) =>
+    void (wide ? navigate({ to: '/chores', search: { chore: id } }) : navigate({ to: '/chores/$id', params: { id } }))
+}
+
+/** A link opening a Chore where {@link useOpenChore} would. */
 function ChoreLink({ chore, className, children }: { chore: Chore; className: string; children: ReactNode }) {
   return useMediaQuery(fromLg) ? (
     <Link to="/chores" search={{ chore: chore.id }} className={className}>

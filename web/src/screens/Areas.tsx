@@ -32,20 +32,31 @@ export function Areas() {
       {areas.length === 0 ? (
         <p className="py-12 text-center text-ink/70">No Areas yet. Add one, such as the kitchen or the garden.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {areas.map((area) => (
-            <li key={area.id}>
-              <button
-                type="button"
+        <table aria-label="Areas" className="w-full rounded-lg bg-white text-left text-sm shadow-sm">
+          <thead className="border-b border-black/10 text-ink/70">
+            <tr>
+              <th className="px-3 py-2 font-semibold">Name</th>
+              <th className="px-3 py-2 font-semibold">Inside</th>
+              <th className="px-3 py-2 text-right font-semibold">Chores</th>
+            </tr>
+          </thead>
+          <tbody>
+            {areas.map((area) => (
+              <tr
+                key={area.id}
+                // The row is what opens the Area, by mouse or by Enter once tabbed to
+                tabIndex={0}
                 onClick={() => setEditing(area)}
-                className="flex w-full items-baseline gap-3 rounded-lg bg-white px-4 py-3 text-left shadow-sm hover:shadow-md"
+                onKeyDown={(event) => event.key === 'Enter' && setEditing(area)}
+                className="cursor-pointer border-b border-black/5 last:border-0 hover:bg-brand/5 focus-visible:bg-brand/5 focus-visible:outline-2 focus-visible:outline-brand"
               >
-                <span className="flex-1 font-medium">{area.name}</span>
-                {area.parentId != null && <span className="text-sm text-ink/60">in {nameOf(area.parentId)}</span>}
-              </button>
-            </li>
-          ))}
-        </ul>
+                <td className="px-3 py-2 font-medium">{area.name}</td>
+                <td className="px-3 py-2">{nameOf(area.parentId)}</td>
+                <td className="px-3 py-2 text-right">{area.choreCount}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
       <Dialog open={editing !== undefined} onOpenChange={(open) => !open && setEditing(undefined)} title={editing ? 'Edit Area' : 'New Area'}>
         {/* Mounted only while open, so each starts from the Area's own values */}

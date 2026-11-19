@@ -28,14 +28,30 @@ function sent(fetch: ReturnType<typeof stubApi>, method: string) {
   }))
 }
 
-test('each Area shows the Area it sits inside', async () => {
+test('Areas are a table of name, the Area each sits inside, and how many Chores use it', async () => {
   stubApi({ '/api/session': 204, '/api/areas': [downstairs, kitchen] })
   renderAreas()
 
-  const rows = await screen.findAllByRole('listitem')
-  expect(rows.map((row) => row.textContent)).toEqual([expect.stringContaining('Downstairs'), expect.stringContaining('Kitchen')])
-  expect(within(rows[1]!).getByText('in Downstairs')).toBeVisible()
-  expect(within(rows[0]!).queryByText(/^in /)).not.toBeInTheDocument()
+  const table = await screen.findByRole('table', { name: 'Areas' })
+  const cells = within(table)
+    .getAllByRole('row')
+    .map((row) => within(row).queryAllByRole(row.querySelector('th') ? 'columnheader' : 'cell').map((cell) => cell.textContent))
+  expect(cells).toEqual([
+    ['Name', 'Inside', 'Chores'],
+    ['Downstairs', '', String(downstairs.choreCount)],
+    ['Kitchen', 'Downstairs', '2'],
+  ])
+})
+
+test('clicking anywhere on an Area\'s row opens it', async () => {
+  stubApi({ '/api/session': 204, '/api/areas': [downstairs, kitchen] })
+  renderAreas()
+
+  const row = within(await screen.findByRole('table', { name: 'Areas' })).getByRole('row', { name: /^Kitchen/ })
+  await userEvent.click(within(row).getAllByRole('cell')[2]!)
+
+  expect(await screen.findByRole('textbox', { name: 'Name' })).toHaveValue('Kitchen')
+  expect(within(row).queryByRole('button')).not.toBeInTheDocument()
 })
 
 test('a new Area is made inside the picked parent', async () => {
@@ -62,7 +78,7 @@ test('an Area is renamed and taken out of its parent', async () => {
   })
   renderAreas()
 
-  await userEvent.click(await screen.findByRole('button', { name: /Kitchen/ }))
+  await userEvent.click(await screen.findByRole('row', { name: /^Kitchen/ }))
   const name = screen.getByRole('textbox', { name: 'Name' })
   expect(screen.getByRole('combobox', { name: 'Inside' })).toHaveTextContent('Downstairs')
   await userEvent.clear(name)
@@ -84,7 +100,7 @@ test('an Area the API rejects shows why', async () => {
   })
   renderAreas()
 
-  await userEvent.click(await screen.findByRole('button', { name: 'Downstairs' }))
+  await userEvent.click(await screen.findByRole('row', { name: /^Downstairs/ }))
   await pick('Inside', 'Kitchen')
   await userEvent.click(screen.getByRole('button', { name: 'Save' }))
 
@@ -100,7 +116,7 @@ test('deleting an Area first says how many Chores use it', async () => {
   })
   renderAreas()
 
-  await userEvent.click(await screen.findByRole('button', { name: /Kitchen/ }))
+  await userEvent.click(await screen.findByRole('row', { name: /^Kitchen/ }))
   await userEvent.click(screen.getByRole('button', { name: 'Delete' }))
 
   const confirm = await screen.findByRole('alertdialog')
