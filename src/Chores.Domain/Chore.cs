@@ -15,6 +15,9 @@ public abstract class Chore(string name, DateOnly createdOn)
     public Area? Area { get; set; }
     public IReadOnlyList<Completion> Completions => _completions;
 
+    /// <summary>The date the household removed the Chore on, keeping its Completions for history; null when not Archived.</summary>
+    public DateOnly? ArchivedOn { get; private set; }
+
     /// <summary>The date of the latest Completion that was not skipped, if any.</summary>
     public DateOnly? LastDone => _completions.Where(c => !c.Skipped).Select(c => (DateOnly?)c.Date).Max();
 
@@ -28,17 +31,23 @@ public abstract class Chore(string name, DateOnly createdOn)
         OnCompletionsChanged();
     }
 
+    /// <summary>Removes the Chore from the household's list but keeps its Completions.</summary>
+    public void Archive(DateOnly date) => ArchivedOn = date;
+
+    /// <summary>Brings an Archived Chore back, scheduled from its history as before.</summary>
+    public void Restore() => ArchivedOn = null;
+
     /// <summary>Sets the Due Date by hand.</summary>
     public abstract void Postpone(DateOnly date);
 
-    /// <summary>Today is after the Due Date, whatever the Importance.</summary>
-    public bool IsOverdue(TimeProvider clock) => clock.Today() > NextDueDate;
+    /// <summary>Today is after the Due Date, whatever the Importance; never for an Archived Chore.</summary>
+    public bool IsOverdue(TimeProvider clock) => ArchivedOn is null && clock.Today() > NextDueDate;
 
     /// <summary>
     /// Rises from 0 four days before the Due Date to 2 four days after it (1 on the Due Date), times the
-    /// Importance weight; null when the Chore has no Due Date.
+    /// Importance weight; null when the Chore has no Due Date or is Archived.
     /// </summary>
-    public double? Urgency(TimeProvider clock) => UnweightedUrgency(clock.Today()) * Importance switch
+    public double? Urgency(TimeProvider clock) => ArchivedOn is not null ? null : UnweightedUrgency(clock.Today()) * Importance switch
     {
         Importance.Low => 0.75,
         Importance.High => 1.5,
