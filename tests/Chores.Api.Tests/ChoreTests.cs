@@ -1,8 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Chores.Api.Data;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Chores.Api.Tests;
@@ -302,14 +300,11 @@ public class ChoreTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task A_finished_One_off_Chore_is_still_listed()
     {
-        await CreateOneOff(new { name = "Hang the mirror", dueDate = "2027-03-08" });
-        // There is no endpoint to complete a Chore yet
-        using (IServiceScope scope = factory.Services.CreateScope())
-        {
-            ChoresDbContext db = scope.ServiceProvider.GetRequiredService<ChoresDbContext>();
-            db.Chores.Single(c => c.Name == "Hang the mirror").Complete(new DateOnly(2027, 3, 9));
-            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
-        }
+        HttpResponseMessage created = await CreateOneOff(new { name = "Hang the mirror", dueDate = "2027-03-08" });
+        int id = (await created.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken)).GetProperty("id").GetInt32();
+        (await _client.PostAsJsonAsync(
+            $"/api/chores/{id}/complete", new { dueDate = "2027-03-08", date = "2027-03-09" }, TestContext.Current.CancellationToken))
+            .EnsureSuccessStatusCode();
 
         JsonElement mirror = await Listed("Hang the mirror");
         Assert.True(mirror.GetProperty("finished").GetBoolean());
