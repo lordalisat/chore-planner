@@ -24,17 +24,18 @@ export function DeleteChore({ chore, onDeleted }: { chore: Chore; onDeleted: () 
       queryClient.removeQueries({ queryKey: choreQuery(chore.id).queryKey, exact: true })
       // Outlives this component, which onDeleted unmounts
       toast({
+        type: 'warning',
         title: `${archived ? 'Archived' : 'Deleted'} ${chore.name}`,
         ...(archived && {
           action: {
             label: 'Undo',
             onAction: () =>
-              api('/api/chores/{id}/restore', 'post', { id: chore.id }).then(refetch, () => toast(unreachableMessage)),
+              api('/api/chores/{id}/restore', 'post', { id: chore.id }).then(refetch, () => toast.error(unreachableMessage)),
           },
         }),
       })
     },
-    onError: () => toast(unreachableMessage),
+    onError: () => toast.error(unreachableMessage),
   })
 
   return (

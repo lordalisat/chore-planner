@@ -192,6 +192,7 @@ test('Postpone… sets the Due Date to the day picked', async () => {
     { path: '/api/chores/7/postpone', method: 'POST', body: { dueDate: '2027-03-09', to: '2027-03-13' } },
   ])
   await expect.poll(() => screen.queryByRole('textbox', { name: 'Postpone to' })).toBeNull()
+  expect(await screen.findByText('Postponed: Laundry to Sat 13 Mar')).toBeInTheDocument()
 })
 
 test('Postpone… to a day that is not after today says so at the date', async () => {
@@ -321,4 +322,50 @@ test('a One-off Chore under Anytime is something to do, so the Overview does not
 
   expect(await screen.findByText('Fix leaking tap')).toBeVisible()
   expect(screen.queryByText('Nothing needs doing yet.')).not.toBeInTheDocument()
+})
+
+const toastType = async (text: string) => (await screen.findByText(text)).closest('[data-type]')?.getAttribute('data-type')
+
+test('each toast is coloured by what happened', async () => {
+  stubApi({
+    '/api/session': 204,
+    '/api/chores': [laundry],
+    '/api/chores/7/complete': { completionId: 31, chore: laundry },
+    '/api/chores/7/skip': { completionId: 32, chore: laundry },
+    '/api/chores/7/postpone': laundry,
+  })
+  renderOverview()
+
+  await userEvent.click(await screen.findByRole('button', { name: 'Mark Laundry done' }))
+  expect(await toastType('Done: Laundry')).toBe('success')
+
+  await userEvent.click(screen.getByRole('button', { name: /^Laundry/, expanded: false }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Skip' }))
+  expect(await toastType('Skipped: Laundry')).toBe('info')
+
+  await userEvent.click(screen.getByRole('button', { name: /^Laundry/, expanded: false }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Postpone…' }))
+  await userEvent.type(await screen.findByRole('textbox', { name: 'Postpone to' }), '13/03/2027')
+  await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+  expect(await toastType('Postponed: Laundry to Sat 13 Mar')).toBe('info')
+})
+
+test('when someone else acted first the toast is an error', async () => {
+  stubApi({ '/api/session': 204, '/api/chores': [laundry], '/api/chores/7/complete': 409 })
+  renderOverview()
+
+  await userEvent.click(await screen.findByRole('button', { name: 'Mark Laundry done' }))
+
+  expect(await toastType('Already done by someone else')).toBe('error')
+})
+
+test('a toast can be closed', async () => {
+  stubApi({ '/api/session': 204, '/api/chores': [laundry], '/api/chores/7/complete': { completionId: 31, chore: laundry } })
+  renderOverview()
+
+  await userEvent.click(await screen.findByRole('button', { name: 'Mark Laundry done' }))
+  await screen.findByText('Done: Laundry')
+  await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+  await expect.poll(() => screen.queryByText('Done: Laundry')).toBeNull()
 })

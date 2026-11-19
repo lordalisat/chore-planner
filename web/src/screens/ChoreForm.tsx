@@ -95,7 +95,7 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
       void queryClient.invalidateQueries({ queryKey: choresQuery.queryKey })
       if (!another) return onDone()
       // Setting up many Chores at once: the next one most likely shares the schedule
-      toast(`Added ${request.name}`)
+      toast.success(`Added ${request.name}`)
       setName('')
       setImportance('Normal')
       setEffort(null)
@@ -105,7 +105,7 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
     },
     onError: (error) => {
       if (error instanceof ApiError && error.status === 400) setErrors(error.errors)
-      else toast(unreachableMessage)
+      else toast.error(unreachableMessage)
     },
   })
 

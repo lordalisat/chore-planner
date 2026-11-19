@@ -37,7 +37,7 @@ export function Shell() {
   const logout = useMutation({
     mutationFn: () => api('/api/logout', 'post'),
     onSuccess: () => queryClient.setQueryData(sessionQuery.queryKey, 'anonymous'),
-    onError: () => toast(unreachableMessage),
+    onError: () => toast.error(unreachableMessage),
   })
 
   return (

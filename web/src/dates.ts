@@ -21,6 +21,11 @@ export function relativeDate(date: string, from: string): string {
   if (days === 0) return 'today'
   if (days === 1) return 'tomorrow'
   if (days < 7) return `in ${days} days`
+  return shortDate(date)
+}
+
+/** A date with its weekday, such as "Tue 24 Nov". */
+export function shortDate(date: string): string {
   const d = parse(date)
   return `${dayNames[d.getUTCDay()]} ${d.getUTCDate()} ${monthNames[d.getUTCMonth()]}`
 }

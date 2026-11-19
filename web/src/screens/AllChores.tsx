@@ -249,10 +249,10 @@ function ArchivedChores() {
     mutationFn: (chore: Chore) => api('/api/chores/{id}/restore', 'post', { id: chore.id }),
     onSuccess: (_, chore) => {
       void queryClient.invalidateQueries({ queryKey: choresQuery.queryKey })
-      toast(`Restored ${chore.name}`)
+      toast.success(`Restored ${chore.name}`)
     },
     // An active Chore may have taken its Name since
-    onError: (error) => toast((error instanceof ApiError && error.errors.name?.[0]) || unreachableMessage),
+    onError: (error) => toast.error((error instanceof ApiError && error.errors.name?.[0]) || unreachableMessage),
   })
 
   if (chores.length === 0) return <p className="py-12 text-center text-ink/70">Nothing is Archived.</p>

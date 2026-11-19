@@ -3,7 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { useState, type FormEvent } from 'react'
 import { api, ApiError } from '../api/client.ts'
 import { choresQuery, urgencyBand, type Chore, type UrgencyBand } from '../chores.ts'
-import { relativeDate, today } from '../dates.ts'
+import { relativeDate, shortDate, today } from '../dates.ts'
 import { DateField } from '../ui/DateField.tsx'
 import { Dialog } from '../ui/Dialog.tsx'
 import { toast } from '../ui/toast.ts'
@@ -232,6 +232,7 @@ const useComplete = () =>
     ({ chore, date }: { chore: Chore; date?: string }) =>
       api('/api/chores/{id}/complete', 'post', { dueDate: chore.dueDate, ...(date && { date }) }, { id: chore.id }),
     'Done',
+    'success',
     'Already done by someone else',
   )
 
@@ -240,6 +241,7 @@ const useSkip = () =>
   useRecord(
     ({ chore }: { chore: Chore }) => api('/api/chores/{id}/skip', 'post', { dueDate: chore.dueDate }, { id: chore.id }),
     'Skipped',
+    'info',
     'Someone else got to it first',
   )
 
@@ -250,6 +252,7 @@ const useSkip = () =>
 function useRecord<Variables extends { chore: Chore }>(
   record: (variables: Variables) => Promise<{ completionId: number }>,
   what: string,
+  type: 'success' | 'info',
   conflict: string,
 ) {
   const refetch = useRefetch()
@@ -259,6 +262,7 @@ function useRecord<Variables extends { chore: Chore }>(
     mutationFn: record,
     onSuccess: ({ completionId }, { chore }) =>
       toast({
+        type,
         title: `${what}: ${chore.name}`,
         action: { label: 'Undo', onAction: () => undo.mutateAsync({ choreId: chore.id, completionId }) },
       }),
@@ -274,6 +278,7 @@ function usePostpone() {
   return useMutation({
     mutationFn: ({ chore, to }: { chore: Chore; to: string }) =>
       api('/api/chores/{id}/postpone', 'post', { dueDate: chore.dueDate, to }, { id: chore.id }),
+    onSuccess: (_, { chore, to }) => toast.info(`Postponed: ${chore.name} to ${shortDate(to)}`),
     onError: failed('Someone else got to it first'),
     onSettled: refetch,
   })
@@ -285,7 +290,7 @@ function useUndo() {
   return useMutation({
     mutationFn: ({ choreId, completionId }: { choreId: number; completionId: number }) =>
       api('/api/chores/{id}/completions/{completionId}', 'delete', { id: choreId, completionId }),
-    onError: () => toast(unreachableMessage),
+    onError: () => toast.error(unreachableMessage),
     onSettled: refetch,
   })
 }
@@ -297,7 +302,7 @@ function useRefetch() {
 
 /** Toasts why a command failed: `conflict` when someone else acted first (409), or that the server can't be reached. */
 const failed = (conflict: string) => (error: Error) => {
-  if (error instanceof ApiError && error.status === 409) toast(conflict)
+  if (error instanceof ApiError && error.status === 409) toast.error(conflict)
   // A validation problem shows at its field, in the form that sent it
-  else if (!(error instanceof ApiError && error.status === 400)) toast(unreachableMessage)
+  else if (!(error instanceof ApiError && error.status === 400)) toast.error(unreachableMessage)
 }

@@ -57,6 +57,7 @@ test('deleting a Chore that was done before archives it at once and offers Undo'
   expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
   expect(requests(fetch)).toContain('DELETE /api/chores/7')
   expect(await screen.findByText('Archived Laundry')).toBeInTheDocument()
+  expect(screen.getByText('Archived Laundry').closest('[data-type]')).toHaveAttribute('data-type', 'warning')
   await userEvent.click(await screen.findByRole('button', { name: 'Undo' }))
   await expect.poll(() => requests(fetch)).toContain('POST /api/chores/7/restore')
 })

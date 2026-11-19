@@ -99,7 +99,7 @@ function AreaForm({ area, areas, onDone }: { area?: Area; areas: Area[]; onDone:
     },
     onError: (error) => {
       if (error instanceof ApiError && error.status === 400) setErrors(error.errors)
-      else toast(unreachableMessage)
+      else toast.error(unreachableMessage)
     },
   })
 
@@ -109,7 +109,7 @@ function AreaForm({ area, areas, onDone }: { area?: Area; areas: Area[]; onDone:
       refetch()
       onDone()
     },
-    onError: () => toast(unreachableMessage),
+    onError: () => toast.error(unreachableMessage),
   })
 
   function submit(event: FormEvent) {
