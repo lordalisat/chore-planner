@@ -16,3 +16,9 @@ export const choreQuery = (id: number) =>
     queryKey: [...choresQuery.queryKey, id],
     queryFn: () => api('/api/chores/{id}', 'get', { id }),
   })
+
+/** The Archived Chores, under the key of every Chore so refetching those refetches these too. */
+export const archivedChoresQuery = queryOptions({
+  queryKey: [...choresQuery.queryKey, 'archived'],
+  queryFn: () => api('/api/chores', 'get', { archived: true }),
+})
