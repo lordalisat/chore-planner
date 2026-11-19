@@ -6,7 +6,7 @@ public sealed class OneOffChore(string name, DateOnly createdOn) : Chore(name, c
     /// <summary>Optional, set by hand.</summary>
     public DateOnly? DueDate { get; set; }
 
-    public bool IsFinished => Completions.Count > 0;
+    public override bool IsFinished => HasHistory;
 
     public override void Postpone(DateOnly date) => DueDate = date;
 

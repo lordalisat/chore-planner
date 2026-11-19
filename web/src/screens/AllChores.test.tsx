@@ -24,6 +24,7 @@ function chore(id: number, name: string, details: Partial<Chore> = {}): Chore {
     overdue: false,
     dormant: false,
     finished: false,
+    canSkip: details.kind === 'Recurring',
     lastDone: null,
     completionCount: 0,
     archivedOn: null,

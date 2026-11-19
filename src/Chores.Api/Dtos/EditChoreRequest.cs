@@ -34,14 +34,11 @@ public sealed record EditChoreRequest(
             chore.Importance = Importance;
             chore.Effort = Effort;
             chore.Area = area;
+            // Which fields apply depends on the kind; the Domain has no use for a request's spare ones
             switch (chore)
             {
                 case RecurringChore recurring:
-                    // The old Preferred Day may not allow the new Interval, so it goes first
-                    recurring.PreferredDay = null;
-                    recurring.Interval = interval!;
-                    recurring.PreferredDay = preferredDay;
-                    recurring.Season = season;
+                    recurring.Reschedule(interval!, preferredDay, season);
                     break;
                 case OneOffChore oneOff:
                     oneOff.DueDate = DueDate;

@@ -19,6 +19,7 @@ public class SkipAndPostponeTests(ApiFactory factory) : IClassFixture<ApiFactory
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         JsonElement answer = await Read(response);
+        Assert.True(answer.GetProperty("chore").GetProperty("canSkip").GetBoolean());
         Assert.Equal(JsonValueKind.Number, answer.GetProperty("completionId").ValueKind);
         Assert.Equal("2027-03-16", answer.GetProperty("chore").GetProperty("dueDate").GetString());
         JsonElement listed = await Listed("Do the laundry");
@@ -47,7 +48,9 @@ public class SkipAndPostponeTests(ApiFactory factory) : IClassFixture<ApiFactory
         HttpResponseMessage response = await Post(id, "skip", new { dueDate = "2027-03-12" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.False((await Listed("Fix the doorbell")).GetProperty("finished").GetBoolean());
+        JsonElement listed = await Listed("Fix the doorbell");
+        Assert.False(listed.GetProperty("canSkip").GetBoolean());
+        Assert.False(listed.GetProperty("finished").GetBoolean());
     }
 
     [Fact]

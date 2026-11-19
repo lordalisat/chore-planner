@@ -84,7 +84,7 @@ public static class ChoreEndpoints
                 return TypedResults.NotFound();
             }
 
-            bool archive = chore.Completions.Count > 0;
+            bool archive = chore.HasHistory;
             if (archive)
             {
                 chore.Archive(clock.Today());
@@ -129,7 +129,7 @@ public static class ChoreEndpoints
             {
                 return TypedResults.NotFound();
             }
-            if (!IsCurrent(chore, request.DueDate))
+            if (!chore.IsDueOn(request.DueDate))
             {
                 return TypedResults.Conflict();
             }
@@ -152,7 +152,7 @@ public static class ChoreEndpoints
             {
                 return TypedResults.NotFound();
             }
-            if (!IsCurrent(chore, request.DueDate))
+            if (!chore.IsDueOn(request.DueDate))
             {
                 return TypedResults.Conflict();
             }
@@ -175,7 +175,7 @@ public static class ChoreEndpoints
             {
                 return TypedResults.NotFound();
             }
-            if (!IsCurrent(chore, request.DueDate))
+            if (!chore.IsDueOn(request.DueDate))
             {
                 return TypedResults.Conflict();
             }
@@ -205,14 +205,6 @@ public static class ChoreEndpoints
             return TypedResults.Ok(ChoreDto.From(chore, entity => IdOf(db, entity), clock));
         });
     }
-
-    /// <summary>Whether the Due Date a device saw is still the Chore's: not when someone else acted on it first.</summary>
-    private static bool IsCurrent(Chore chore, DateOnly? dueDate) => chore switch
-    {
-        RecurringChore recurring => recurring.DueDate == dueDate,
-        OneOffChore oneOff => !oneOff.IsFinished && oneOff.DueDate == dueDate,
-        _ => false,
-    };
 
     private static Task<Chore?> Find(ChoresDbContext db, int id) =>
         db.Chores.Include(c => c.Area).SingleOrDefaultAsync(c => EF.Property<int>(c, "Id") == id);

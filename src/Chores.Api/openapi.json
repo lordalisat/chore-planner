@@ -741,6 +741,7 @@
           "overdue",
           "dormant",
           "finished",
+          "canSkip",
           "lastDone",
           "completionCount",
           "archivedOn"
@@ -840,6 +841,9 @@
             "type": "boolean"
           },
           "finished": {
+            "type": "boolean"
+          },
+          "canSkip": {
             "type": "boolean"
           },
           "lastDone": {

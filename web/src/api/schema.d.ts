@@ -865,6 +865,7 @@ export interface components {
             overdue: boolean;
             dormant: boolean;
             finished: boolean;
+            canSkip: boolean;
             /** Format: date */
             lastDone: null | string;
             /** Format: int32 */

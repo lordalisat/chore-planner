@@ -22,6 +22,7 @@ const laundry: Chore = {
   overdue: false,
   dormant: false,
   finished: false,
+  canSkip: true,
   lastDone: '2027-03-09',
   completionCount: 3,
   archivedOn: null,

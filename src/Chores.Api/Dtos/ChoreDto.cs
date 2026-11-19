@@ -8,6 +8,7 @@ namespace Chores.Api.Dtos;
 /// <param name="Urgency">How pressing the Chore is today; null without a Due Date.</param>
 /// <param name="Dormant">Outside its Season; the Overview hides it.</param>
 /// <param name="Finished">A One-off Chore that was completed; the Overview hides it.</param>
+/// <param name="CanSkip">Whether the Chore can move on to its next Due Date without being done: a Recurring one.</param>
 /// <param name="CompletionCount">How many Completions, done or skipped, the Chore has; deleting one with any Archives it.</param>
 /// <param name="ArchivedOn">The date the Chore was Archived on; null when it is not.</param>
 public sealed record ChoreDto(
@@ -25,6 +26,7 @@ public sealed record ChoreDto(
     bool Overdue,
     bool Dormant,
     bool Finished,
+    bool CanSkip,
     DateOnly? LastDone,
     int CompletionCount,
     DateOnly? ArchivedOn)
@@ -47,7 +49,8 @@ public sealed record ChoreDto(
             chore.Urgency(clock),
             chore.IsOverdue(clock),
             recurring?.IsDormant(clock) ?? false,
-            (chore as OneOffChore)?.IsFinished ?? false,
+            chore.IsFinished,
+            chore.CanSkip,
             chore.LastDone,
             chore.Completions.Count,
             chore.ArchivedOn);

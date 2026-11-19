@@ -104,7 +104,7 @@ function ChoreRow({ chore, today, onDone, onDoneOn, onSkip, onPostpone }: { chor
         entries={[
           { label: 'Done on…', onSelect: () => onDoneOn(chore) },
           // Only a Recurring Chore has a next Due Date to move on to
-          ...(chore.kind === 'Recurring' ? [{ label: 'Skip', onSelect: () => onSkip(chore) }] : []),
+          ...(chore.canSkip ? [{ label: 'Skip', onSelect: () => onSkip(chore) }] : []),
           { label: 'Postpone…', onSelect: () => onPostpone(chore) },
         ]}
       />

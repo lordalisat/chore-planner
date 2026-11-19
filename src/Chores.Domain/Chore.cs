@@ -18,13 +18,29 @@ public abstract class Chore(string name, DateOnly createdOn)
     /// <summary>The date the household removed the Chore on, keeping its Completions for history; null when not Archived.</summary>
     public DateOnly? ArchivedOn { get; private set; }
 
+    /// <summary>A One-off Chore once completed; a Recurring Chore never is.</summary>
+    public virtual bool IsFinished => false;
+
+    /// <summary>Only a Recurring Chore can move on to its next Due Date without being done.</summary>
+    public virtual bool CanSkip => false;
+
+    /// <summary>Has Completions to keep, so deleting it Archives it rather than removing it.</summary>
+    public bool HasHistory => _completions.Count > 0;
+
     /// <summary>The date of the latest Completion that was not skipped, if any.</summary>
     public DateOnly? LastDone => _completions.Where(c => !c.Skipped).Select(c => (DateOnly?)c.Date).Max();
 
     public void Complete(DateOnly date) => Add(CompletionOn(date));
 
-    /// <summary>Removes a Completion, done or skipped.</summary>
+    /// <summary>
+    /// Moves on to the next Due Date as if done on the current one, recording a skipped Completion that leaves
+    /// Last Done as it is; only when <see cref="CanSkip"/>.
+    /// </summary>
+    public void Skip(DateOnly date) => Add(CanSkip
+        ? CompletionOn(date) with { Skipped = true }
+        : throw new InvalidOperationException("Only a Recurring Chore can be skipped."));
 
+    /// <summary>Removes a Completion, done or skipped.</summary>
     public void RemoveCompletion(Completion completion)
     {
         _completions.Remove(completion);
@@ -36,6 +52,11 @@ public abstract class Chore(string name, DateOnly createdOn)
 
     /// <summary>Brings an Archived Chore back, scheduled from its history as before.</summary>
     public void Restore() => ArchivedOn = null;
+
+    /// <summary>
+    /// Whether the Chore is still open with the given Due Date, or without one when null: not once someone acted on it.
+    /// </summary>
+    public bool IsDueOn(DateOnly? dueDate) => !IsFinished && NextDueDate == dueDate;
 
     /// <summary>Sets the Due Date by hand.</summary>
     public abstract void Postpone(DateOnly date);

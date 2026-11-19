@@ -31,6 +31,8 @@ public sealed class RecurringChore(string name, Interval interval, DateOnly crea
 
     public Season? Season { get; set; }
 
+    public override bool CanSkip => true;
+
     /// <summary>The Postpone date, overriding the calculated Due Date until the next Completion, done or skipped.</summary>
     public DateOnly? PostponedTo { get; private set; }
 
@@ -39,11 +41,16 @@ public sealed class RecurringChore(string name, Interval interval, DateOnly crea
 
     public override void Postpone(DateOnly date) => PostponedTo = date;
 
-    /// <summary>
-    /// Moves on to the next Due Date as if done on the current one, recording a skipped Completion that leaves
-    /// Last Done as it is.
-    /// </summary>
-    public void Skip(DateOnly date) => Add(new Completion(date, CalculatedDueDate(), PostponedTo, Skipped: true));
+    /// <summary>Replaces the Interval, Preferred Day and Season at once, so the new Interval is checked against the new Preferred Day only.</summary>
+    public void Reschedule(Interval interval, PreferredDay? preferredDay, Season? season)
+    {
+        EnsureAllowed(interval, preferredDay);
+        // The old Preferred Day may not allow the new Interval, so it goes first
+        PreferredDay = null;
+        Interval = interval;
+        PreferredDay = preferredDay;
+        Season = season;
+    }
 
     /// <summary>
     /// The expected occurrences after the Due Date, up to and including <paramref name="until"/>, assuming each

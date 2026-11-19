@@ -10,13 +10,13 @@ public sealed record SkipChoreRequest(DateOnly? DueDate)
     public Result<Chore> SkipOn(Chore chore, DateOnly today)
     {
         List<FieldError> errors = [];
-        if (chore is not RecurringChore)
+        if (!chore.CanSkip)
         {
             errors.Add(new FieldError("kind", "Only a Recurring Chore can be skipped."));
         }
         return new Result<Chore>(errors, () =>
         {
-            ((RecurringChore)chore).Skip(today);
+            chore.Skip(today);
             return chore;
         });
     }
