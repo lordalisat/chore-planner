@@ -1,13 +1,37 @@
 namespace Chores.Domain;
 
 /// <summary>A part of the house a Chore belongs to, optionally inside one parent Area.</summary>
-public sealed class Area(string name, Area? parent = null)
+public sealed class Area
 {
-    // For persistence, which sets the Parent after construction
+    private Area? _parent;
+
+    public Area(string name, Area? parent = null)
+    {
+        Name = name;
+        Parent = parent;
+    }
+
+    // For persistence, which sets the Parent's field after construction
     private Area(string name) : this(name, null)
     {
     }
 
-    public string Name { get; set; } = name;
-    public Area? Parent { get; set; } = parent;
+    public string Name { get; set; }
+
+    /// <summary>The Area this one sits inside; never this Area itself or one inside it.</summary>
+    public Area? Parent
+    {
+        get => _parent;
+        set
+        {
+            for (Area? ancestor = value; ancestor is not null; ancestor = ancestor.Parent)
+            {
+                if (ancestor == this)
+                {
+                    throw new ArgumentException("An Area cannot sit inside itself.", nameof(value));
+                }
+            }
+            _parent = value;
+        }
+    }
 }
