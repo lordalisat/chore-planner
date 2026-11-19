@@ -36,7 +36,7 @@ export function Overview() {
       today={today()}
       onDone={(chore) => complete.mutate({ chore })}
       onDoneOn={setDoneOn}
-      onSkip={(chore) => skip.mutate(chore)}
+      onSkip={(chore) => skip.mutate({ chore })}
       onPostpone={setPostponing}
     />
   )
@@ -51,10 +51,28 @@ export function Overview() {
       )}
       <Dialog open={doneOn !== null} onOpenChange={(open) => !open && setDoneOn(null)} title={`When was ${doneOn?.name ?? ''} done?`}>
         {/* Mounted only while open, so each starts on today */}
-        {doneOn && <DoneOnForm chore={doneOn} onDone={() => setDoneOn(null)} complete={complete} />}
+        {doneOn && (
+          <DateForm
+            label="Done on"
+            initial={today()}
+            missing="Pick the day it was done."
+            field="date"
+            save={(date, callbacks) => complete.mutate({ chore: doneOn, date }, callbacks)}
+            onDone={() => setDoneOn(null)}
+          />
+        )}
       </Dialog>
       <Dialog open={postponing !== null} onOpenChange={(open) => !open && setPostponing(null)} title={`Postpone ${postponing?.name ?? ''}`}>
-        {postponing && <PostponeForm chore={postponing} onDone={() => setPostponing(null)} postpone={postpone} />}
+        {postponing && (
+          <DateForm
+            label="Postpone to"
+            initial={null}
+            missing="Pick the day to postpone to."
+            field="to"
+            save={(to, callbacks) => postpone.mutate({ chore: postponing, to }, callbacks)}
+            onDone={() => setPostponing(null)}
+          />
+        )}
       </Dialog>
     </div>
   )
@@ -112,27 +130,35 @@ function ChoreRow({ chore, today, onDone, onDoneOn, onSkip, onPostpone }: { chor
   )
 }
 
-function DoneOnForm({ chore, onDone, complete }: { chore: Chore; onDone: () => void; complete: ReturnType<typeof useComplete> }) {
-  const [date, setDate] = useState<string | null>(today())
+type DateFormProps = {
+  label: string
+  initial: string | null
+  /** Shown when no day is picked. */
+  missing: string
+  /** The request field a validation problem names. */
+  field: 'date' | 'to'
+  save: (date: string, callbacks: { onSuccess: () => void; onError: (failure: Error) => void }) => void
+  onDone: () => void
+}
+
+/** Asks for one day, for Done on… or Postpone…; a validation problem stays open at the date. */
+function DateForm({ label, initial, missing, field, save, onDone }: DateFormProps) {
+  const [date, setDate] = useState<string | null>(initial)
   const [error, setError] = useState<string>()
 
   function submit(event: FormEvent) {
     event.preventDefault()
-    if (!date) return setError('Pick the day it was done.')
-    complete.mutate(
-      { chore, date },
-      {
-        onSuccess: onDone,
-        // A validation problem stays open at the date; anything else was already toasted
-        onError: (failure) =>
-          failure instanceof ApiError && failure.status === 400 ? setError(failure.errors.date?.[0]) : onDone(),
-      },
-    )
+    if (!date) return setError(missing)
+    save(date, {
+      onSuccess: onDone,
+      // Anything but a validation problem was already toasted
+      onError: (failure) => (failure instanceof ApiError && failure.status === 400 ? setError(failure.errors[field]?.[0]) : onDone()),
+    })
   }
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
-      <DateField label="Done on" value={date} onValueChange={setDate} error={error} />
+      <DateField label={label} value={date} onValueChange={setDate} error={error} />
       <button type="submit" className="rounded-lg bg-brand px-4 py-2 font-semibold text-white hover:bg-brand/90">
         Save
       </button>
@@ -140,67 +166,43 @@ function DoneOnForm({ chore, onDone, complete }: { chore: Chore; onDone: () => v
   )
 }
 
-function PostponeForm({ chore, onDone, postpone }: { chore: Chore; onDone: () => void; postpone: ReturnType<typeof usePostpone> }) {
-  const [to, setTo] = useState<string | null>(null)
-  const [error, setError] = useState<string>()
-
-  function submit(event: FormEvent) {
-    event.preventDefault()
-    if (!to) return setError('Pick the day to postpone to.')
-    postpone.mutate(
-      { chore, to },
-      {
-        onSuccess: onDone,
-        // A validation problem stays open at the date; anything else was already toasted
-        onError: (failure) => (failure instanceof ApiError && failure.status === 400 ? setError(failure.errors.to?.[0]) : onDone()),
-      },
-    )
-  }
-
-  return (
-    <form onSubmit={submit} className="flex flex-col gap-4">
-      <DateField label="Postpone to" value={to} onValueChange={setTo} error={error} />
-      <button type="submit" className="rounded-lg bg-brand px-4 py-2 font-semibold text-white hover:bg-brand/90">
-        Save
-      </button>
-    </form>
-  )
-}
-
-/**
- * Completes a Chore for the Due Date this device showed, today unless another date is given, then offers Undo. When
- * someone else acted first the API refuses, and the list is fetched again to show what they did.
- */
-function useComplete() {
-  const refetch = useRefetch()
-  const undo = useUndo()
-
-  return useMutation({
-    mutationFn: ({ chore, date }: { chore: Chore; date?: string }) =>
+/** Completes a Chore for the Due Date this device showed, today unless another date is given, then offers Undo. */
+const useComplete = () =>
+  useRecord(
+    ({ chore, date }: { chore: Chore; date?: string }) =>
       api('/api/chores/{id}/complete', 'post', { dueDate: chore.dueDate, ...(date && { date }) }, { id: chore.id }),
-    onSuccess: ({ completionId }, { chore }) =>
-      toast({
-        title: `Done: ${chore.name}`,
-        action: { label: 'Undo', onAction: () => undo.mutateAsync({ choreId: chore.id, completionId }) },
-      }),
-    onError: failed('Already done by someone else'),
-    onSettled: refetch,
-  })
-}
+    'Done',
+    'Already done by someone else',
+  )
 
 /** Skips a Recurring Chore's Due Date this device showed, then offers Undo, like Complete. */
-function useSkip() {
+const useSkip = () =>
+  useRecord(
+    ({ chore }: { chore: Chore }) => api('/api/chores/{id}/skip', 'post', { dueDate: chore.dueDate }, { id: chore.id }),
+    'Skipped',
+    'Someone else got to it first',
+  )
+
+/**
+ * Records a Completion, done or skipped, then offers Undo, toasting "`what`: Name". When someone else acted first the
+ * API refuses, `conflict` says so, and the list is fetched again to show what they did.
+ */
+function useRecord<Variables extends { chore: Chore }>(
+  record: (variables: Variables) => Promise<{ completionId: number }>,
+  what: string,
+  conflict: string,
+) {
   const refetch = useRefetch()
   const undo = useUndo()
 
   return useMutation({
-    mutationFn: (chore: Chore) => api('/api/chores/{id}/skip', 'post', { dueDate: chore.dueDate }, { id: chore.id }),
-    onSuccess: ({ completionId }, chore) =>
+    mutationFn: record,
+    onSuccess: ({ completionId }, { chore }) =>
       toast({
-        title: `Skipped: ${chore.name}`,
+        title: `${what}: ${chore.name}`,
         action: { label: 'Undo', onAction: () => undo.mutateAsync({ choreId: chore.id, completionId }) },
       }),
-    onError: failed('Someone else got to it first'),
+    onError: failed(conflict),
     onSettled: refetch,
   })
 }
