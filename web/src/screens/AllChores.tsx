@@ -7,7 +7,7 @@ import { longDate, monthNames, relativeDate, today } from '../dates.ts'
 import { toast } from '../ui/toast.ts'
 import { fromLg, useMediaQuery } from '../ui/useMediaQuery.ts'
 import { ChoreForm } from './ChoreForm.tsx'
-import { DeleteChore } from './DeleteChore.tsx'
+import { ChoreEditor } from './EditChore.tsx'
 import { unreachableMessage } from './Unreachable.tsx'
 
 const route = getRouteApi('/authenticated/chores')
@@ -140,13 +140,7 @@ function ChorePanel({ chore: id }: { chore: number | 'new' }) {
       {id === 'new' ? (
         <ChoreForm key="new" onDone={close} />
       ) : chore ? (
-        <>
-          {/* Keyed, so moving to another Chore starts from that one's values */}
-          <ChoreForm key={chore.id} chore={chore} onDone={close} />
-          <div className="flex justify-center">
-            <DeleteChore chore={chore} onDeleted={close} />
-          </div>
-        </>
+        <ChoreEditor chore={chore} onDone={close} />
       ) : (
         <p className="py-6 text-center text-ink/70">That Chore is gone.</p>
       )}

@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
-import { choreQuery } from '../chores.ts'
+import { choreQuery, type Chore } from '../chores.ts'
 import { ChoreForm } from './ChoreForm.tsx'
 import { DeleteChore } from './DeleteChore.tsx'
 
@@ -13,14 +13,23 @@ export function EditChore() {
   const navigate = useNavigate()
 
   return (
-    <section className="mx-auto max-w-lg">
-      <h1 className="mb-4 text-xl font-semibold text-brand">Edit Chore</h1>
-      {/* Keyed, so moving to another Chore starts from that one's values */}
-      <ChoreForm key={chore.id} chore={chore} onDone={() => void navigate({ to: '/' })} />
-      <div className="mt-4 flex justify-center">
-        <DeleteChore chore={chore} onDeleted={() => void navigate({ to: '/' })} />
-      </div>
+    <section className="mx-auto flex max-w-lg flex-col gap-4">
+      <h1 className="text-xl font-semibold text-brand">Edit Chore</h1>
+      <ChoreEditor chore={chore} onDone={() => void navigate({ to: '/' })} />
     </section>
+  )
+}
+
+/** The Chore form filled in with a Chore, with Delete below it; `onDone` leaves once it is saved or deleted. */
+export function ChoreEditor({ chore, onDone }: { chore: Chore; onDone: () => void }) {
+  return (
+    <>
+      {/* Keyed, so moving to another Chore starts from that one's values */}
+      <ChoreForm key={chore.id} chore={chore} onDone={onDone} />
+      <div className="flex justify-center">
+        <DeleteChore chore={chore} onDeleted={onDone} />
+      </div>
+    </>
   )
 }
 
