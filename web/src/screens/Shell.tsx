@@ -9,8 +9,8 @@ import { toast } from '../ui/toast.ts'
 import { ChoreForm } from './ChoreForm.tsx'
 import { unreachableMessage } from './Unreachable.tsx'
 
-// Links to the screens besides the Overview; Areas (08) and All Chores (09) join here
-const navLinks: { to: '/'; label: string }[] = []
+// Links to the screens besides the Overview; All Chores (09) joins here
+const navLinks: { to: '/areas'; label: string }[] = [{ to: '/areas', label: 'Areas' }]
 
 /** Header with navigation around every screen but the login: a menu on a phone, a top bar from md up. */
 export function Shell() {

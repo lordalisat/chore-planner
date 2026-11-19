@@ -10,7 +10,9 @@ import {
   type RouterHistory,
 } from '@tanstack/react-router'
 import { ApiError } from './api/client.ts'
+import { areasQuery } from './areas.ts'
 import { choreQuery, choresQuery } from './chores.ts'
+import { Areas } from './screens/Areas.tsx'
 import { ChoreNotFound, EditChore } from './screens/EditChore.tsx'
 import { Login } from './screens/Login.tsx'
 import { Overview } from './screens/Overview.tsx'
@@ -83,7 +85,14 @@ const choreRoute = createRoute({
   notFoundComponent: ChoreNotFound,
 })
 
-const routeTree = rootRoute.addChildren([loginRoute, authenticatedRoute.addChildren([overviewRoute, choreRoute])])
+const areasRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/areas',
+  loader: ({ context }) => context.queryClient.ensureQueryData(areasQuery),
+  component: Areas,
+})
+
+const routeTree = rootRoute.addChildren([loginRoute, authenticatedRoute.addChildren([overviewRoute, choreRoute, areasRoute])])
 
 /** The app's screens; `history` defaults to the browser's. */
 export function createAppRouter(queryClient: QueryClient, history?: RouterHistory) {
