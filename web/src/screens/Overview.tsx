@@ -1,7 +1,14 @@
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import { useState, type FormEvent } from 'react'
+import { api, ApiError } from '../api/client.ts'
 import { choresQuery, type Chore } from '../chores.ts'
 import { relativeDate, today } from '../dates.ts'
+import { DateField } from '../ui/DateField.tsx'
+import { Dialog } from '../ui/Dialog.tsx'
+import { Menu } from '../ui/Menu.tsx'
+import { toast } from '../ui/toast.ts'
+import { unreachableMessage } from './Unreachable.tsx'
 
 /**
  * What needs doing, most urgent first, with One-off Chores that have no Due Date under Anytime at the bottom; Dormant
@@ -9,6 +16,8 @@ import { relativeDate, today } from '../dates.ts'
  */
 export function Overview() {
   const { data: chores } = useSuspenseQuery(choresQuery)
+  const complete = useComplete()
+  const [doneOn, setDoneOn] = useState<Chore | null>(null)
   const shown = chores
     .filter((chore) => !chore.dormant && !chore.finished)
     .sort((a, b) => (b.urgency ?? -1) - (a.urgency ?? -1))
@@ -18,40 +27,47 @@ export function Overview() {
   if (shown.length === 0) {
     return <p className="py-12 text-center text-ink/70">Nothing to do yet. Add a Chore to get started.</p>
   }
-  const now = today()
+  const list = (chores: Chore[]) => (
+    <ChoreList chores={chores} today={today()} onDone={(chore) => complete.mutate({ chore })} onDoneOn={setDoneOn} />
+  )
   return (
     <div className="flex flex-col gap-6">
-      {scheduled.length > 0 && <ChoreList chores={scheduled} today={now} />}
+      {scheduled.length > 0 && list(scheduled)}
       {anytime.length > 0 && (
         <section className="flex flex-col gap-2">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-ink/60">Anytime</h2>
-          <ChoreList chores={anytime} today={now} />
+          {list(anytime)}
         </section>
       )}
+      <Dialog open={doneOn !== null} onOpenChange={(open) => !open && setDoneOn(null)} title={`When was ${doneOn?.name ?? ''} done?`}>
+        {/* Mounted only while open, so each starts on today */}
+        {doneOn && <DoneOnForm chore={doneOn} onDone={() => setDoneOn(null)} complete={complete} />}
+      </Dialog>
     </div>
   )
 }
 
-function ChoreList({ chores, today }: { chores: Chore[]; today: string }) {
+type RowActions = { onDone: (chore: Chore) => void; onDoneOn: (chore: Chore) => void }
+
+function ChoreList({ chores, today, ...actions }: { chores: Chore[]; today: string } & RowActions) {
   return (
     <ul className="flex flex-col gap-2">
       {chores.map((chore) => (
-        <ChoreRow key={chore.id} chore={chore} today={today} />
+        <ChoreRow key={chore.id} chore={chore} today={today} {...actions} />
       ))}
     </ul>
   )
 }
 
-function ChoreRow({ chore, today }: { chore: Chore; today: string }) {
+function ChoreRow({ chore, today, onDone, onDoneOn }: { chore: Chore; today: string } & RowActions) {
   return (
-    <li>
-      <Link
-        to="/chores/$id"
-        params={{ id: chore.id }}
-        className={`flex items-baseline gap-3 rounded-lg border-l-4 bg-white px-4 py-3 shadow-sm hover:shadow-md ${
-          chore.overdue ? 'border-red-700' : 'border-transparent'
-        }`}
-      >
+    <li
+      className={`flex items-center gap-3 rounded-lg border-l-4 bg-white py-2 pr-2 pl-4 shadow-sm hover:shadow-md ${
+        chore.overdue ? 'border-red-700' : 'border-transparent'
+      }`}
+    >
+      {/* Only the Chore itself opens its edit screen; Done and the menu sit beside the link, not in it */}
+      <Link to="/chores/$id" params={{ id: chore.id }} className="flex flex-1 items-baseline gap-3 py-1">
         <span className="flex-1 font-medium">{chore.name}</span>
         {chore.effort != null && <span className="text-sm text-ink/60">{chore.effort} min</span>}
         {chore.dueDate && (
@@ -60,6 +76,70 @@ function ChoreRow({ chore, today }: { chore: Chore; today: string }) {
           </span>
         )}
       </Link>
+      <button type="button" onClick={() => onDone(chore)} className="rounded-lg bg-brand px-3 py-1.5 font-semibold text-white hover:bg-brand/90">
+        Done
+      </button>
+      <Menu label={`More for ${chore.name}`} trigger="⋯" entries={[{ label: 'Done on…', onSelect: () => onDoneOn(chore) }]} />
     </li>
   )
+}
+
+function DoneOnForm({ chore, onDone, complete }: { chore: Chore; onDone: () => void; complete: ReturnType<typeof useComplete> }) {
+  const [date, setDate] = useState<string | null>(today())
+  const [error, setError] = useState<string>()
+
+  function submit(event: FormEvent) {
+    event.preventDefault()
+    if (!date) return setError('Pick the day it was done.')
+    complete.mutate(
+      { chore, date },
+      {
+        onSuccess: onDone,
+        // A validation problem stays open at the date; anything else was already toasted
+        onError: (failure) =>
+          failure instanceof ApiError && failure.status === 400 ? setError(failure.errors.date?.[0]) : onDone(),
+      },
+    )
+  }
+
+  return (
+    <form onSubmit={submit} className="flex flex-col gap-4">
+      <DateField label="Done on" value={date} onValueChange={setDate} error={error} />
+      <button type="submit" className="rounded-lg bg-brand px-4 py-2 font-semibold text-white hover:bg-brand/90">
+        Save
+      </button>
+    </form>
+  )
+}
+
+/**
+ * Completes a Chore for the Due Date this device showed, today unless another date is given, then offers Undo. When
+ * someone else acted first the API refuses, and the list is fetched again to show what they did.
+ */
+function useComplete() {
+  const queryClient = useQueryClient()
+  const refetch = () => queryClient.invalidateQueries({ queryKey: choresQuery.queryKey })
+
+  const undo = useMutation({
+    mutationFn: ({ choreId, completionId }: { choreId: number; completionId: number }) =>
+      api('/api/chores/{id}/completions/{completionId}', 'delete', { id: choreId, completionId }),
+    onError: () => toast(unreachableMessage),
+    onSettled: refetch,
+  })
+
+  return useMutation({
+    mutationFn: ({ chore, date }: { chore: Chore; date?: string }) =>
+      api('/api/chores/{id}/complete', 'post', { dueDate: chore.dueDate, ...(date && { date }) }, { id: chore.id }),
+    onSuccess: ({ completionId }, { chore }) =>
+      toast({
+        title: `Done: ${chore.name}`,
+        action: { label: 'Undo', onAction: () => undo.mutateAsync({ choreId: chore.id, completionId }) },
+      }),
+    onError: (error) => {
+      if (error instanceof ApiError && error.status === 409) toast('Already done by someone else')
+      // A validation problem shows at its field, in the form that sent it
+      else if (!(error instanceof ApiError && error.status === 400)) toast(unreachableMessage)
+    },
+    onSettled: refetch,
+  })
 }

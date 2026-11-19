@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { expect, test } from 'vitest'
 import App from '../App.tsx'
 import type { Chore } from '../chores.ts'
@@ -30,6 +31,28 @@ function chore(name: string, details: Partial<Chore>): Chore {
   }
 }
 
+const laundry = chore('Laundry', {
+  id: 7,
+  kind: 'Recurring',
+  interval: { count: 1, unit: 'Week' },
+  dueDate: '2027-03-09',
+  urgency: 1.25,
+  overdue: true,
+})
+
+function renderOverview() {
+  const queryClient = new QueryClient()
+  const router = createAppRouter(queryClient, createMemoryHistory())
+  render(<App queryClient={queryClient} router={router} />)
+  return router
+}
+
+// What the Overview asked the API to do, leaving out the reads
+const commands = (fetch: ReturnType<typeof stubApi>) =>
+  fetch.mock.calls
+    .filter(([, init]) => init?.method !== 'GET')
+    .map(([path, init]) => ({ path: String(path), method: init?.method, body: init?.body && JSON.parse(String(init.body)) }))
+
 test('One-off Chores without a Due Date wait under Anytime; finished ones are gone', async () => {
   stubApi({
     '/api/session': 204,
@@ -42,10 +65,11 @@ test('One-off Chores without a Due Date wait under Anytime; finished ones are go
     ],
   })
 
-  const queryClient = new QueryClient()
-  render(<App queryClient={queryClient} router={createAppRouter(queryClient, createMemoryHistory())} />)
+  renderOverview()
 
-  const [main, anytime] = await screen.findAllByRole('list')
+  await screen.findByText('Laundry')
+  // Leaving out the toasts' list
+  const [main, anytime] = screen.getAllByRole('list').filter((list) => list.tagName === 'UL')
   expect(within(main!).getAllByRole('listitem').map((row) => row.querySelector('span')?.textContent)).toEqual([
     'Take out the bins',
     'Book the plumber',
@@ -54,4 +78,55 @@ test('One-off Chores without a Due Date wait under Anytime; finished ones are go
   expect(screen.getByRole('heading', { name: 'Anytime' })).toBeVisible()
   expect(within(anytime!).getAllByRole('listitem').map((row) => row.querySelector('span')?.textContent)).toEqual(['Fix leaking tap'])
   expect(screen.queryByText('Hang the mirror')).not.toBeInTheDocument()
+})
+
+test('Done records a Completion today for the Due Date shown, and Undo takes it back', async () => {
+  const fetch = stubApi({
+    '/api/session': 204,
+    '/api/chores': [laundry],
+    '/api/chores/7/complete': { completionId: 31, chore: { ...laundry, dueDate: '2027-03-16', lastDone: '2027-03-10' } },
+    '/api/chores/7/completions/31': laundry,
+  })
+  const router = renderOverview()
+
+  await userEvent.click(await screen.findByRole('button', { name: 'Done' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Undo' }))
+
+  await expect.poll(() => commands(fetch)).toEqual([
+    { path: '/api/chores/7/complete', method: 'POST', body: { dueDate: '2027-03-09' } },
+    { path: '/api/chores/7/completions/31', method: 'DELETE', body: undefined },
+  ])
+  // Done sits beside the row's link, so it stays on the Overview
+  expect(router.state.location.pathname).toBe('/')
+})
+
+test('when someone else did it first, the list is fetched again and says so', async () => {
+  const fetch = stubApi({ '/api/session': 204, '/api/chores': [laundry], '/api/chores/7/complete': 409 })
+  renderOverview()
+
+  await userEvent.click(await screen.findByRole('button', { name: 'Done' }))
+
+  expect(await screen.findByText('Already done by someone else')).toBeInTheDocument()
+  await expect.poll(() => fetch.mock.calls.filter(([path]) => path === '/api/chores')).toHaveLength(2)
+})
+
+test('Done on… records the Completion on the day picked', async () => {
+  const fetch = stubApi({
+    '/api/session': 204,
+    '/api/chores': [laundry],
+    '/api/chores/7/complete': { completionId: 31, chore: laundry },
+  })
+  const router = renderOverview()
+
+  await userEvent.click(await screen.findByRole('button', { name: 'More for Laundry' }))
+  await userEvent.click(await screen.findByRole('menuitem', { name: 'Done on…' }))
+  const date = await screen.findByRole('textbox', { name: 'Done on' })
+  await userEvent.clear(date)
+  await userEvent.type(date, '08/03/2027')
+  await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+  await expect.poll(() => commands(fetch)).toEqual([
+    { path: '/api/chores/7/complete', method: 'POST', body: { dueDate: '2027-03-09', date: '2027-03-08' } },
+  ])
+  expect(router.state.location.pathname).toBe('/')
 })
