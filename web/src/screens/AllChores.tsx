@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { api, ApiError } from '../api/client.ts'
 import { archivedChoresQuery, choresQuery, type Chore } from '../chores.ts'
 import { longDate, relativeDate, today } from '../dates.ts'
 import { toast } from '../ui/toast.ts'
+import { fromLg, useMediaQuery } from '../ui/useMediaQuery.ts'
 import { ChoreForm } from './ChoreForm.tsx'
 import { DeleteChore } from './DeleteChore.tsx'
 import { unreachableMessage } from './Unreachable.tsx'
@@ -75,11 +76,12 @@ const filterClass =
 
 /**
  * Every Chore in one place, including the ones the Overview hides; Archived ones under their own filter. An Active
- * Chore opens in the Chore form, beside the list from lg up and in its place below.
+ * Chore opens in the Chore form, beside the list from lg up and on its own screen below.
  */
 export function AllChores() {
   const { archived, chore } = route.useSearch()
   const open = !archived && chore !== undefined
+  const wide = useMediaQuery(fromLg)
 
   return (
     <div className={open ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_28rem] lg:items-start lg:gap-6' : ''}>
@@ -94,7 +96,8 @@ export function AllChores() {
               Archived
             </Link>
           </nav>
-          {!archived && (
+          {/* Below lg the Shell's New Chore opens the form */}
+          {!archived && wide && (
             <Link
               to="/chores"
               search={{ chore: 'new' }}
@@ -156,11 +159,7 @@ function ActiveChores() {
       <ul className="flex flex-col gap-2 md:hidden">
         {sorted.map((chore) => (
           <li key={chore.id}>
-            <Link
-              to="/chores"
-              search={{ chore: chore.id }}
-              className="flex flex-col gap-0.5 rounded-lg bg-white px-4 py-3 shadow-sm hover:shadow-md"
-            >
+            <ChoreLink chore={chore} className="flex flex-col gap-0.5 rounded-lg bg-white px-4 py-3 shadow-sm hover:shadow-md">
               <span className="flex items-baseline gap-2">
                 <span className="flex-1 font-medium">{chore.name}</span>
                 <Marks chore={chore} />
@@ -169,7 +168,7 @@ function ActiveChores() {
               <span className="text-sm text-ink/60">
                 {[chore.area?.name, kindName(chore), schedule(chore), seasonName(chore)].filter(Boolean).join(' · ')}
               </span>
-            </Link>
+            </ChoreLink>
           </li>
         ))}
       </ul>
@@ -197,9 +196,9 @@ function ActiveChores() {
           {sorted.map((chore) => (
             <tr key={chore.id} className="border-b border-black/5 last:border-0 hover:bg-brand/5">
               <td className="px-3 py-2">
-                <Link to="/chores" search={{ chore: chore.id }} className="font-medium hover:underline">
+                <ChoreLink chore={chore} className="font-medium hover:underline">
                   {chore.name}
-                </Link>{' '}
+                </ChoreLink>{' '}
                 <Marks chore={chore} />
               </td>
               <td className="px-3 py-2">{chore.area?.name}</td>
@@ -214,6 +213,19 @@ function ActiveChores() {
         </tbody>
       </table>
     </>
+  )
+}
+
+/** Opens a Chore beside the list from lg up, and on its own screen below. */
+function ChoreLink({ chore, className, children }: { chore: Chore; className: string; children: ReactNode }) {
+  return useMediaQuery(fromLg) ? (
+    <Link to="/chores" search={{ chore: chore.id }} className={className}>
+      {children}
+    </Link>
+  ) : (
+    <Link to="/chores/$id" params={{ id: chore.id }} className={className}>
+      {children}
+    </Link>
   )
 }
 

@@ -2,7 +2,7 @@ import { QueryClient } from '@tanstack/react-query'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expect, test } from 'vitest'
+import { beforeEach, expect, test, vi } from 'vitest'
 import App from '../App.tsx'
 import type { Chore } from '../chores.ts'
 import { createAppRouter } from '../router.tsx'
@@ -59,6 +59,17 @@ const gutters = chore(4, 'Clean the gutters', {
   preferredDay: 'FirstOfMonth',
   dueDate: '2027-09-01',
 })
+
+// jsdom has no layout, so the lg breakpoint is whatever a test says; from lg up unless it says otherwise
+function screenFromLg(fromLg: boolean) {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: fromLg && query === '(min-width: 64rem)',
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }))
+}
+beforeEach(() => screenFromLg(true))
 
 function renderAt(url: string) {
   const queryClient = new QueryClient()
@@ -153,6 +164,21 @@ test('clicking through Chores opens each beside the list, and saving one stays o
   expect(screen.queryByRole('textbox', { name: 'Name' })).not.toBeInTheDocument()
   const put = fetch.mock.calls.find(([, init]) => init?.method === 'PUT')
   expect(JSON.parse(String(put?.[1]?.body))).toMatchObject({ name: 'Mow the lawn', effort: 50 })
+})
+
+test('below lg a Chore opens on its own screen, and new ones come from the Shell', async () => {
+  screenFromLg(false)
+  stubApi({ '/api/session': 204, '/api/chores': [laundry, lawn], '/api/chores/1': laundry })
+  const router = renderAt('/chores')
+
+  await userEvent.click(within(await table()).getByRole('link', { name: 'Laundry' }))
+
+  expect(await screen.findByRole('textbox', { name: 'Name' })).toHaveValue('Laundry')
+  expect(router.state.location.pathname).toBe('/chores/1')
+  expect(screen.queryByRole('table', { name: 'All Chores' })).not.toBeInTheDocument()
+  await router.navigate({ to: '/chores' })
+  await table()
+  expect(screen.queryByRole('link', { name: 'New Chore' })).not.toBeInTheDocument()
 })
 
 test('the selected Chore is in the URL, so reloading keeps it open', async () => {
