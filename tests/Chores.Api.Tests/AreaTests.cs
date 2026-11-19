@@ -139,7 +139,8 @@ public class AreaTests(ApiFactory factory) : IClassFixture<ApiFactory>
             new { name = "Wash the ground floor windows", interval = new { count = 1, unit = "Month" }, lastDone = "2027-03-01", areaId = downstairs },
             TestContext.Current.CancellationToken));
         await _client.DeleteAsync($"/api/chores/{windows}", TestContext.Current.CancellationToken);
-        Assert.Equal(1, (await Listed(downstairs)).GetProperty("choreCount").GetInt32());
+        // The confirmation names every Chore deleting it detaches
+        Assert.Equal(2, (await Listed(downstairs)).GetProperty("choreCount").GetInt32());
 
         HttpResponseMessage response = await Delete(downstairs);
 

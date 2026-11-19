@@ -16,10 +16,7 @@ public static class AreaEndpoints
         areas.MapGet("/", async (ChoresDbContext db) =>
         {
             List<Area> all = await AllAreas(db);
-            Dictionary<int, int> choreCounts = await db.Chores
-                .Where(c => EF.Property<int?>(c, "AreaId") != null)
-                .GroupBy(c => EF.Property<int>(c, "AreaId"))
-                .ToDictionaryAsync(g => g.Key, g => g.Count());
+            Dictionary<int, int> choreCounts = await ChoreCounts(db);
             return TypedResults.Ok(all.OrderBy(a => a.Name).Select(area => ToDto(db, area, choreCounts)).ToList());
         });
 
@@ -53,8 +50,7 @@ public static class AreaEndpoints
             }
 
             await db.SaveChangesAsync();
-            int choreCount = await db.Chores.CountAsync(c => EF.Property<int?>(c, "AreaId") == id);
-            return TypedResults.Ok(ToDto(db, area, new Dictionary<int, int> { [id] = choreCount }));
+            return TypedResults.Ok(ToDto(db, area, await ChoreCounts(db)));
         });
 
         // Gone for good; its Chores, Archived ones too, and the Areas inside it stay, without it
@@ -82,6 +78,12 @@ public static class AreaEndpoints
 
     // Few enough to load at once, which also gives every Area its parents for the cycle check
     private static Task<List<Area>> AllAreas(ChoresDbContext db) => db.Areas.ToListAsync();
+
+    // Archived Chores too, since deleting the Area detaches them as well
+    private static Task<Dictionary<int, int>> ChoreCounts(ChoresDbContext db) => db.Chores.IgnoreQueryFilters()
+        .Where(c => EF.Property<int?>(c, "AreaId") != null)
+        .GroupBy(c => EF.Property<int>(c, "AreaId"))
+        .ToDictionaryAsync(g => g.Key, g => g.Count());
 
     private static Area? ParentOf(ChoresDbContext db, List<Area> all, SaveAreaRequest request) =>
         request.ParentId is { } parentId ? all.SingleOrDefault(a => IdOf(db, a) == parentId) : null;
