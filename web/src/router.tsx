@@ -73,6 +73,8 @@ const overviewRoute = createRoute({
 const allChoresRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/chores',
+  // A desktop setup screen: a wide table, with the Chore form beside it
+  staticData: { wide: true },
   // Active Chores unless asked for the Archived ones, with the Chore open beside them, or a new one
   validateSearch: (search): { archived?: true; chore?: number | 'new' } => ({
     ...(search.archived === true && { archived: true }),
@@ -122,5 +124,9 @@ export type AppRouter = ReturnType<typeof createAppRouter>
 declare module '@tanstack/react-router' {
   interface Register {
     router: AppRouter
+  }
+  interface StaticDataRouteOption {
+    /** The Shell lets the screen use the full width of a desktop browser, not a centered column. */
+    wide?: boolean
   }
 }

@@ -55,18 +55,19 @@ export function Areas() {
   )
 }
 
-const top = 'top'
+// The parent list only takes ids as text, so having no parent needs a value no id has
+const noParent = 'none'
 
 /** Creates an Area, or edits and deletes the given one; `onDone` closes it. */
 function AreaForm({ area, areas, onDone }: { area?: Area; areas: Area[]; onDone: () => void }) {
   const queryClient = useQueryClient()
   const [name, setName] = useState(area?.name ?? '')
-  const [parent, setParent] = useState<string>(area?.parentId != null ? String(area.parentId) : top)
+  const [parent, setParent] = useState<string>(area?.parentId != null ? String(area.parentId) : noParent)
   const [errors, setErrors] = useState<FieldErrors>({})
   const [confirming, setConfirming] = useState(false)
   // An Area can't sit inside itself; one inside it the API turns down
   const parents: Option<string>[] = [
-    { value: top, label: 'Nothing, at the top' },
+    { value: noParent, label: 'Nothing, at the top' },
     ...areas.filter((other) => other.id !== area?.id).map((other) => ({ value: String(other.id), label: other.name })),
   ]
 
@@ -78,7 +79,7 @@ function AreaForm({ area, areas, onDone }: { area?: Area; areas: Area[]; onDone:
 
   const save = useMutation({
     mutationFn: () => {
-      const request = { name, parentId: parent === top ? null : Number(parent) }
+      const request = { name, parentId: parent === noParent ? null : Number(parent) }
       return area ? api('/api/areas/{id}', 'put', request, { id: area.id }) : api('/api/areas', 'post', request)
     },
     onSuccess: () => {
@@ -109,7 +110,7 @@ function AreaForm({ area, areas, onDone }: { area?: Area; areas: Area[]; onDone:
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
       <TextField label="Name" autoFocus value={name} onValueChange={setName} error={errors.name?.[0]} />
-      <SelectField label="Inside" options={parents} value={parent} onValueChange={(next) => setParent(next ?? top)} error={errors.parentId?.[0]} />
+      <SelectField label="Inside" options={parents} value={parent} onValueChange={(next) => setParent(next ?? noParent)} error={errors.parentId?.[0]} />
       <div className="flex flex-wrap gap-2">
         <button
           type="submit"

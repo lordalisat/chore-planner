@@ -46,12 +46,13 @@ export async function api<P extends keyof paths, M extends MethodOf<P>>(
     ...Params<Operation<P, M>>,
   ]
 ): Promise<ResponseBody<Operation<P, M>>> {
+  const hasPlaceholders = path.includes('{')
   // Only a GET has a query string, and it never has a body
-  const params = (path.includes('{') || method === 'get' ? args.pop() : undefined) as
+  const params = (hasPlaceholders || method === 'get' ? args.pop() : undefined) as
     | Record<string, string | number | boolean>
     | undefined
   const [body] = args
-  const url = path.includes('{')
+  const url = hasPlaceholders
     ? path.replace(/\{(\w+)\}/g, (_, name: string) => encodeURIComponent(String(params?.[name])))
     : params
       ? `${path}?${new URLSearchParams(Object.entries(params).map(([key, value]) => [key, String(value)]))}`

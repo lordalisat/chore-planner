@@ -21,8 +21,7 @@ export function Shell() {
   const navigate = useNavigate()
   const router = useRouter()
   const [creating, setCreating] = useState(false)
-  // All Chores is a desktop setup screen: a wide table, with the Chore form beside it
-  const wide = useRouterState({ select: (state) => state.location.pathname === '/chores' })
+  const wide = useRouterState({ select: (state) => state.matches.some((match) => match.staticData.wide) })
   // Refetched on focus, so a session ended elsewhere sends this device to the login. The route guard does the
   // redirect, once; navigating from here would rerun on every location change until the Shell unmounts.
   const { data: session } = useQuery(sessionQuery)
