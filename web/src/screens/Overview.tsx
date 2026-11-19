@@ -9,7 +9,10 @@ import { Menu } from '../ui/Menu.tsx'
 import { toast } from '../ui/toast.ts'
 import { unreachableMessage } from './Unreachable.tsx'
 
-/** What needs doing, most urgent first; Dormant and finished Chores wait out of sight. */
+/**
+ * What needs doing, most urgent first, with One-off Chores that have no Due Date under Anytime at the bottom; Dormant
+ * Chores wait out of sight until their Season, and finished ones are gone.
+ */
 export function Overview() {
   const { data: chores } = useSuspenseQuery(choresQuery)
   const complete = useComplete()
@@ -17,33 +20,45 @@ export function Overview() {
   const shown = chores
     .filter((chore) => !chore.dormant && !chore.finished)
     .sort((a, b) => (b.urgency ?? -1) - (a.urgency ?? -1))
+  const scheduled = shown.filter((chore) => chore.dueDate)
+  const anytime = shown.filter((chore) => !chore.dueDate)
 
   if (shown.length === 0) {
     return <p className="py-12 text-center text-ink/70">Nothing to do yet. Add a Chore to get started.</p>
   }
-  const now = today()
+  const list = (chores: Chore[]) => (
+    <ChoreList chores={chores} today={today()} onDone={(chore) => complete.mutate({ chore })} onDoneOn={setDoneOn} />
+  )
   return (
-    <>
-      <ul className="flex flex-col gap-2">
-        {shown.map((chore) => (
-          <ChoreRow
-            key={chore.id}
-            chore={chore}
-            today={now}
-            onDone={() => complete.mutate({ chore })}
-            onDoneOn={() => setDoneOn(chore)}
-          />
-        ))}
-      </ul>
+    <div className="flex flex-col gap-6">
+      {scheduled.length > 0 && list(scheduled)}
+      {anytime.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-ink/60">Anytime</h2>
+          {list(anytime)}
+        </section>
+      )}
       <Dialog open={doneOn !== null} onOpenChange={(open) => !open && setDoneOn(null)} title={`When was ${doneOn?.name ?? ''} done?`}>
         {/* Mounted only while open, so each starts on today */}
         {doneOn && <DoneOnForm chore={doneOn} onDone={() => setDoneOn(null)} complete={complete} />}
       </Dialog>
-    </>
+    </div>
   )
 }
 
-function ChoreRow({ chore, today, onDone, onDoneOn }: { chore: Chore; today: string; onDone: () => void; onDoneOn: () => void }) {
+type RowActions = { onDone: (chore: Chore) => void; onDoneOn: (chore: Chore) => void }
+
+function ChoreList({ chores, today, ...actions }: { chores: Chore[]; today: string } & RowActions) {
+  return (
+    <ul className="flex flex-col gap-2">
+      {chores.map((chore) => (
+        <ChoreRow key={chore.id} chore={chore} today={today} {...actions} />
+      ))}
+    </ul>
+  )
+}
+
+function ChoreRow({ chore, today, onDone, onDoneOn }: { chore: Chore; today: string } & RowActions) {
   return (
     <li
       className={`flex items-center gap-3 rounded-lg border-l-4 bg-white py-2 pr-2 pl-4 shadow-sm ${
@@ -57,10 +72,10 @@ function ChoreRow({ chore, today, onDone, onDoneOn }: { chore: Chore; today: str
           {relativeDate(chore.dueDate, today)}
         </span>
       )}
-      <button type="button" onClick={onDone} className="rounded-lg bg-brand px-3 py-1.5 font-semibold text-white hover:bg-brand/90">
+      <button type="button" onClick={() => onDone(chore)} className="rounded-lg bg-brand px-3 py-1.5 font-semibold text-white hover:bg-brand/90">
         Done
       </button>
-      <Menu label={`More for ${chore.name}`} trigger="⋯" entries={[{ label: 'Done on…', onSelect: onDoneOn }]} />
+      <Menu label={`More for ${chore.name}`} trigger="⋯" entries={[{ label: 'Done on…', onSelect: () => onDoneOn(chore) }]} />
     </li>
   )
 }

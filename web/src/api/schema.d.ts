@@ -223,6 +223,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chores/one-off": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateOneOffChoreRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ChoreDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/chores/{id}/complete": {
         parameters: {
             query?: never;
@@ -370,6 +418,14 @@ export interface components {
             dueDate: null | string;
             /** Format: date */
             date?: null | string;
+        };
+        CreateOneOffChoreRequest: {
+            name: string;
+            /** Format: date */
+            dueDate?: null | string;
+            importance?: components["schemas"]["Importance"];
+            /** Format: int32 */
+            effort?: null | number;
         };
         CreateRecurringChoreRequest: {
             name: string;

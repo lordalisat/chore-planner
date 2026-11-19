@@ -1,9 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Chores.Api.Data;
-using Chores.Domain;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Chores.Api.Tests;
@@ -135,16 +132,11 @@ public class CompletionTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    // There is no endpoint for creating One-off Chores yet
     private async Task<int> CreateOneOff(string name)
     {
-        using (IServiceScope scope = factory.Services.CreateScope())
-        {
-            ChoresDbContext db = scope.ServiceProvider.GetRequiredService<ChoresDbContext>();
-            db.Add(new OneOffChore(name, ApiFactory.Today));
-            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
-        }
-        return (await Listed(name)).GetProperty("id").GetInt32();
+        HttpResponseMessage response = await _client.PostAsJsonAsync("/api/chores/one-off", new { name }, TestContext.Current.CancellationToken);
+        response.EnsureSuccessStatusCode();
+        return (await Read(response)).GetProperty("id").GetInt32();
     }
 
     private async Task<int> CreateWeekly(string name, string? lastDone = null)

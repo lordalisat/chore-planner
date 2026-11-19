@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Suspense } from 'react'
 import { expect, test } from 'vitest'
@@ -8,23 +8,35 @@ import { stubApi } from '../test-api.ts'
 import { Toasts } from '../ui/Toasts.tsx'
 import { Overview } from './Overview.tsx'
 
-const laundry: Chore = {
+function chore(name: string, details: Partial<Chore>): Chore {
+  return {
+    id: name.length,
+    kind: 'OneOff',
+    name,
+    importance: 'Normal',
+    effort: null,
+    area: null,
+    interval: null,
+    preferredDay: null,
+    season: null,
+    dueDate: null,
+    urgency: null,
+    overdue: false,
+    dormant: false,
+    finished: false,
+    lastDone: null,
+    ...details,
+  }
+}
+
+const laundry = chore('Laundry', {
   id: 7,
   kind: 'Recurring',
-  name: 'Laundry',
-  importance: 'Normal',
-  effort: 30,
-  area: null,
   interval: { count: 1, unit: 'Week' },
-  preferredDay: 'Tuesday',
-  season: null,
   dueDate: '2027-03-09',
   urgency: 1.25,
   overdue: true,
-  dormant: false,
-  finished: false,
-  lastDone: '2027-03-02',
-}
+})
 
 function renderOverview() {
   render(
@@ -42,6 +54,32 @@ const commands = (fetch: ReturnType<typeof stubApi>) =>
   fetch.mock.calls
     .filter(([, init]) => init?.method !== 'GET')
     .map(([path, init]) => ({ path: String(path), method: init?.method, body: init?.body && JSON.parse(String(init.body)) }))
+
+test('One-off Chores without a Due Date wait under Anytime; finished ones are gone', async () => {
+  stubApi({
+    '/api/chores': [
+      chore('Fix leaking tap', { urgency: 0.5 }),
+      chore('Laundry', { kind: 'Recurring', dueDate: '2027-03-16', urgency: 0 }),
+      chore('Hang the mirror', { dueDate: '2027-03-08', finished: true }),
+      chore('Book the plumber', { dueDate: '2027-03-12', urgency: 0.5 }),
+      chore('Take out the bins', { kind: 'Recurring', dueDate: '2027-03-09', urgency: 1.25, overdue: true }),
+    ],
+  })
+
+  renderOverview()
+
+  await screen.findByText('Laundry')
+  // Leaving out the toasts' list
+  const [main, anytime] = screen.getAllByRole('list').filter((list) => list.tagName === 'UL')
+  expect(within(main!).getAllByRole('listitem').map((row) => row.firstChild?.textContent)).toEqual([
+    'Take out the bins',
+    'Book the plumber',
+    'Laundry',
+  ])
+  expect(screen.getByRole('heading', { name: 'Anytime' })).toBeVisible()
+  expect(within(anytime!).getAllByRole('listitem').map((row) => row.firstChild?.textContent)).toEqual(['Fix leaking tap'])
+  expect(screen.queryByText('Hang the mirror')).not.toBeInTheDocument()
+})
 
 test('Done records a Completion today for the Due Date shown, and Undo takes it back', async () => {
   const fetch = stubApi({
@@ -68,16 +106,6 @@ test('when someone else did it first, the list is fetched again and says so', as
 
   expect(await screen.findByText('Already done by someone else')).toBeInTheDocument()
   await expect.poll(() => fetch.mock.calls.filter(([path]) => path === '/api/chores')).toHaveLength(2)
-})
-
-test('finished One-off Chores are hidden', async () => {
-  stubApi({
-    '/api/chores': [laundry, { ...laundry, id: 8, kind: 'OneOff', name: 'Fix the tap', interval: null, preferredDay: null, finished: true }],
-  })
-  renderOverview()
-
-  expect(await screen.findByText('Laundry')).toBeInTheDocument()
-  expect(screen.queryByText('Fix the tap')).not.toBeInTheDocument()
 })
 
 test('Done on… records the Completion on the day picked', async () => {

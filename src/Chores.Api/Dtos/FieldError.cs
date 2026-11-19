@@ -18,4 +18,22 @@ public static class FieldErrorList
             return null;
         }
     }
+
+    /// <summary>The trimmed Name, or adds at "name" why a Chore cannot have it.</summary>
+    /// <param name="takenNames">The Names of the other Chores, which this one may not share.</param>
+    public static string CheckName(this List<FieldError> errors, string? name, IEnumerable<string> takenNames)
+    {
+        // Missing when the JSON leaves it out, whatever its type says
+        string trimmed = name?.Trim() ?? "";
+        if (trimmed.Length == 0)
+        {
+            errors.Add(new FieldError("name", "A Chore needs a name."));
+        }
+        // A Name tells Chores apart on the Overview
+        else if (takenNames.FirstOrDefault(taken => string.Equals(taken.Trim(), trimmed, StringComparison.CurrentCultureIgnoreCase)) is { } taken)
+        {
+            errors.Add(new FieldError("name", $"There is already a Chore called {taken}."));
+        }
+        return trimmed;
+    }
 }

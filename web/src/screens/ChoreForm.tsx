@@ -12,10 +12,21 @@ import { TextField } from '../ui/TextField.tsx'
 import { toast } from '../ui/toast.ts'
 import { unreachableMessage } from './Unreachable.tsx'
 
-type Request = components['schemas']['CreateRecurringChoreRequest']
-type Unit = Request['interval']['unit']
-type PreferredDay = NonNullable<Request['preferredDay']>
-type Importance = NonNullable<Request['importance']>
+type RecurringRequest = components['schemas']['CreateRecurringChoreRequest']
+type OneOffRequest = components['schemas']['CreateOneOffChoreRequest']
+type Kind = components['schemas']['ChoreDto']['kind']
+type Unit = RecurringRequest['interval']['unit']
+type PreferredDay = NonNullable<RecurringRequest['preferredDay']>
+type Importance = NonNullable<RecurringRequest['importance']>
+type Submission = { another: boolean } & (
+  | { kind: 'Recurring'; request: RecurringRequest }
+  | { kind: 'OneOff'; request: OneOffRequest }
+)
+
+const kinds: Option<Kind>[] = [
+  { value: 'Recurring', label: 'Recurring' },
+  { value: 'OneOff', label: 'One-off' },
+]
 
 const units: Option<Unit>[] = [
   { value: 'Day', label: 'days' },
@@ -46,9 +57,10 @@ function preferredDaysFor(unit: Unit): Option<PreferredDay>[] {
   return [...(unit === 'Day' ? [] : weekdays), ...(unit === 'Month' || unit === 'Year' ? daysInMonth : [])]
 }
 
-/** Creates a Recurring Chore; `onDone` closes it. */
+/** Creates a Recurring or One-off Chore; `onDone` closes it. */
 export function ChoreForm({ onDone }: { onDone: () => void }) {
   const queryClient = useQueryClient()
+  const [kind, setKind] = useState<Kind>('Recurring')
   const [name, setName] = useState('')
   const [count, setCount] = useState<number | null>(1)
   const [unit, setUnit] = useState<Unit>('Week')
@@ -60,6 +72,7 @@ export function ChoreForm({ onDone }: { onDone: () => void }) {
   const [importance, setImportance] = useState<Importance>('Normal')
   const [effort, setEffort] = useState<number | null>(null)
   const [lastDone, setLastDone] = useState<string | null>(null)
+  const [dueDate, setDueDate] = useState<string | null>(null)
   const [errors, setErrors] = useState<FieldErrors>({})
   const nameInput = useRef<HTMLInputElement>(null)
 
@@ -71,7 +84,10 @@ export function ChoreForm({ onDone }: { onDone: () => void }) {
   }
 
   const create = useMutation({
-    mutationFn: ({ request }: { request: Request; another: boolean }) => api('/api/chores/recurring', 'post', request),
+    mutationFn: (submission: Submission) =>
+      submission.kind === 'Recurring'
+        ? api('/api/chores/recurring', 'post', submission.request)
+        : api('/api/chores/one-off', 'post', submission.request),
     onSuccess: (_, { request, another }) => {
       void queryClient.invalidateQueries({ queryKey: choresQuery.queryKey })
       if (!another) return onDone()
@@ -81,6 +97,7 @@ export function ChoreForm({ onDone }: { onDone: () => void }) {
       setImportance('Normal')
       setEffort(null)
       setLastDone(null)
+      setDueDate(null)
       nameInput.current?.focus()
     },
     onError: (error) => {
@@ -91,6 +108,11 @@ export function ChoreForm({ onDone }: { onDone: () => void }) {
 
   function submit(event: FormEvent, another = false) {
     event.preventDefault()
+    if (kind === 'OneOff') {
+      setErrors({})
+      create.mutate({ another, kind, request: { name, dueDate, importance, effort } })
+      return
+    }
     // A Season needs both months; the API can only judge a whole one
     if (seasonal && (seasonFrom === null || seasonTo === null)) {
       setErrors({ season: ['Pick the months the Season runs from and to.'] })
@@ -99,6 +121,7 @@ export function ChoreForm({ onDone }: { onDone: () => void }) {
     setErrors({})
     create.mutate({
       another,
+      kind,
       request: {
         name,
         interval: { count: count ?? 0, unit },
@@ -113,43 +136,53 @@ export function ChoreForm({ onDone }: { onDone: () => void }) {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
+      <SegmentedField label="Kind" options={kinds} value={kind} onValueChange={setKind} />
       <TextField ref={nameInput} label="Name" autoFocus value={name} onValueChange={setName} error={errors.name?.[0]} />
-      <div className="flex flex-col gap-1">
-        <div className="flex items-end gap-2">
-          <NumberField label="Every" min={1} value={count} onValueChange={setCount} invalid={!!errors.interval} className="w-24" />
-          <SelectField label="Unit" hideLabel options={units} value={unit} onValueChange={(next) => next && changeUnit(next)} invalid={!!errors.interval} className="flex-1" />
-        </div>
-        {errors.interval && <p className="text-sm text-red-700">{errors.interval[0]}</p>}
-      </div>
-      {/* Nothing to prefer for an Interval in days */}
-      {preferredDays.length > 0 && (
-        <SelectField
-          label="Preferred day"
-          options={preferredDays}
-          value={preferredDay}
-          onValueChange={setPreferredDay}
-          noneLabel="Any day"
-          error={errors.preferredDay?.[0]}
-        />
+      {kind === 'OneOff' && (
+        <DateField label="Due date" value={dueDate} onValueChange={setDueDate} error={errors.dueDate?.[0]} />
       )}
-      <div className="flex flex-col gap-2">
-        <SwitchField
-          label="Seasonal"
-          description={seasonal ? 'Only due between these months' : 'Due all year'}
-          checked={seasonal}
-          onCheckedChange={setSeasonal}
-        />
-        {seasonal && (
-          <div className="flex gap-2">
-            <SelectField label="Season from" options={months} value={seasonFrom} onValueChange={setSeasonFrom} placeholder="Month" invalid={!!errors.season} className="flex-1" />
-            <SelectField label="Season to" options={months} value={seasonTo} onValueChange={setSeasonTo} placeholder="Month" invalid={!!errors.season} className="flex-1" />
+      {kind === 'Recurring' && (
+        <>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-end gap-2">
+              <NumberField label="Every" min={1} value={count} onValueChange={setCount} invalid={!!errors.interval} className="w-24" />
+              <SelectField label="Unit" hideLabel options={units} value={unit} onValueChange={(next) => next && changeUnit(next)} invalid={!!errors.interval} className="flex-1" />
+            </div>
+            {errors.interval && <p className="text-sm text-red-700">{errors.interval[0]}</p>}
           </div>
-        )}
-        {errors.season && <p className="text-sm text-red-700">{errors.season[0]}</p>}
-      </div>
+          {/* Nothing to prefer for an Interval in days */}
+          {preferredDays.length > 0 && (
+            <SelectField
+              label="Preferred day"
+              options={preferredDays}
+              value={preferredDay}
+              onValueChange={setPreferredDay}
+              noneLabel="Any day"
+              error={errors.preferredDay?.[0]}
+            />
+          )}
+          <div className="flex flex-col gap-2">
+            <SwitchField
+              label="Seasonal"
+              description={seasonal ? 'Only due between these months' : 'Due all year'}
+              checked={seasonal}
+              onCheckedChange={setSeasonal}
+            />
+            {seasonal && (
+              <div className="flex gap-2">
+                <SelectField label="Season from" options={months} value={seasonFrom} onValueChange={setSeasonFrom} placeholder="Month" invalid={!!errors.season} className="flex-1" />
+                <SelectField label="Season to" options={months} value={seasonTo} onValueChange={setSeasonTo} placeholder="Month" invalid={!!errors.season} className="flex-1" />
+              </div>
+            )}
+            {errors.season && <p className="text-sm text-red-700">{errors.season[0]}</p>}
+          </div>
+        </>
+      )}
       <SegmentedField label="Importance" options={importances} value={importance} onValueChange={setImportance} />
       <NumberField label="Effort in minutes" min={0} value={effort} onValueChange={setEffort} error={errors.effort?.[0]} />
-      <DateField label="Last done" value={lastDone} onValueChange={setLastDone} error={errors.lastDone?.[0]} />
+      {kind === 'Recurring' && (
+        <DateField label="Last done" value={lastDone} onValueChange={setLastDone} error={errors.lastDone?.[0]} />
+      )}
       <div className="flex flex-wrap gap-2">
         <button
           type="submit"
