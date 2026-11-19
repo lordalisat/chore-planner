@@ -221,3 +221,20 @@ test('Archived Chores show their archive date and Restore, and cannot be edited'
   await userEvent.click(screen.getByRole('link', { name: 'Active' }))
   expect(within(await table()).getByRole('row', { name: /Take out the bins/ })).toBeVisible()
 })
+
+test('Restore says so when an active Chore has taken the Name', async () => {
+  const bins = chore(5, 'Take out the bins', { kind: 'Recurring', archivedOn: '2027-03-08', completionCount: 3 })
+  stubApi({
+    '/api/session': 204,
+    '/api/chores?archived=true': [bins],
+    '/api/chores/5/restore': Response.json(
+      { errors: { name: ['There is already a Chore called take out the bins.'] } },
+      { status: 400, headers: { 'Content-Type': 'application/problem+json' } },
+    ),
+  })
+  renderAt('/chores?archived=true')
+
+  await userEvent.click(await screen.findByRole('button', { name: 'Restore' }))
+
+  expect(await screen.findByText('There is already a Chore called take out the bins.')).toBeVisible()
+})

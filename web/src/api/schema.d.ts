@@ -415,6 +415,15 @@ export interface paths {
                         "application/json": components["schemas"]["ChoreDto"];
                     };
                 };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                    };
+                };
                 /** @description Not Found */
                 404: {
                     headers: {

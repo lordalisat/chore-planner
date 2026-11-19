@@ -76,6 +76,23 @@ public class DeleteChoreTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task Restore_refuses_a_Name_an_active_Chore_has_taken()
+    {
+        int archived = await Create("Clean the shower", lastDone: "2027-03-04");
+        await _client.DeleteAsync($"/api/chores/{archived}", TestContext.Current.CancellationToken);
+        int active = await Create("clean the shower");
+
+        HttpResponseMessage response = await Restore(archived);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        JsonElement problem = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+        Assert.Equal(["name"], problem.GetProperty("errors").EnumerateObject().Select(e => e.Name));
+        Assert.Single(await Chores("/api/chores"), c => c.GetProperty("name").GetString()!.Equals("clean the shower", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(await Chores("/api/chores?archived=true"), c => c.GetProperty("id").GetInt32() == archived);
+        Assert.Contains(await Chores("/api/chores"), c => c.GetProperty("id").GetInt32() == active);
+    }
+
+    [Fact]
     public async Task Only_an_Archived_Chore_can_be_Restored()
     {
         int id = await Create("Descale the kettle", lastDone: "2027-03-01");

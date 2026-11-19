@@ -97,17 +97,29 @@ public static class ChoreEndpoints
             return TypedResults.Ok(new DeleteChoreResponse(archive));
         });
 
-        chores.MapPost("/{id:int}/restore", async Task<Results<Ok<ChoreDto>, NotFound>> (int id, ChoresDbContext db, TimeProvider clock) =>
+        // Not while an active Chore has taken its Name since
+        chores.MapPost("/{id:int}/restore", async Task<Results<Ok<ChoreDto>, NotFound, ValidationProblem>> (
+            int id, ChoresDbContext db, TimeProvider clock) =>
         {
             if (await db.Chores.IgnoreQueryFilters().Include(c => c.Area)
                     .SingleOrDefaultAsync(c => EF.Property<int>(c, "Id") == id && c.ArchivedOn != null) is not { } chore)
             {
                 return TypedResults.NotFound();
             }
+            List<FieldError> errors = [];
+            errors.CheckName(chore.Name, await db.Chores.Select(c => c.Name).ToListAsync());
+            Result<Chore> result = new(errors, () =>
+            {
+                chore.Restore();
+                return chore;
+            });
+            if (result.Value is not { } restored)
+            {
+                return result.ToProblem();
+            }
 
-            chore.Restore();
             await db.SaveChangesAsync();
-            return TypedResults.Ok(ChoreDto.From(chore, entity => IdOf(db, entity), clock));
+            return TypedResults.Ok(ChoreDto.From(restored, entity => IdOf(db, entity), clock));
         });
 
         chores.MapPost("/{id:int}/complete", async Task<Results<Ok<RecordedCompletionDto>, NotFound, Conflict, ValidationProblem>> (

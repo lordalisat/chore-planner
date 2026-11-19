@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { api } from '../api/client.ts'
+import { api, ApiError } from '../api/client.ts'
 import { archivedChoresQuery, choresQuery, type Chore } from '../chores.ts'
 import { longDate, relativeDate, today } from '../dates.ts'
 import { toast } from '../ui/toast.ts'
@@ -232,7 +232,8 @@ function ArchivedChores() {
       void queryClient.invalidateQueries({ queryKey: choresQuery.queryKey })
       toast(`Restored ${chore.name}`)
     },
-    onError: () => toast(unreachableMessage),
+    // An active Chore may have taken its Name since
+    onError: (error) => toast((error instanceof ApiError && error.errors.name?.[0]) || unreachableMessage),
   })
 
   if (chores.length === 0) return <p className="py-12 text-center text-ink/70">Nothing is Archived.</p>
