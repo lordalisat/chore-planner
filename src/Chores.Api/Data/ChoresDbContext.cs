@@ -9,6 +9,9 @@ public sealed class ChoresDbContext(DbContextOptions<ChoresDbContext> options) :
     public DbSet<Area> Areas => Set<Area>();
     public DbSet<Chore> Chores => Set<Chore>();
 
+    /// <summary>The key of a Chore, Area or Completion, which the Domain does not hold.</summary>
+    public int IdOf(object entity) => (int)Entry(entity).Property("Id").CurrentValue!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Chore>(chore =>

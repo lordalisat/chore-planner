@@ -39,25 +39,25 @@ public static class AreaEndpoints
             int id, SaveAreaRequest request, ChoresDbContext db) =>
         {
             List<Area> all = await AllAreas(db);
-            if (all.SingleOrDefault(a => IdOf(db, a) == id) is not { } area)
+            if (all.SingleOrDefault(a => db.IdOf(a) == id) is not { } area)
             {
                 return TypedResults.NotFound();
             }
             Result<Area> result = request.ApplyTo(area, ParentOf(db, all, request));
-            if (result.Value is null)
+            if (result.Value is not { } saved)
             {
                 return result.ToProblem();
             }
 
             await db.SaveChangesAsync();
-            return TypedResults.Ok(ToDto(db, area, await ChoreCounts(db)));
+            return TypedResults.Ok(ToDto(db, saved, await ChoreCounts(db)));
         });
 
         // Gone for good; its Chores, Archived ones too, and the Areas inside it stay, without it
         areas.MapDelete("/{id:int}", async Task<Results<NoContent, NotFound>> (int id, ChoresDbContext db) =>
         {
             List<Area> all = await AllAreas(db);
-            if (all.SingleOrDefault(a => IdOf(db, a) == id) is not { } area)
+            if (all.SingleOrDefault(a => db.IdOf(a) == id) is not { } area)
             {
                 return TypedResults.NotFound();
             }
@@ -86,14 +86,11 @@ public static class AreaEndpoints
         .ToDictionaryAsync(g => g.Key, g => g.Count());
 
     private static Area? ParentOf(ChoresDbContext db, List<Area> all, SaveAreaRequest request) =>
-        request.ParentId is { } parentId ? all.SingleOrDefault(a => IdOf(db, a) == parentId) : null;
+        request.ParentId is { } parentId ? all.SingleOrDefault(a => db.IdOf(a) == parentId) : null;
 
     private static AreaDto ToDto(ChoresDbContext db, Area area, IReadOnlyDictionary<int, int> choreCounts)
     {
-        int id = IdOf(db, area);
-        return new AreaDto(id, area.Name, area.Parent is null ? null : IdOf(db, area.Parent), choreCounts.GetValueOrDefault(id));
+        int id = db.IdOf(area);
+        return new AreaDto(id, area.Name, area.Parent is null ? null : db.IdOf(area.Parent), choreCounts.GetValueOrDefault(id));
     }
-
-    // Keys are shadow properties, see ChoresDbContext
-    private static int IdOf(ChoresDbContext db, Area area) => (int)db.Entry(area).Property("Id").CurrentValue!;
 }

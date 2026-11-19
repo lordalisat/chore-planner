@@ -18,12 +18,12 @@ public static class ChoreEndpoints
         {
             IQueryable<Chore> query = archived ? db.Chores.IgnoreQueryFilters().Where(c => c.ArchivedOn != null) : db.Chores;
             List<Chore> all = await query.Include(c => c.Area).ToListAsync();
-            return TypedResults.Ok(all.Select(chore => ChoreDto.From(chore, entity => IdOf(db, entity), clock)).ToList());
+            return TypedResults.Ok(all.Select(chore => ChoreDto.From(chore, db.IdOf, clock)).ToList());
         });
 
         chores.MapGet("/{id:int}", async Task<Results<Ok<ChoreDto>, NotFound>> (int id, ChoresDbContext db, TimeProvider clock) =>
             await Find(db, id) is { } chore
-                ? TypedResults.Ok(ChoreDto.From(chore, entity => IdOf(db, entity), clock))
+                ? TypedResults.Ok(ChoreDto.From(chore, db.IdOf, clock))
                 : TypedResults.NotFound());
 
         chores.MapPost("/recurring", async Task<Results<Created<ChoreDto>, ValidationProblem>> (
@@ -38,7 +38,7 @@ public static class ChoreEndpoints
 
             db.Add(chore);
             await db.SaveChangesAsync();
-            ChoreDto created = ChoreDto.From(chore, entity => IdOf(db, entity), clock);
+            ChoreDto created = ChoreDto.From(chore, db.IdOf, clock);
             return TypedResults.Created($"/api/chores/{created.Id}", created);
         });
 
@@ -51,13 +51,13 @@ public static class ChoreEndpoints
             }
             List<string> takenNames = await db.Chores.Where(c => EF.Property<int>(c, "Id") != id).Select(c => c.Name).ToListAsync();
             Result<Chore> result = request.ApplyTo(chore, takenNames, await FindArea(db, request.AreaId));
-            if (result.Value is null)
+            if (result.Value is not { } edited)
             {
                 return result.ToProblem();
             }
 
             await db.SaveChangesAsync();
-            return TypedResults.Ok(ChoreDto.From(chore, entity => IdOf(db, entity), clock));
+            return TypedResults.Ok(ChoreDto.From(edited, db.IdOf, clock));
         });
 
         chores.MapPost("/one-off", async Task<Results<Created<ChoreDto>, ValidationProblem>> (
@@ -72,7 +72,7 @@ public static class ChoreEndpoints
 
             db.Add(chore);
             await db.SaveChangesAsync();
-            ChoreDto created = ChoreDto.From(chore, entity => IdOf(db, entity), clock);
+            ChoreDto created = ChoreDto.From(chore, db.IdOf, clock);
             return TypedResults.Created($"/api/chores/{created.Id}", created);
         });
 
@@ -119,90 +119,31 @@ public static class ChoreEndpoints
             }
 
             await db.SaveChangesAsync();
-            return TypedResults.Ok(ChoreDto.From(restored, entity => IdOf(db, entity), clock));
+            return TypedResults.Ok(ChoreDto.From(restored, db.IdOf, clock));
         });
 
-        chores.MapPost("/{id:int}/complete", async Task<Results<Ok<RecordedCompletionDto>, NotFound, Conflict, ValidationProblem>> (
-            int id, CompleteChoreRequest request, ChoresDbContext db, TimeProvider clock) =>
-        {
-            if (await Find(db, id) is not { } chore)
-            {
-                return TypedResults.NotFound();
-            }
-            if (!chore.IsDueOn(request.DueDate))
-            {
-                return TypedResults.Conflict();
-            }
+        chores.MapPost("/{id:int}/complete", (int id, CompleteChoreRequest request, ChoresDbContext db, TimeProvider clock) =>
+            ActOn(db, id, request.DueDate, chore => request.CompleteOn(chore, clock.Today()), chore => Recorded(db, chore, clock)));
 
-            Result<Chore> result = request.CompleteOn(chore, clock.Today());
-            if (result.Value is not { } completed)
-            {
-                return result.ToProblem();
-            }
+        chores.MapPost("/{id:int}/skip", (int id, SkipChoreRequest request, ChoresDbContext db, TimeProvider clock) =>
+            ActOn(db, id, request.DueDate, chore => request.SkipOn(chore, clock.Today()), chore => Recorded(db, chore, clock)));
 
-            await db.SaveChangesAsync();
-            return TypedResults.Ok(new RecordedCompletionDto(
-                IdOf(db, completed.Completions[^1]), ChoreDto.From(completed, entity => IdOf(db, entity), clock)));
-        });
-
-        chores.MapPost("/{id:int}/skip", async Task<Results<Ok<RecordedCompletionDto>, NotFound, Conflict, ValidationProblem>> (
-            int id, SkipChoreRequest request, ChoresDbContext db, TimeProvider clock) =>
-        {
-            if (await Find(db, id) is not { } chore)
-            {
-                return TypedResults.NotFound();
-            }
-            if (!chore.IsDueOn(request.DueDate))
-            {
-                return TypedResults.Conflict();
-            }
-
-            Result<Chore> result = request.SkipOn(chore, clock.Today());
-            if (result.Value is not { } skipped)
-            {
-                return result.ToProblem();
-            }
-
-            await db.SaveChangesAsync();
-            return TypedResults.Ok(new RecordedCompletionDto(
-                IdOf(db, skipped.Completions[^1]), ChoreDto.From(skipped, entity => IdOf(db, entity), clock)));
-        });
-
-        chores.MapPost("/{id:int}/postpone", async Task<Results<Ok<ChoreDto>, NotFound, Conflict, ValidationProblem>> (
-            int id, PostponeChoreRequest request, ChoresDbContext db, TimeProvider clock) =>
-        {
-            if (await Find(db, id) is not { } chore)
-            {
-                return TypedResults.NotFound();
-            }
-            if (!chore.IsDueOn(request.DueDate))
-            {
-                return TypedResults.Conflict();
-            }
-
-            Result<Chore> result = request.PostponeOn(chore, clock.Today());
-            if (result.Value is not { } postponed)
-            {
-                return result.ToProblem();
-            }
-
-            await db.SaveChangesAsync();
-            return TypedResults.Ok(ChoreDto.From(postponed, entity => IdOf(db, entity), clock));
-        });
+        chores.MapPost("/{id:int}/postpone", (int id, PostponeChoreRequest request, ChoresDbContext db, TimeProvider clock) =>
+            ActOn(db, id, request.DueDate, chore => request.PostponeOn(chore, clock.Today()), chore => ChoreDto.From(chore, db.IdOf, clock)));
 
         // Undo for a Completion, done or skipped
         chores.MapDelete("/{id:int}/completions/{completionId:int}", async Task<Results<Ok<ChoreDto>, NotFound>> (
             int id, int completionId, ChoresDbContext db, TimeProvider clock) =>
         {
             if (await Find(db, id) is not { } chore
-                || chore.Completions.FirstOrDefault(c => IdOf(db, c) == completionId) is not { } completion)
+                || chore.Completions.FirstOrDefault(c => db.IdOf(c) == completionId) is not { } completion)
             {
                 return TypedResults.NotFound();
             }
 
             chore.RemoveCompletion(completion);
             await db.SaveChangesAsync();
-            return TypedResults.Ok(ChoreDto.From(chore, entity => IdOf(db, entity), clock));
+            return TypedResults.Ok(ChoreDto.From(chore, db.IdOf, clock));
         });
     }
 
@@ -211,6 +152,33 @@ public static class ChoreEndpoints
 
     private static async Task<Area?> FindArea(ChoresDbContext db, int? id) => id is { } areaId ? await db.Areas.FindAsync(areaId) : null;
 
-    // Keys are shadow properties, see ChoresDbContext
-    private static int IdOf(ChoresDbContext db, object entity) => (int)db.Entry(entity).Property("Id").CurrentValue!;
+    /// <summary>
+    /// Acts on a Chore only while it still has the Due Date the device saw, so two devices can't both act on it:
+    /// a conflict when someone else acted first, or what was wrong with the request.
+    /// </summary>
+    private static async Task<Results<Ok<T>, NotFound, Conflict, ValidationProblem>> ActOn<T>(
+        ChoresDbContext db, int id, DateOnly? seenDueDate, Func<Chore, Result<Chore>> act, Func<Chore, T> answer)
+    {
+        if (await Find(db, id) is not { } chore)
+        {
+            return TypedResults.NotFound();
+        }
+        if (!chore.IsDueOn(seenDueDate))
+        {
+            return TypedResults.Conflict();
+        }
+
+        Result<Chore> result = act(chore);
+        if (result.Value is not { } acted)
+        {
+            return result.ToProblem();
+        }
+
+        await db.SaveChangesAsync();
+        return TypedResults.Ok(answer(acted));
+    }
+
+    // The Completion just recorded, which Undo removes
+    private static RecordedCompletionDto Recorded(ChoresDbContext db, Chore chore, TimeProvider clock) =>
+        new(db.IdOf(chore.Completions[^1]), ChoreDto.From(chore, db.IdOf, clock));
 }
