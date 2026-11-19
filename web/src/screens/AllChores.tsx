@@ -249,39 +249,55 @@ function ArchivedChores() {
   })
 
   if (chores.length === 0) return <p className="py-12 text-center text-ink/70">Nothing is Archived.</p>
+  const sorted = [...chores].sort((a, b) => a.name.localeCompare(b.name))
+  const restoreButton = (chore: Chore) => (
+    <button
+      type="button"
+      disabled={restore.isPending}
+      onClick={() => restore.mutate(chore)}
+      className="rounded-lg border border-brand px-3 py-1 font-semibold text-brand hover:bg-brand/5 disabled:opacity-60"
+    >
+      Restore
+    </button>
+  )
   return (
-    <table aria-label="Archived Chores" className="w-full rounded-lg bg-white text-left text-sm shadow-sm">
-      <thead className="border-b border-black/10 text-ink/70">
-        <tr>
-          <th className="px-3 py-2 font-semibold">Name</th>
-          <th className="px-3 py-2 font-semibold">Area</th>
-          <th className="px-3 py-2 font-semibold">Archived</th>
-          <th className="px-3 py-2">
-            <span className="sr-only">Actions</span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {[...chores]
-          .sort((a, b) => a.name.localeCompare(b.name))
-          .map((chore) => (
+    <>
+      {/* A phone gets a plain list */}
+      <ul aria-label="Archived Chores" className="flex flex-col gap-2 md:hidden">
+        {sorted.map((chore) => (
+          <li key={chore.id} className="flex items-center gap-3 rounded-lg bg-white px-4 py-3 shadow-sm">
+            <span className="flex flex-1 flex-col gap-0.5">
+              <span className="font-medium">{chore.name}</span>
+              <span className="text-sm text-ink/60">
+                {[chore.area?.name, chore.archivedOn && `Archived ${longDate(chore.archivedOn)}`].filter(Boolean).join(' · ')}
+              </span>
+            </span>
+            {restoreButton(chore)}
+          </li>
+        ))}
+      </ul>
+      <table aria-label="Archived Chores" className="hidden w-full rounded-lg bg-white text-left text-sm shadow-sm md:table">
+        <thead className="border-b border-black/10 text-ink/70">
+          <tr>
+            <th className="px-3 py-2 font-semibold">Name</th>
+            <th className="px-3 py-2 font-semibold">Area</th>
+            <th className="px-3 py-2 font-semibold">Archived</th>
+            <th className="px-3 py-2">
+              <span className="sr-only">Actions</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((chore) => (
             <tr key={chore.id} className="border-b border-black/5 last:border-0">
               <td className="px-3 py-2 font-medium">{chore.name}</td>
               <td className="px-3 py-2">{chore.area?.name}</td>
               <td className="px-3 py-2">{chore.archivedOn && longDate(chore.archivedOn)}</td>
-              <td className="px-3 py-2 text-right">
-                <button
-                  type="button"
-                  disabled={restore.isPending}
-                  onClick={() => restore.mutate(chore)}
-                  className="rounded-lg border border-brand px-3 py-1 font-semibold text-brand hover:bg-brand/5 disabled:opacity-60"
-                >
-                  Restore
-                </button>
-              </td>
+              <td className="px-3 py-2 text-right">{restoreButton(chore)}</td>
             </tr>
           ))}
-      </tbody>
-    </table>
+        </tbody>
+      </table>
+    </>
   )
 }

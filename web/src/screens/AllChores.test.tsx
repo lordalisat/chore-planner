@@ -239,6 +239,11 @@ test('Archived Chores show their archive date and Restore, and cannot be edited'
   expect(row).toHaveTextContent('8 Mar 2027')
   expect(row).toHaveTextContent('Driveway')
   expect(within(t).queryByRole('link')).not.toBeInTheDocument()
+  // A phone gets a plain list instead
+  const item = within(screen.getByRole('list', { name: 'Archived Chores' })).getByRole('listitem')
+  expect(item).toHaveTextContent('Take out the bins')
+  expect(item).toHaveTextContent('8 Mar 2027')
+  expect(within(item).getByRole('button', { name: 'Restore' })).toBeInTheDocument()
   expect(screen.queryByText('Laundry')).not.toBeInTheDocument()
 
   await userEvent.click(within(row).getByRole('button', { name: 'Restore' }))
@@ -261,7 +266,8 @@ test('Restore says so when an active Chore has taken the Name', async () => {
   })
   renderAt('/chores?archived=true')
 
-  await userEvent.click(await screen.findByRole('button', { name: 'Restore' }))
+  const t = await screen.findByRole('table', { name: 'Archived Chores' })
+  await userEvent.click(within(t).getByRole('button', { name: 'Restore' }))
 
   expect(await screen.findByText('There is already a Chore called take out the bins.')).toBeVisible()
 })
