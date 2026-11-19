@@ -1,6 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Chores.Api.Data;
+using Chores.Domain;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Chores.Api.Tests;
@@ -136,9 +139,131 @@ public class ChoreTests(ApiFactory factory) : IClassFixture<ApiFactory>
             c => c.GetProperty("name").GetString()!.Equals("Vacuum the stairs", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public async Task One_Chore_is_read_by_its_id()
+    {
+        int id = await Created(new { name = "Water the plants", interval = new { count = 1, unit = "Week" }, preferredDay = "Friday" });
+
+        JsonElement plants = await _client.GetFromJsonAsync<JsonElement>($"/api/chores/{id}", TestContext.Current.CancellationToken);
+
+        Assert.Equal("Water the plants", plants.GetProperty("name").GetString());
+        Assert.Equal("2027-03-12", plants.GetProperty("dueDate").GetString());
+    }
+
+    [Fact]
+    public async Task An_unknown_Chore_is_not_found()
+    {
+        HttpResponseMessage response = await _client.GetAsync("/api/chores/999999", TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Editing_a_Recurring_Chore_replaces_its_fields_and_moves_its_Due_Date()
+    {
+        int id = await Created(new { name = "Wash the towels", interval = new { count = 1, unit = "Week" }, preferredDay = "Tuesday", effort = 30 });
+
+        HttpResponseMessage response = await Edit(id, new
+        {
+            name = "Wash the bath towels",
+            interval = new { count = 2, unit = "Week" },
+            preferredDay = "Saturday",
+            season = new { fromMonth = 3, toMonth = 10 },
+            importance = "High",
+            effort = (int?)null,
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonElement towels = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+        Assert.Equal(id, towels.GetProperty("id").GetInt32());
+        Assert.Equal("Wash the bath towels", towels.GetProperty("name").GetString());
+        Assert.Equal(2, towels.GetProperty("interval").GetProperty("count").GetInt32());
+        Assert.Equal("Saturday", towels.GetProperty("preferredDay").GetString());
+        Assert.Equal(3, towels.GetProperty("season").GetProperty("fromMonth").GetInt32());
+        Assert.Equal("High", towels.GetProperty("importance").GetString());
+        Assert.Equal(JsonValueKind.Null, towels.GetProperty("effort").ValueKind);
+        // Never done, so due on the first Saturday from when it was created
+        Assert.Equal("2027-03-13", towels.GetProperty("dueDate").GetString());
+        Assert.Equal("Wash the bath towels", (await Listed("Wash the bath towels")).GetProperty("name").GetString());
+    }
+
+    [Fact]
+    public async Task A_new_Interval_moves_the_Due_Date_on_from_Last_Done()
+    {
+        int id = await Created(new { name = "Clean the oven", interval = new { count = 1, unit = "Month" }, lastDone = "2027-03-01" });
+
+        HttpResponseMessage response = await Edit(id, new { name = "Clean the oven", interval = new { count = 3, unit = "Month" } });
+
+        JsonElement oven = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+        Assert.Equal("2027-06-01", oven.GetProperty("dueDate").GetString());
+        Assert.Equal("2027-03-01", oven.GetProperty("lastDone").GetString());
+        Assert.Equal("Normal", oven.GetProperty("importance").GetString());
+    }
+
+    [Fact]
+    public async Task An_edit_the_Domain_rejects_answers_a_validation_problem_and_changes_nothing()
+    {
+        int id = await Created(new { name = "Pay the rent", interval = new { count = 1, unit = "Month" }, preferredDay = "FirstOfMonth" });
+
+        HttpResponseMessage response = await Edit(id, new { name = "Pay the rent", interval = new { count = 1, unit = "Week" }, preferredDay = "FirstOfMonth" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        JsonElement problem = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+        Assert.Equal(["preferredDay"], problem.GetProperty("errors").EnumerateObject().Select(e => e.Name));
+        Assert.Equal("Month", (await Listed("Pay the rent")).GetProperty("interval").GetProperty("unit").GetString());
+    }
+
+    [Fact]
+    public async Task An_edited_Chore_keeps_its_own_Name_but_cannot_take_another_ones()
+    {
+        await Created(new { name = "Defrost the freezer", interval = new { count = 6, unit = "Month" } });
+        int id = await Created(new { name = "Descale the kettle", interval = new { count = 1, unit = "Month" } });
+
+        HttpResponseMessage own = await Edit(id, new { name = "descale the kettle", interval = new { count = 2, unit = "Month" } });
+        HttpResponseMessage other = await Edit(id, new { name = "Defrost the freezer", interval = new { count = 2, unit = "Month" } });
+
+        Assert.Equal(HttpStatusCode.OK, own.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, other.StatusCode);
+        JsonElement problem = await other.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+        Assert.Equal(["name"], problem.GetProperty("errors").EnumerateObject().Select(e => e.Name));
+    }
+
+    [Fact]
+    public async Task Editing_a_One_off_Chore_replaces_its_Due_Date_and_ignores_a_schedule()
+    {
+        int id = await Seeded(new OneOffChore("Fix the gate", ApiFactory.Today) { DueDate = new DateOnly(2027, 3, 20), Effort = 60 });
+
+        HttpResponseMessage response = await Edit(id, new
+        {
+            name = "Fix the garden gate",
+            dueDate = "2027-03-12",
+            interval = new { count = 1, unit = "Week" },
+            importance = "Low",
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonElement gate = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+        Assert.Equal("OneOff", gate.GetProperty("kind").GetString());
+        Assert.Equal("Fix the garden gate", gate.GetProperty("name").GetString());
+        Assert.Equal("2027-03-12", gate.GetProperty("dueDate").GetString());
+        Assert.Equal("Low", gate.GetProperty("importance").GetString());
+        Assert.Equal(JsonValueKind.Null, gate.GetProperty("effort").ValueKind);
+        Assert.Equal(JsonValueKind.Null, gate.GetProperty("interval").ValueKind);
+    }
+
+    [Fact]
+    public async Task Editing_an_unknown_Chore_is_not_found()
+    {
+        HttpResponseMessage response = await Edit(999999, new { name = "Nothing", interval = new { count = 1, unit = "Week" } });
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
     [Theory]
     [InlineData("GET", "/api/chores")]
     [InlineData("POST", "/api/chores/recurring")]
+    [InlineData("GET", "/api/chores/1")]
+    [InlineData("PUT", "/api/chores/1")]
     public async Task Chores_need_the_household_password(string method, string path)
     {
         HttpResponseMessage response = await factory.CreateBrowserClient().SendAsync(
@@ -150,6 +275,27 @@ public class ChoreTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
     private Task<HttpResponseMessage> Create(object chore) =>
         _client.PostAsJsonAsync("/api/chores/recurring", chore, TestContext.Current.CancellationToken);
+
+    private Task<HttpResponseMessage> Edit(int id, object chore) =>
+        _client.PutAsJsonAsync($"/api/chores/{id}", chore, TestContext.Current.CancellationToken);
+
+    // Until One-off Chores can be created through the API
+    private async Task<int> Seeded(Chore chore)
+    {
+        using IServiceScope scope = factory.Services.CreateScope();
+        ChoresDbContext db = scope.ServiceProvider.GetRequiredService<ChoresDbContext>();
+        db.Add(chore);
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        return db.Entry(chore).Property<int>("Id").CurrentValue;
+    }
+
+    private async Task<int> Created(object chore)
+    {
+        HttpResponseMessage response = await Create(chore);
+        response.EnsureSuccessStatusCode();
+        JsonElement created = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+        return created.GetProperty("id").GetInt32();
+    }
 
     private async Task<JsonElement> Listed(string name)
     {
