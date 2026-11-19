@@ -185,7 +185,14 @@ function ActiveChores() {
         </thead>
         <tbody>
           {sorted.map((chore) => (
-            <tr key={chore.id} className="border-b border-black/5 last:border-0 hover:bg-brand/5">
+            <tr
+              key={chore.id}
+              // The whole row opens the Chore through its name's link, which keyboards and screen readers still use
+              onClick={(event) => {
+                if (!(event.target as Element).closest('a')) event.currentTarget.querySelector('a')?.click()
+              }}
+              className="cursor-pointer border-b border-black/5 last:border-0 hover:bg-brand/5"
+            >
               <td className="px-3 py-2">
                 <ChoreLink chore={chore} className="font-medium hover:underline">
                   {chore.name}

@@ -218,6 +218,16 @@ test('below lg a Chore opens on its own screen, and new ones come from the Shell
   expect(screen.queryByRole('link', { name: 'New Chore' })).not.toBeInTheDocument()
 })
 
+test('clicking anywhere on a row opens its Chore, not only on its name', async () => {
+  stubApi({ '/api/session': 204, '/api/chores': [laundry, lawn] })
+  const router = renderAt('/chores')
+
+  const row = within(await table()).getByRole('row', { name: /Mow the lawn/ })
+  await userEvent.click(within(row).getAllByRole('cell')[2]!)
+
+  await expect.poll(() => router.state.location.search).toEqual({ chore: lawn.id })
+})
+
 test('the selected Chore is in the URL, so reloading keeps it open', async () => {
   stubApi({ '/api/session': 204, '/api/chores': [laundry, lawn] })
   renderAt('/chores?chore=2')
