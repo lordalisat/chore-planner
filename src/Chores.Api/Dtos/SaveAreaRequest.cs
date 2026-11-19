@@ -10,12 +10,7 @@ public sealed record SaveAreaRequest(string Name, int? ParentId = null)
     public Result<Area> ApplyTo(Area? area, Area? parent)
     {
         List<FieldError> errors = [];
-        // Missing when the JSON leaves it out, whatever its type says
-        string name = Name?.Trim() ?? "";
-        if (name.Length == 0)
-        {
-            errors.Add(new FieldError("name", "An Area needs a name."));
-        }
+        string name = errors.CheckRequiredName(Name, "An Area needs a name.");
         if (ParentId is not null && parent is null)
         {
             errors.Add(new FieldError("parentId", "That Area does not exist."));
