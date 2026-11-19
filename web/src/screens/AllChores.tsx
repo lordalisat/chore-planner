@@ -95,10 +95,11 @@ export function AllChores() {
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="flex-1 text-xl font-semibold text-brand">All Chores</h1>
           <nav aria-label="Filter" className="flex gap-1 rounded-xl bg-white p-1 shadow-sm">
-            <Link to="/chores" aria-current={archived ? undefined : 'page'} className={filterClass}>
+            {/* The router marks the current filter; Active must say it has no archived, or it would match the Archived URL too */}
+            <Link to="/chores" search={{ archived: undefined }} activeOptions={{ explicitUndefined: true }} className={filterClass}>
               Active
             </Link>
-            <Link to="/chores" search={{ archived: true }} aria-current={archived ? 'page' : undefined} className={filterClass}>
+            <Link to="/chores" search={{ archived: true }} className={filterClass}>
               Archived
             </Link>
           </nav>

@@ -107,6 +107,19 @@ test('the Overview is in the top navigation too, and the screen you are on is ma
   expect(screen.getByRole('link', { name: 'All Chores' })).not.toHaveAttribute('aria-current')
 })
 
+test('the filter marks only the one shown', async () => {
+  stubApi({ '/api/session': 204, '/api/chores': [laundry], '/api/chores?archived=true': [] })
+  const filter = async () => within(await screen.findByRole('navigation', { name: 'Filter' }))
+  const router = renderAt('/chores?archived=true')
+
+  expect((await filter()).getByRole('link', { name: 'Archived' })).toHaveAttribute('aria-current', 'page')
+  expect((await filter()).getByRole('link', { name: 'Active' })).not.toHaveAttribute('aria-current')
+
+  await router.navigate({ to: '/chores', search: { chore: 1 } })
+  await expect.poll(async () => (await filter()).getByRole('link', { name: 'Active' })).toHaveAttribute('aria-current', 'page')
+  expect((await filter()).getByRole('link', { name: 'Archived' })).not.toHaveAttribute('aria-current')
+})
+
 test('every Chore that is not Archived is listed, Dormant and finished ones marked', async () => {
   stubApi({ '/api/session': 204, '/api/chores': [laundry, lawn, mirror] })
   renderAt('/chores')
