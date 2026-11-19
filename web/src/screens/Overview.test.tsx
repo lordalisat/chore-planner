@@ -311,3 +311,14 @@ test('with only Later Chores, the Overview says nothing needs doing yet', async 
   expect(await screen.findByText('Nothing needs doing yet.')).toBeVisible()
   expect(screen.getByRole('button', { name: 'Later (1)' })).toBeVisible()
 })
+
+test('a One-off Chore under Anytime is something to do, so the Overview does not say there is nothing', async () => {
+  stubApi({
+    '/api/session': 204,
+    '/api/chores': [chore('Fix leaking tap', { urgency: 0.5 }), chore('Laundry', { kind: 'Recurring', dueDate: '2027-03-20', urgency: 0 })],
+  })
+  renderOverview()
+
+  expect(await screen.findByText('Fix leaking tap')).toBeVisible()
+  expect(screen.queryByText('Nothing needs doing yet.')).not.toBeInTheDocument()
+})

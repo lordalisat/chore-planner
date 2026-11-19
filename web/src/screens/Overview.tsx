@@ -48,7 +48,8 @@ export function Overview() {
   )
   return (
     <div className="flex flex-col gap-6">
-      {now.length > 0 ? list(now) : <p className="py-6 text-center text-ink/70">Nothing needs doing yet.</p>}
+      {now.length > 0 && list(now)}
+      {now.length === 0 && anytime.length === 0 && <p className="py-6 text-center text-ink/70">Nothing needs doing yet.</p>}
       {anytime.length > 0 && (
         <section className="flex flex-col gap-2">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-ink/60">Anytime</h2>
