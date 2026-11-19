@@ -22,23 +22,7 @@ public sealed record CreateRecurringChoreRequest(
     {
         List<FieldError> errors = [];
         string name = errors.CheckName(Name, takenNames);
-        Interval? interval = errors.Try("interval", "Every needs a whole number of at least 1.", () => Interval is { } given
-            ? new Interval(given.Count, given.Unit)
-            : throw new ArgumentNullException(nameof(Interval)));
-        PreferredDay? preferredDay = null;
-        if (PreferredDay is not null && !PreferredDayText.TryFromText(PreferredDay, out preferredDay))
-        {
-            errors.Add(new FieldError("preferredDay", "That is not a day."));
-        }
-        else if (interval is not null && preferredDay?.Allows(interval) == false)
-        {
-            errors.Add(new FieldError("preferredDay", preferredDay is PreferredDay.Weekday
-                ? "A weekday needs an Interval in weeks, months or years."
-                : "The first or last of the month needs an Interval in months or years."));
-        }
-        Season? season = Season is null
-            ? null
-            : errors.Try("season", "A Season runs between months 1 and 12.", () => new Season(Season.FromMonth, Season.ToMonth));
+        (Interval? interval, PreferredDay? preferredDay, Season? season) = errors.CheckSchedule(Interval, PreferredDay, Season);
         // Result only builds the Chore when nothing was wrong, so the Interval is there
         return new Result<RecurringChore>(errors, () =>
         {

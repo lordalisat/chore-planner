@@ -1,3 +1,5 @@
+using Chores.Domain;
+
 namespace Chores.Api.Dtos;
 
 /// <summary>What is wrong with one field of a request, keyed by its JSON name so the form shows it at that field.</summary>
@@ -35,5 +37,31 @@ public static class FieldErrorList
             errors.Add(new FieldError("name", $"There is already a Chore called {taken}."));
         }
         return trimmed;
+    }
+
+    /// <summary>
+    /// The Interval, Preferred Day and Season of a Recurring Chore; the Domain decides which combinations are valid.
+    /// </summary>
+    public static (Interval? Interval, PreferredDay? PreferredDay, Season? Season) CheckSchedule(
+        this List<FieldError> errors, IntervalDto? interval, string? preferredDay, SeasonDto? season)
+    {
+        Interval? validInterval = errors.Try("interval", "Every needs a whole number of at least 1.", () => interval is { } given
+            ? new Interval(given.Count, given.Unit)
+            : throw new ArgumentNullException(nameof(interval)));
+        PreferredDay? validDay = null;
+        if (preferredDay is not null && !PreferredDayText.TryFromText(preferredDay, out validDay))
+        {
+            errors.Add(new FieldError("preferredDay", "That is not a day."));
+        }
+        else if (validInterval is not null && validDay?.Allows(validInterval) == false)
+        {
+            errors.Add(new FieldError("preferredDay", validDay is PreferredDay.Weekday
+                ? "A weekday needs an Interval in weeks, months or years."
+                : "The first or last of the month needs an Interval in months or years."));
+        }
+        Season? validSeason = season is null
+            ? null
+            : errors.Try("season", "A Season runs between months 1 and 12.", () => new Season(season.FromMonth, season.ToMonth));
+        return (validInterval, validDay, validSeason);
     }
 }

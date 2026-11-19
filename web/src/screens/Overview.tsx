@@ -1,4 +1,5 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
 import { choresQuery, type Chore } from '../chores.ts'
 import { relativeDate, today } from '../dates.ts'
 
@@ -43,18 +44,22 @@ function ChoreList({ chores, today }: { chores: Chore[]; today: string }) {
 
 function ChoreRow({ chore, today }: { chore: Chore; today: string }) {
   return (
-    <li
-      className={`flex items-baseline gap-3 rounded-lg border-l-4 bg-white px-4 py-3 shadow-sm ${
-        chore.overdue ? 'border-red-700' : 'border-transparent'
-      }`}
-    >
-      <span className="flex-1 font-medium">{chore.name}</span>
-      {chore.effort != null && <span className="text-sm text-ink/60">{chore.effort} min</span>}
-      {chore.dueDate && (
-        <span className={`text-sm ${chore.overdue ? 'font-semibold text-red-700' : 'text-ink/70'}`}>
-          {relativeDate(chore.dueDate, today)}
-        </span>
-      )}
+    <li>
+      <Link
+        to="/chores/$id"
+        params={{ id: chore.id }}
+        className={`flex items-baseline gap-3 rounded-lg border-l-4 bg-white px-4 py-3 shadow-sm hover:shadow-md ${
+          chore.overdue ? 'border-red-700' : 'border-transparent'
+        }`}
+      >
+        <span className="flex-1 font-medium">{chore.name}</span>
+        {chore.effort != null && <span className="text-sm text-ink/60">{chore.effort} min</span>}
+        {chore.dueDate && (
+          <span className={`text-sm ${chore.overdue ? 'font-semibold text-red-700' : 'text-ink/70'}`}>
+            {relativeDate(chore.dueDate, today)}
+          </span>
+        )}
+      </Link>
     </li>
   )
 }
