@@ -122,6 +122,65 @@ test.each([
   expect(within(t).getByRole('columnheader', { name: column })).toHaveAttribute('aria-sort', 'descending')
 })
 
+test('clicking through Chores opens each beside the list, and saving one stays on the list', async () => {
+  const fetch = stubApi({
+    '/api/session': 204,
+    '/api/chores': [laundry, lawn],
+    '/api/chores/2': (init) => Response.json(init?.method === 'PUT' ? { ...lawn, effort: 50 } : lawn),
+  })
+  const router = renderAt('/chores')
+  const t = await table()
+
+  await userEvent.click(within(t).getByRole('link', { name: 'Laundry' }))
+  expect(await screen.findByRole('textbox', { name: 'Name' })).toHaveValue('Laundry')
+  expect(router.state.location.search).toEqual({ chore: 1 })
+
+  // A Dormant Chore can be edited too
+  await userEvent.click(within(t).getByRole('link', { name: 'Mow the lawn' }))
+  const effort = await screen.findByRole('textbox', { name: 'Effort in minutes' })
+  expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Mow the lawn')
+  await userEvent.clear(effort)
+  await userEvent.type(effort, '50')
+  await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+  await expect.poll(() => router.state.location.search).toEqual({})
+  expect(router.state.location.pathname).toBe('/chores')
+  expect(screen.queryByRole('textbox', { name: 'Name' })).not.toBeInTheDocument()
+  const put = fetch.mock.calls.find(([, init]) => init?.method === 'PUT')
+  expect(JSON.parse(String(put?.[1]?.body))).toMatchObject({ name: 'Mow the lawn', effort: 50 })
+})
+
+test('the selected Chore is in the URL, so reloading keeps it open', async () => {
+  stubApi({ '/api/session': 204, '/api/chores': [laundry, lawn] })
+  renderAt('/chores?chore=2')
+
+  expect(await screen.findByRole('textbox', { name: 'Name' })).toHaveValue('Mow the lawn')
+  expect(screen.getByRole('table', { name: 'All Chores' })).toBeInTheDocument()
+})
+
+test('new Chores are entered beside the list, one after another', async () => {
+  const fetch = stubApi({
+    '/api/session': 204,
+    '/api/chores': [laundry],
+    '/api/chores/one-off': (init) => Response.json({ ...mirror, name: JSON.parse(String(init?.body)).name }),
+  })
+  const router = renderAt('/chores')
+  await table()
+
+  await userEvent.click(screen.getByRole('link', { name: 'New Chore' }))
+  expect(router.state.location.search).toEqual({ chore: 'new' })
+  await userEvent.click(await screen.findByRole('radio', { name: 'One-off' }))
+  for (const name of ['Fix the tap', 'Hang the mirror']) {
+    await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), name)
+    await userEvent.click(screen.getByRole('button', { name: 'Save and add another' }))
+    await expect.poll(() => screen.getByRole('textbox', { name: 'Name' })).toHaveValue('')
+  }
+
+  const posted = fetch.mock.calls.filter(([url]) => url === '/api/chores/one-off')
+  expect(posted.map(([, init]) => JSON.parse(String(init?.body)).name)).toEqual(['Fix the tap', 'Hang the mirror'])
+  expect(router.state.location.search).toEqual({ chore: 'new' })
+})
+
 test('Archived Chores show their archive date and Restore, and cannot be edited', async () => {
   const bins = chore(5, 'Take out the bins', { kind: 'Recurring', archivedOn: '2027-03-08', completionCount: 3 })
   let archived = [bins]

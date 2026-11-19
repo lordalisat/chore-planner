@@ -71,8 +71,11 @@ const overviewRoute = createRoute({
 const allChoresRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/chores',
-  // Active Chores unless asked for the Archived ones
-  validateSearch: (search): { archived?: true } => (search.archived === true ? { archived: true } : {}),
+  // Active Chores unless asked for the Archived ones, with the Chore open beside them, or a new one
+  validateSearch: (search): { archived?: true; chore?: number | 'new' } => ({
+    ...(search.archived === true && { archived: true }),
+    ...((search.chore === 'new' || Number.isInteger(search.chore)) && { chore: search.chore as number | 'new' }),
+  }),
   loaderDeps: ({ search: { archived } }) => ({ archived }),
   loader: ({ context, deps: { archived } }) =>
     context.queryClient.ensureQueryData(archived ? archivedChoresQuery : choresQuery),

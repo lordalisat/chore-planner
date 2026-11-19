@@ -1,10 +1,12 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
-import { getRouteApi, Link } from '@tanstack/react-router'
+import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { api } from '../api/client.ts'
 import { archivedChoresQuery, choresQuery, type Chore } from '../chores.ts'
 import { longDate, relativeDate, today } from '../dates.ts'
 import { toast } from '../ui/toast.ts'
+import { ChoreForm } from './ChoreForm.tsx'
+import { DeleteChore } from './DeleteChore.tsx'
 import { unreachableMessage } from './Unreachable.tsx'
 
 const route = getRouteApi('/authenticated/chores')
@@ -70,25 +72,73 @@ function sortChores(chores: Chore[], { column, descending }: Sort) {
 const filterClass =
   'rounded-lg px-3 py-1.5 text-sm font-semibold text-brand aria-[current=page]:bg-brand aria-[current=page]:text-white'
 
-/** Every Chore in one place, including the ones the Overview hides; Archived ones under their own filter. */
+/**
+ * Every Chore in one place, including the ones the Overview hides; Archived ones under their own filter. An Active
+ * Chore opens in the Chore form, beside the list from lg up and in its place below.
+ */
 export function AllChores() {
-  const { archived } = route.useSearch()
+  const { archived, chore } = route.useSearch()
+  const open = !archived && chore !== undefined
 
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <h1 className="flex-1 text-xl font-semibold text-brand">All Chores</h1>
-        <nav aria-label="Filter" className="flex gap-1 rounded-xl bg-white p-1 shadow-sm">
-          <Link to="/chores" aria-current={archived ? undefined : 'page'} className={filterClass}>
-            Active
-          </Link>
-          <Link to="/chores" search={{ archived: true }} aria-current={archived ? 'page' : undefined} className={filterClass}>
-            Archived
-          </Link>
-        </nav>
+    <div className={open ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_28rem] lg:items-start lg:gap-6' : ''}>
+      <section className={`flex-col gap-4 ${open ? 'hidden lg:flex' : 'flex'}`}>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="flex-1 text-xl font-semibold text-brand">All Chores</h1>
+          <nav aria-label="Filter" className="flex gap-1 rounded-xl bg-white p-1 shadow-sm">
+            <Link to="/chores" aria-current={archived ? undefined : 'page'} className={filterClass}>
+              Active
+            </Link>
+            <Link to="/chores" search={{ archived: true }} aria-current={archived ? 'page' : undefined} className={filterClass}>
+              Archived
+            </Link>
+          </nav>
+          {!archived && (
+            <Link
+              to="/chores"
+              search={{ chore: 'new' }}
+              className="rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand/90"
+            >
+              New Chore
+            </Link>
+          )}
+        </div>
+        {archived ? <ArchivedChores /> : <ActiveChores />}
+      </section>
+      {open && <ChorePanel chore={chore} />}
+    </div>
+  )
+}
+
+/** The Chore form for the open Chore, or an empty one; saving, deleting or closing it goes back to the list. */
+function ChorePanel({ chore: id }: { chore: number | 'new' }) {
+  const { data: chores } = useSuspenseQuery(choresQuery)
+  const navigate = useNavigate()
+  const close = () => void navigate({ to: '/chores' })
+  const chore = id === 'new' ? undefined : chores.find((chore) => chore.id === id)
+
+  return (
+    <aside className="flex flex-col gap-4 lg:sticky lg:top-4 lg:rounded-2xl lg:bg-white lg:p-6 lg:shadow-sm">
+      <div className="flex items-center">
+        <h2 className="flex-1 text-xl font-semibold text-brand">{id === 'new' ? 'New Chore' : 'Edit Chore'}</h2>
+        <Link to="/chores" aria-label="Close" className="rounded-lg px-3 py-1 text-2xl leading-none hover:bg-black/5">
+          ×
+        </Link>
       </div>
-      {archived ? <ArchivedChores /> : <ActiveChores />}
-    </section>
+      {id === 'new' ? (
+        <ChoreForm key="new" onDone={close} />
+      ) : chore ? (
+        <>
+          {/* Keyed, so moving to another Chore starts from that one's values */}
+          <ChoreForm key={chore.id} chore={chore} onDone={close} />
+          <div className="flex justify-center">
+            <DeleteChore chore={chore} onDeleted={close} />
+          </div>
+        </>
+      ) : (
+        <p className="py-6 text-center text-ink/70">That Chore is gone.</p>
+      )}
+    </aside>
   )
 }
 
@@ -106,8 +156,8 @@ function ActiveChores() {
         {sorted.map((chore) => (
           <li key={chore.id}>
             <Link
-              to="/chores/$id"
-              params={{ id: chore.id }}
+              to="/chores"
+              search={{ chore: chore.id }}
               className="flex flex-col gap-0.5 rounded-lg bg-white px-4 py-3 shadow-sm hover:shadow-md"
             >
               <span className="flex items-baseline gap-2">
@@ -146,7 +196,7 @@ function ActiveChores() {
           {sorted.map((chore) => (
             <tr key={chore.id} className="border-b border-black/5 last:border-0 hover:bg-brand/5">
               <td className="px-3 py-2">
-                <Link to="/chores/$id" params={{ id: chore.id }} className="font-medium hover:underline">
+                <Link to="/chores" search={{ chore: chore.id }} className="font-medium hover:underline">
                   {chore.name}
                 </Link>{' '}
                 <Marks chore={chore} />
