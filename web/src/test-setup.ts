@@ -6,6 +6,12 @@ import { afterEach, vi } from 'vitest'
 HTMLElement.prototype.showPopover ??= function () {}
 HTMLElement.prototype.hidePopover ??= function () {}
 Element.prototype.getAnimations ??= () => []
+// Toasts measure themselves to stack, with an observer jsdom lacks
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
 document.head.append(Object.assign(document.createElement('style'), { textContent: '[popover] { display: block !important }' }))
 
 afterEach(() => {
