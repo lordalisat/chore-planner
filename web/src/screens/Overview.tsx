@@ -146,18 +146,16 @@ function ChoreRow({ chore, today, open, onToggle, onClose, onDone, onDoneOn, onS
   }
   return (
     <li data-urgency={band} className={`rounded-lg border-l-4 bg-white shadow-sm ${bandBorder[band]}`}>
-      <div className="flex items-center gap-3 py-2 pr-3 pl-3">
-        <button
-          type="button"
-          aria-label={`Mark ${chore.name} done`}
-          onClick={act(onDone)}
-          className="group grid size-7 shrink-0 place-items-center rounded-full border-2 border-brand text-brand hover:bg-brand hover:text-white"
-        >
-          <svg viewBox="0 0 16 16" aria-hidden className="size-4 opacity-0 group-hover:opacity-100">
-            <path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+      <div className="flex items-center gap-1 py-1 pr-3 pl-1">
+        {/* A 44px target around the small round check, so a thumb finds it */}
+        <button type="button" aria-label={`Mark ${chore.name} done`} onClick={act(onDone)} className="group grid size-11 shrink-0 place-items-center">
+          <span className="grid size-7 place-items-center rounded-full border-2 border-brand text-brand group-hover:bg-brand group-hover:text-white">
+            <svg viewBox="0 0 16 16" aria-hidden className="size-4 opacity-0 group-hover:opacity-100">
+              <path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
         </button>
-        <button type="button" aria-expanded={open} onClick={onToggle} className="flex min-w-0 flex-1 flex-col text-left">
+        <button type="button" aria-expanded={open} onClick={onToggle} className="flex min-h-11 min-w-0 flex-1 flex-col justify-center text-left">
           <span className="flex w-full items-baseline gap-3">
             <span className="flex-1 truncate font-medium">{chore.name}</span>
             {details && <span className="text-sm text-ink/60">{details}</span>}
@@ -184,7 +182,7 @@ function ChoreRow({ chore, today, open, onToggle, onClose, onDone, onDoneOn, onS
 
 function RowAction({ onClick, children }: { onClick: () => void; children: string }) {
   return (
-    <button type="button" onClick={onClick} className="rounded-lg border border-brand/30 px-3 py-1.5 text-sm font-medium text-brand hover:bg-brand/10">
+    <button type="button" onClick={onClick} className="min-h-11 rounded-lg border border-brand/30 px-4 text-sm font-medium text-brand hover:bg-brand/10">
       {children}
     </button>
   )

@@ -8,6 +8,10 @@ import type { Chore } from '../chores.ts'
 import { createAppRouter } from '../router.tsx'
 import { stubApi } from '../test-api.ts'
 
+/** A row's Chore, from its Done button: "Mark Laundry done". */
+const rowName = (row: HTMLElement) =>
+  within(row).getByRole('button', { name: /^Mark .* done$/ }).getAttribute('aria-label')?.replace(/^Mark (.*) done$/, '$1')
+
 function chore(name: string, details: Partial<Chore>): Chore {
   return {
     id: name.length,
@@ -71,12 +75,12 @@ test('One-off Chores without a Due Date wait under Anytime; finished ones are go
   await screen.findByText('Take out the bins')
   // Leaving out the toasts' list
   const [main, anytime] = screen.getAllByRole('list').filter((list) => list.tagName === 'UL')
-  expect(within(main!).getAllByRole('listitem').map((row) => row.querySelector('span')?.textContent)).toEqual([
+  expect(within(main!).getAllByRole('listitem').map(rowName)).toEqual([
     'Take out the bins',
     'Book the plumber',
   ])
   expect(screen.getByRole('heading', { name: 'Anytime' })).toBeVisible()
-  expect(within(anytime!).getAllByRole('listitem').map((row) => row.querySelector('span')?.textContent)).toEqual(['Fix leaking tap'])
+  expect(within(anytime!).getAllByRole('listitem').map(rowName)).toEqual(['Fix leaking tap'])
   expect(screen.queryByText('Hang the mirror')).not.toBeInTheDocument()
 })
 
@@ -251,7 +255,7 @@ test('Chores equally urgent go by Due Date, earliest first', async () => {
 
   await screen.findByText('Laundry')
   const [main] = screen.getAllByRole('list').filter((list) => list.tagName === 'UL')
-  expect(within(main!).getAllByRole('listitem').map((row) => row.querySelector('span')?.textContent)).toEqual([
+  expect(within(main!).getAllByRole('listitem').map(rowName)).toEqual([
     'Clean vacuum water',
     'Laundry',
   ])
@@ -299,7 +303,7 @@ test('Chores not urgent yet wait under Later, folded away, below Anytime', async
   await userEvent.click(later)
 
   const section = screen.getByRole('region', { name: /^Later/ })
-  expect(within(section).getAllByRole('listitem').map((row) => row.querySelector('span')?.textContent)).toEqual([
+  expect(within(section).getAllByRole('listitem').map(rowName)).toEqual([
     'Clean vacuum water',
     'Laundry',
   ])

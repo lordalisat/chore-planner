@@ -1,7 +1,8 @@
 import { Menu as SdkMenu, MenuContent, MenuItem, MenuTrigger } from '@ui-sdk/react/menu'
 import type { ReactNode } from 'react'
 
-export type MenuEntry = { label: string; onSelect: () => void }
+/** `current` marks the entry for the screen you are on. */
+export type MenuEntry = { label: string; onSelect: () => void; current?: boolean }
 
 /** A button opening a list of actions. */
 export function Menu({ trigger, label, entries }: { trigger: ReactNode; label: string; entries: MenuEntry[] }) {
@@ -19,7 +20,8 @@ export function Menu({ trigger, label, entries }: { trigger: ReactNode; label: s
           <MenuItem
             key={entry.label}
             onSelect={entry.onSelect}
-            className="cursor-pointer rounded-md px-3 py-2 data-highlighted:bg-cream"
+            aria-current={entry.current ? 'page' : undefined}
+            className="cursor-pointer rounded-md px-3 py-2 aria-[current=page]:font-semibold aria-[current=page]:text-brand data-highlighted:bg-cream"
           >
             {entry.label}
           </MenuItem>

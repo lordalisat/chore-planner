@@ -89,6 +89,7 @@ const allChoresRoute = createRoute({
 const choreRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/chores/$id',
+  staticData: { form: true },
   params: { parse: ({ id }) => ({ id: Number(id) }), stringify: ({ id }) => ({ id: String(id) }) },
   loader: async ({ context, params: { id } }) => {
     if (!Number.isInteger(id)) throw notFound()
@@ -130,5 +131,7 @@ declare module '@tanstack/react-router' {
     wide?: boolean
     /** From lg up, the Shell's New Chore opens the form beside this screen's list (`?chore=new`), not in a dialog. */
     newChoreBeside?: boolean
+    /** A form screen: the phone's floating New Chore button would sit on its own buttons. */
+    form?: boolean
   }
 }
