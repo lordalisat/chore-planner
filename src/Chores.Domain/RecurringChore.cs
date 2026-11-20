@@ -64,8 +64,12 @@ public sealed class RecurringChore(string name, Interval interval, DateOnly crea
         }
     }
 
-    /// <summary>Outside its Season; occurrences that would fall there are skipped by the Due Date.</summary>
-    public bool IsDormant(TimeProvider clock) => Season is { } season && !season.Contains(clock.Today());
+    /// <summary>
+    /// Outside its Season, waiting for a Due Date inside the next one; occurrences that would fall outside it are skipped
+    /// by the Due Date. A Due Date missed inside the Season, or Postponed outside it, keeps the Chore showing.
+    /// </summary>
+    public bool IsDormant(TimeProvider clock) =>
+        Season is { } season && !season.Contains(clock.Today()) && DueDate > clock.Today() && season.Contains(DueDate);
 
     protected override DateOnly? NextDueDate => DueDate;
 

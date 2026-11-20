@@ -401,25 +401,52 @@ public class RecurringChoreTests
     [InlineData(3, true)]
     public void Season_from_November_to_February_wraps_the_year(int month, bool dormant)
     {
-        RecurringChore chore = NewChore(7, IntervalUnit.Day);
-        chore.Season = new Season(11, 2);
+        var day = new DateOnly(2027, month, 15);
+        var chore = new RecurringChore("Clear the gutters", new Interval(7, IntervalUnit.Day), day) { Season = new Season(11, 2) };
 
-        Assert.Equal(dormant, chore.IsDormant(new FixedClock(new DateOnly(2027, month, 15))));
+        Assert.Equal(dormant, chore.IsDormant(new FixedClock(day)));
     }
 
     [Fact]
-    public void Season_affects_only_the_Due_Date_not_Overdue_or_Urgency()
+    public void Due_Date_missed_inside_the_Season_stays_Overdue_and_showing_after_it_ends()
     {
         var june = new DateOnly(2027, 6, 15);
         RecurringChore chore = NewChore(7, IntervalUnit.Day);
         chore.Season = new Season(4, 5);
         chore.Complete(new DateOnly(2027, 5, 16));
 
-        // Due 23 May, still inside the Season, and not done since
+        // Due 23 May, still inside the Season, and not done since: up to the household to do or skip
         Assert.Equal(new DateOnly(2027, 5, 23), chore.DueDate);
-        Assert.True(chore.IsDormant(new FixedClock(june)));
+        Assert.False(chore.IsDormant(new FixedClock(june)));
         Assert.True(chore.IsOverdue(new FixedClock(june)));
         Assert.Equal(2, chore.Urgency(new FixedClock(june)));
+    }
+
+    [Fact]
+    public void Skipping_a_Due_Date_missed_inside_the_Season_makes_it_Dormant_until_the_next_one()
+    {
+        var june = new DateOnly(2027, 6, 15);
+        RecurringChore chore = NewChore(7, IntervalUnit.Day);
+        chore.Season = new Season(4, 5);
+        // Due 27 May; skipping it moves on to 3 June, outside the Season, so to the next April
+        chore.Complete(new DateOnly(2027, 5, 20));
+
+        chore.Skip(june);
+
+        Assert.True(chore.IsDormant(new FixedClock(june)));
+    }
+
+    [Fact]
+    public void Postponed_into_its_Dormant_months_it_stays_showing()
+    {
+        var june = new DateOnly(2027, 6, 15);
+        RecurringChore chore = NewChore(7, IntervalUnit.Day);
+        chore.Season = new Season(4, 5);
+        chore.Complete(new DateOnly(2027, 5, 30));
+
+        chore.Postpone(new DateOnly(2027, 6, 20));
+
+        Assert.False(chore.IsDormant(new FixedClock(june)));
     }
 
     [Fact]

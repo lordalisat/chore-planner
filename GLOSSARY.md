@@ -78,5 +78,5 @@ _Avoid_: Projection, occurrence, instance
 The part of the year in which a Recurring Chore applies, such as spring to autumn for mowing the lawn.
 
 **Dormant**:
-The state of a Recurring Chore outside its Season: hidden, with every occurrence that would fall in it skipped.
+The state of a Recurring Chore outside its Season, waiting for its next Due Date inside the Season: hidden, with every occurrence that would fall outside the Season skipped. A Due Date missed before the Season ended, or Postponed into the months outside it, keeps the Chore showing until someone does, skips or postpones it.
 _Avoid_: Paused, inactive
