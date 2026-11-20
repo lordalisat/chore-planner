@@ -1,0 +1,62 @@
+#!/bin/sh
+# Remove every worktree whose branch is merged into origin/main, with its branch and the
+# processes it left running in the devcontainer. Run from the main checkout.
+#   clean-up -n   only print what it would do
+set -e
+dry=; [ "$1" = -n ] && dry=1
+run() { if [ -n "$dry" ]; then echo "  would: $*"; else "$@"; fi; }
+
+main=$(cd "$(git rev-parse --git-common-dir)/.." && pwd -P)
+cd "$main"
+git fetch -q --prune origin
+container=$(docker ps -q --filter "label=devcontainer.local_folder=$main")
+ws="/workspaces/$(basename "$main")"
+
+# Processes in the devcontainer (as vscode: rootless Podman's root can't read their /proc) whose working directory is under a worktree: "pid relative-worktree-path"
+procs() {
+  [ -n "$container" ] || return 0
+  docker exec -u vscode "$container" sh -c 'for p in /proc/[0-9]*; do c=$(readlink "$p/cwd" 2>/dev/null) || continue
+    case "$c" in '"$ws"'/.claude/worktrees/*) r=${c#'"$ws"'/}; echo "${p#/proc/} $(echo "$r" | cut -d/ -f1-3)";; esac; done'
+}
+stop() { # stop every process under worktree $1 (relative path)
+  pids=$(procs | awk -v w="$1" '$2 == w { print $1 }')
+  [ -n "$pids" ] && { echo "  stop processes:" $pids; run docker exec -u vscode "$container" kill $pids; }
+  return 0
+}
+
+git worktree list --porcelain | awk '/^worktree /{w=substr($0,10)} /^branch /{b=substr($0,19)} /^locked/{l=1} /^$/{print w"\t"b"\t"l; w=b=l=""}' |
+while IFS="$(printf '\t')" read -r path branch locked; do
+  [ "$path" = "$main" ] && continue
+  rel=${path#"$main"/}
+  if [ -n "$locked" ]; then echo "keep $rel: locked by a running session"; continue; fi
+  if [ -z "$branch" ] || ! git merge-base --is-ancestor "$branch" origin/main; then echo "keep $rel: ${branch:-detached} is not merged"; continue; fi
+  if [ -n "$(git -C "$path" status --porcelain)" ]; then echo "keep $rel: merged, but has uncommitted changes"; continue; fi
+  echo "remove $rel ($branch, merged)"
+  stop "$rel"
+  run git worktree remove "$path"
+  run git branch -D "$branch"
+done
+
+# Processes whose worktree is already gone
+for rel in $(procs | awk '{print $2}' | sort -u); do
+  [ -d "$main/$rel" ] || { echo "orphaned processes in $rel"; stop "$rel"; }
+done
+run git worktree prune
+
+# Devcontainers and images built per worktree, before ./dev reused the main container
+for id in $(docker ps -aq --filter label=devcontainer.local_folder); do
+  folder=$(docker inspect -f '{{ index .Config.Labels "devcontainer.local_folder" }}' "$id")
+  case "$folder" in "$main"/.claude/worktrees/*)
+    image=$(docker inspect -f '{{ .Config.Image }}' "$id")
+    echo "remove devcontainer of $folder"
+    run docker rm -f "$id"; run docker rmi "$image" || true;;
+  esac
+done
+
+# The main checkout follows origin/main when it's on main with nothing uncommitted
+if [ "$(git branch --show-current)" = main ] && [ -z "$(git status --porcelain)" ]; then
+  run git merge -q --ff-only origin/main
+  echo "main checkout: fast-forward to $(git rev-parse --short origin/main)"
+else
+  echo "main checkout left alone: not on main, or uncommitted changes"
+fi

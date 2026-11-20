@@ -19,4 +19,4 @@ A change to `web/` is done when you have seen it in a browser at **phone width (
 
 ## After a PR merges
 
-PRs are squash-merged, so `ExitWorktree remove` always reports unmerged commits. Confirm with `gh pr view <number> --json state` that it says `MERGED`, then remove with `discard_changes: true`. Worktrees share the main container, so there are no containers or images to remove.
+The `clean-up` skill removes merged worktrees, their branches and the servers they left running in the devcontainer.
