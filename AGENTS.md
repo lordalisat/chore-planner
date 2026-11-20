@@ -2,6 +2,10 @@
 
 Run `dotnet`, `npm` and the app through `./dev`; check with `./check`; a `web/` change is seen in a browser at phone and desktop width. See `docs/agents/dev-environment.md`.
 
+## Reviewing
+
+A review of a diff that touches `web/` runs `/experience-review` after `/code-review`, and reports both.
+
 ## Agent skills
 
 ### Issue tracker
