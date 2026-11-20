@@ -1,6 +1,6 @@
 # Solution skeleton
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 02
 
 Create the solution layout from the spec: `Chores.Domain`, `Chores.Api`, `Chores.Domain.Tests` and a `web/` React + Vite + TypeScript app.

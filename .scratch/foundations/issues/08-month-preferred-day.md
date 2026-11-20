@@ -1,6 +1,6 @@
 # First or last of month as Preferred Day
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 04
 
 Besides a weekday, a Recurring Chore's Preferred Day can be "first of month" or "last of month". Raised in review of 04 (PR #5).

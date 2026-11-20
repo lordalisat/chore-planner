@@ -1,6 +1,6 @@
 # Docker image for the home server
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 03
 
 ## Acceptance

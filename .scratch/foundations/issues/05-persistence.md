@@ -1,6 +1,6 @@
 # Persistence with EF Core and SQLite
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 04
 
 Persist the Domain model with EF Core and SQLite in `Chores.Api`. The Domain project stays free of EF references; mapping lives in the Api project.

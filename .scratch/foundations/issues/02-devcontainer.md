@@ -1,6 +1,6 @@
 # Devcontainer
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 01
 
 A devcontainer in which the whole app can be built, tested and run. The primary workflow is a terminal running the devcontainer CLI, with editing on the host; VS Code must work just as well, so other contributors can join without adopting that setup. A fresh machine (or a coding agent) needs only Docker and either the `devcontainer` CLI or VS Code.
