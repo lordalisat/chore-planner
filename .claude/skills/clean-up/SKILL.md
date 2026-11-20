@@ -13,5 +13,5 @@ A worktree is **done** when its branch is an ancestor of `origin/main`: PRs are 
    - stops its processes in the devcontainer
    - removes the worktree and its branch
 
-   It also stops processes left behind by worktrees that are already gone, removes old per-worktree devcontainers, and fast-forwards `main` when it's checked out and clean. `-n` only prints the plan.
+   It also deletes merged branches that GitHub has deleted and no worktree has checked out, stops processes left behind by worktrees that are already gone, removes old per-worktree devcontainers, and fast-forwards `main` when it's checked out and clean. `-n` only prints the plan.
 3. **Report** from the script's output: what was removed, what was kept and why. If the script kept a worktree as "locked", it belongs to a live session; leave it alone.

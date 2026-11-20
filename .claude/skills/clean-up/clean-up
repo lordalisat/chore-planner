@@ -37,6 +37,14 @@ while IFS="$(printf '\t')" read -r path branch locked; do
   run git branch -D "$branch"
 done
 
+# Branches whose PR merged and GitHub deleted, with no worktree checking them out
+git for-each-ref --format='%(refname:short)|%(upstream:track)|%(worktreepath)' refs/heads |
+while IFS='|' read -r branch track wt; do
+  [ "$track" = "[gone]" ] && [ -z "$wt" ] && git merge-base --is-ancestor "$branch" origin/main || continue
+  echo "remove branch $branch (merged, deleted on GitHub)"
+  run git branch -D "$branch"
+done
+
 # Processes whose worktree is already gone
 for rel in $(procs | awk '{print $2}' | sort -u); do
   [ -d "$main/$rel" ] || { echo "orphaned processes in $rel"; stop "$rel"; }
