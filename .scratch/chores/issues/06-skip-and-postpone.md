@@ -1,6 +1,6 @@
 # Skip and Postpone
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 05
 
 ## API

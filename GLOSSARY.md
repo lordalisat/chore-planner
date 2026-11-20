@@ -32,6 +32,10 @@ _Avoid_: Room, location, zone, area group
 A record that a Chore's Due Date was dealt with on a given date: done, or skipped (see Skip); the history of a Chore is its list of Completions.
 _Avoid_: Check-off, log entry
 
+**Archived**:
+The state of a Chore removed by the household whose Completions are kept for history; it is never Overdue, has no Urgency and can only be restored.
+_Avoid_: Deleted, hidden, inactive
+
 ### Scheduling
 
 **Interval**:

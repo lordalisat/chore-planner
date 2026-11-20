@@ -11,44 +11,21 @@ public sealed record CreateRecurringChoreRequest(
     SeasonDto? Season = null,
     Importance Importance = Importance.Normal,
     int? Effort = null,
-    DateOnly? LastDone = null)
+    DateOnly? LastDone = null,
+    int? AreaId = null)
 {
     /// <summary>
     /// The Chore this asks for, or what is wrong with which field. The Domain decides what is valid; each rejection
     /// is reported at the field the form shows it on.
     /// </summary>
     /// <param name="takenNames">The Names of the other Chores, which this one may not share.</param>
-    public Result<RecurringChore> ToChore(DateOnly createdOn, IEnumerable<string> takenNames)
+    /// <param name="area">The Area <see cref="AreaId"/> names; null when there is no such Area.</param>
+    public Result<RecurringChore> ToChore(DateOnly createdOn, IEnumerable<string> takenNames, Area? area)
     {
         List<FieldError> errors = [];
-        // Missing when the JSON leaves it out, whatever its type says
-        string name = Name?.Trim() ?? "";
-        if (name.Length == 0)
-        {
-            errors.Add(new FieldError("name", "A Chore needs a name."));
-        }
-        // A Name tells Chores apart on the Overview
-        else if (takenNames.FirstOrDefault(taken => string.Equals(taken.Trim(), name, StringComparison.CurrentCultureIgnoreCase)) is { } taken)
-        {
-            errors.Add(new FieldError("name", $"There is already a Chore called {taken}."));
-        }
-        Interval? interval = errors.Try("interval", "Every needs a whole number of at least 1.", () => Interval is { } given
-            ? new Interval(given.Count, given.Unit)
-            : throw new ArgumentNullException(nameof(Interval)));
-        PreferredDay? preferredDay = null;
-        if (PreferredDay is not null && !PreferredDayText.TryFromText(PreferredDay, out preferredDay))
-        {
-            errors.Add(new FieldError("preferredDay", "That is not a day."));
-        }
-        else if (interval is not null && preferredDay?.Allows(interval) == false)
-        {
-            errors.Add(new FieldError("preferredDay", preferredDay is PreferredDay.Weekday
-                ? "A weekday needs an Interval in weeks, months or years."
-                : "The first or last of the month needs an Interval in months or years."));
-        }
-        Season? season = Season is null
-            ? null
-            : errors.Try("season", "A Season runs between months 1 and 12.", () => new Season(Season.FromMonth, Season.ToMonth));
+        string name = errors.CheckName(Name, takenNames);
+        errors.CheckArea(AreaId, area);
+        (Interval? interval, PreferredDay? preferredDay, Season? season) = errors.CheckSchedule(Interval, PreferredDay, Season);
         // Result only builds the Chore when nothing was wrong, so the Interval is there
         return new Result<RecurringChore>(errors, () =>
         {
@@ -58,6 +35,7 @@ public sealed record CreateRecurringChoreRequest(
                 Season = season,
                 Importance = Importance,
                 Effort = Effort,
+                Area = area,
             };
             if (LastDone is { } lastDone)
             {

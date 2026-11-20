@@ -2,7 +2,8 @@
 // is shorter or longer than another
 
 const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+/** Short month names, January first. */
+export const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const msPerDay = 24 * 60 * 60 * 1000
 
 const parse = (date: string) => new Date(`${date}T00:00:00Z`)
@@ -20,6 +21,17 @@ export function relativeDate(date: string, from: string): string {
   if (days === 0) return 'today'
   if (days === 1) return 'tomorrow'
   if (days < 7) return `in ${days} days`
+  return shortDate(date)
+}
+
+/** A date with its weekday, such as "Tue 24 Nov". */
+export function shortDate(date: string): string {
   const d = parse(date)
   return `${dayNames[d.getUTCDay()]} ${d.getUTCDate()} ${monthNames[d.getUTCMonth()]}`
+}
+
+/** A date in full, such as "8 Mar 2027". */
+export function longDate(date: string): string {
+  const d = parse(date)
+  return `${d.getUTCDate()} ${monthNames[d.getUTCMonth()]} ${d.getUTCFullYear()}`
 }

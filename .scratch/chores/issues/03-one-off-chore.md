@@ -1,6 +1,6 @@
 # Creating a One-off Chore
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 02
 
 ## API

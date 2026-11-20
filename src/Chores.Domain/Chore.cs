@@ -15,30 +15,60 @@ public abstract class Chore(string name, DateOnly createdOn)
     public Area? Area { get; set; }
     public IReadOnlyList<Completion> Completions => _completions;
 
+    /// <summary>The date the household removed the Chore on, keeping its Completions for history; null when not Archived.</summary>
+    public DateOnly? ArchivedOn { get; private set; }
+
+    /// <summary>A One-off Chore once completed; a Recurring Chore never is.</summary>
+    public virtual bool IsFinished => false;
+
+    /// <summary>Only a Recurring Chore can move on to its next Due Date without being done.</summary>
+    public virtual bool CanSkip => false;
+
+    /// <summary>Has Completions to keep, so deleting it Archives it rather than removing it.</summary>
+    public bool HasHistory => _completions.Count > 0;
+
     /// <summary>The date of the latest Completion that was not skipped, if any.</summary>
     public DateOnly? LastDone => _completions.Where(c => !c.Skipped).Select(c => (DateOnly?)c.Date).Max();
 
     public void Complete(DateOnly date) => Add(CompletionOn(date));
 
-    /// <summary>Removes a Completion, done or skipped.</summary>
+    /// <summary>
+    /// Moves on to the next Due Date as if done on the current one, recording a skipped Completion that leaves
+    /// Last Done as it is; only when <see cref="CanSkip"/>.
+    /// </summary>
+    public void Skip(DateOnly date) => Add(CanSkip
+        ? CompletionOn(date) with { Skipped = true }
+        : throw new InvalidOperationException("Only a Recurring Chore can be skipped."));
 
+    /// <summary>Removes a Completion, done or skipped.</summary>
     public void RemoveCompletion(Completion completion)
     {
         _completions.Remove(completion);
         OnCompletionsChanged();
     }
 
+    /// <summary>Removes the Chore from the household's list but keeps its Completions.</summary>
+    public void Archive(DateOnly date) => ArchivedOn = date;
+
+    /// <summary>Brings an Archived Chore back, scheduled from its history as before.</summary>
+    public void Restore() => ArchivedOn = null;
+
+    /// <summary>
+    /// Whether the Chore is still open with the given Due Date, or without one when null: not once someone acted on it.
+    /// </summary>
+    public bool IsDueOn(DateOnly? dueDate) => !IsFinished && NextDueDate == dueDate;
+
     /// <summary>Sets the Due Date by hand.</summary>
     public abstract void Postpone(DateOnly date);
 
-    /// <summary>Today is after the Due Date, whatever the Importance.</summary>
-    public bool IsOverdue(TimeProvider clock) => clock.Today() > NextDueDate;
+    /// <summary>Today is after the Due Date, whatever the Importance; never for an Archived Chore.</summary>
+    public bool IsOverdue(TimeProvider clock) => ArchivedOn is null && clock.Today() > NextDueDate;
 
     /// <summary>
     /// Rises from 0 four days before the Due Date to 2 four days after it (1 on the Due Date), times the
-    /// Importance weight; null when the Chore has no Due Date.
+    /// Importance weight; null when the Chore has no Due Date or is Archived.
     /// </summary>
-    public double? Urgency(TimeProvider clock) => UnweightedUrgency(clock.Today()) * Importance switch
+    public double? Urgency(TimeProvider clock) => ArchivedOn is not null ? null : UnweightedUrgency(clock.Today()) * Importance switch
     {
         Importance.Low => 0.75,
         Importance.High => 1.5,

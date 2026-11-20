@@ -1,16 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, Outlet, useNavigate, useRouter } from '@tanstack/react-router'
+import { Link, Outlet, useNavigate, useRouter, useRouterState } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { api } from '../api/client.ts'
 import { sessionQuery } from '../session.ts'
 import { Dialog } from '../ui/Dialog.tsx'
 import { Menu } from '../ui/Menu.tsx'
 import { toast } from '../ui/toast.ts'
+import { fromLg, useMediaQuery } from '../ui/useMediaQuery.ts'
 import { ChoreForm } from './ChoreForm.tsx'
 import { unreachableMessage } from './Unreachable.tsx'
 
-// Links to the screens besides the Overview; Areas (08) and All Chores (09) join here
-const navLinks: { to: '/'; label: string }[] = []
+// Every screen in the navigation; the Overview only counts as current on itself, not on the screens below it
+const navLinks: { to: '/' | '/chores' | '/areas'; label: string; exact?: boolean }[] = [
+  { to: '/', label: 'Overview', exact: true },
+  { to: '/chores', label: 'All Chores' },
+  { to: '/areas', label: 'Areas' },
+]
 
 /** Header with navigation around every screen but the login: a menu on a phone, a top bar from md up. */
 export function Shell() {
@@ -18,6 +23,10 @@ export function Shell() {
   const navigate = useNavigate()
   const router = useRouter()
   const [creating, setCreating] = useState(false)
+  const wide = useRouterState({ select: (state) => state.matches.some((match) => match.staticData.wide) })
+  const beside = useRouterState({ select: (state) => state.matches.some((match) => match.staticData.newChoreBeside) })
+  const fromLgUp = useMediaQuery(fromLg)
+  const newChore = () => (beside && fromLgUp ? void navigate({ to: '/chores', search: { chore: 'new' } }) : setCreating(true))
   // Refetched on focus, so a session ended elsewhere sends this device to the login. The route guard does the
   // redirect, once; navigating from here would rerun on every location change until the Shell unmounts.
   const { data: session } = useQuery(sessionQuery)
@@ -28,26 +37,32 @@ export function Shell() {
   const logout = useMutation({
     mutationFn: () => api('/api/logout', 'post'),
     onSuccess: () => queryClient.setQueryData(sessionQuery.queryKey, 'anonymous'),
-    onError: () => toast(unreachableMessage),
+    onError: () => toast.error(unreachableMessage),
   })
 
   return (
     <div className="min-h-dvh">
       <header className="bg-brand text-white">
-        <div className="mx-auto flex max-w-3xl items-center gap-2 px-4 py-2">
+        {/* One width on every screen, so the navigation stays put; only the content below narrows */}
+        <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-2">
           <Link to="/" className="py-2 text-lg font-semibold">
             Chores
           </Link>
           <nav className="ml-auto hidden items-center gap-2 md:flex">
             {navLinks.map((link) => (
-              <Link key={link.label} to={link.to} className="rounded-lg px-3 py-2 hover:bg-white/10">
+              <Link
+                key={link.label}
+                to={link.to}
+                activeOptions={{ exact: link.exact ?? false }}
+                className="rounded-lg px-3 py-2 hover:bg-white/10 data-[status=active]:bg-white/20"
+              >
                 {link.label}
               </Link>
             ))}
-            <button type="button" onClick={() => setCreating(true)} className="rounded-lg bg-cream px-3 py-2 font-semibold text-brand hover:bg-white">
+            <button type="button" onClick={newChore} className="rounded-lg bg-cream px-3 py-2 font-semibold text-brand hover:bg-white">
               New Chore
             </button>
-            <button type="button" onClick={() => logout.mutate()} className="rounded-lg px-3 py-2 hover:bg-white/10">
+            <button type="button" onClick={() => logout.mutate()} className="ml-2 px-2 py-2 text-sm text-white/70 hover:text-white hover:underline">
               Log out
             </button>
           </nav>
@@ -63,13 +78,13 @@ export function Shell() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-3xl px-4 py-6">
+      <main className={`mx-auto px-4 py-6 ${wide ? 'max-w-7xl' : 'max-w-3xl'}`}>
         <Outlet />
       </main>
       <button
         type="button"
         aria-label="New Chore"
-        onClick={() => setCreating(true)}
+        onClick={newChore}
         className="fixed right-4 bottom-6 flex size-14 items-center justify-center rounded-full bg-brand text-3xl text-white shadow-lg md:hidden"
       >
         +

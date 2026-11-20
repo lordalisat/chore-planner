@@ -5,6 +5,14 @@ type Method = 'get' | 'post' | 'put' | 'delete'
 type MethodOf<P extends keyof paths> = { [M in Method]: paths[P][M] extends undefined ? never : M }[Method]
 type Operation<P extends keyof paths, M extends MethodOf<P>> = NonNullable<paths[P][M]>
 type RequestBody<O> = O extends { requestBody: { content: { 'application/json': infer B } } } ? B : undefined
+type Query<O> = O extends { parameters: { query?: infer Q } } ? Exclude<Q, undefined> : never
+// The values for a path's `{placeholders}`, such as `{ id: 7 }` for `/api/chores/{id}`, or else for its query string,
+// such as `{ archived: true }` for `/api/chores?archived=true`
+type Params<O> = O extends { parameters: { path: infer X } }
+  ? [pathParams: X]
+  : [Query<O>] extends [never]
+    ? []
+    : [query?: Query<O>]
 type ResponseBody<O> = O extends { responses: { 200: { content: { 'application/json': infer R } } } } ? R : undefined
 
 /** A validation problem's messages by field, such as `{ preferredDay: ['…'] }`. */
@@ -26,15 +34,30 @@ export class ApiError extends Error {
 export const isUnauthorized = (error: unknown) => error instanceof ApiError && error.status === 401
 
 /**
- * Calls the API with the types from `schema.d.ts` (`npm run api`). Rejects with an ApiError when the API answers
- * other than 2xx, and with a TypeError when the server can't be reached.
+ * Calls the API with the types from `schema.d.ts` (`npm run api`): `api(path, method, body?, params?)`, with the
+ * body when the operation takes one and the path's values when it has `{placeholders}`, or else its query string.
+ * Rejects with an ApiError when the API answers other than 2xx, and with a TypeError when the server can't be reached.
  */
 export async function api<P extends keyof paths, M extends MethodOf<P>>(
   path: P,
   method: M,
-  ...[body]: RequestBody<Operation<P, M>> extends undefined ? [] : [RequestBody<Operation<P, M>>]
+  ...args: [
+    ...(RequestBody<Operation<P, M>> extends undefined ? [] : [RequestBody<Operation<P, M>>]),
+    ...Params<Operation<P, M>>,
+  ]
 ): Promise<ResponseBody<Operation<P, M>>> {
-  const response = await fetch(path, {
+  const hasPlaceholders = path.includes('{')
+  // Only a GET has a query string, and it never has a body
+  const params = (hasPlaceholders || method === 'get' ? args.pop() : undefined) as
+    | Record<string, string | number | boolean>
+    | undefined
+  const [body] = args
+  const url = hasPlaceholders
+    ? path.replace(/\{(\w+)\}/g, (_, name: string) => encodeURIComponent(String(params?.[name])))
+    : params
+      ? `${path}?${new URLSearchParams(Object.entries(params).map(([key, value]) => [key, String(value)]))}`
+      : path
+  const response = await fetch(url, {
     method: method.toUpperCase(),
     ...(body !== undefined && { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
   })

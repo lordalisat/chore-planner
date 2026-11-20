@@ -1,6 +1,6 @@
 # Editing a Chore
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 02
 
 ## API
@@ -10,10 +10,15 @@ Blocked by: 02
 
 ## UI
 
-- Tapping an Overview row opens the Chore form at the `/chores/$id` route (typed numeric param), filled in, reusing the create form. Its loader prefetches the Chore through TanStack Query. Saving returns to the Overview.
+- **Edit**, among the actions an Overview row shows when tapped, opens the Chore form at the `/chores/$id` route (typed numeric param), filled in, reusing the create form. Its loader prefetches the Chore through TanStack Query. A Back button at the top, saving and deleting all return to the screen it was opened from (the Overview when opened directly).
 - Last done is not editable here; Completions are how it changes.
 
 ## Acceptance
 
 - Integration tests: edit each kind; 400 on an invalid combination; 404 on an unknown id; the Due Date in the response reflects a new Interval or Preferred Day.
 - On a phone and in a desktop browser: changing laundry from Tuesday to Saturday moves its Due Date on the Overview.
+
+## Comments
+
+- 2026-11-19, hand check: tapping the whole row to edit felt odd next to its actions. The row now opens nothing; Edit moved into the row's ⋯ menu, and Done became a round check on the left.
+- 2026-11-19, hand check: the ⋯ menu was too small a target. Tapping a row now expands it to show Done on…, Skip, Postpone… and Edit as buttons; the ⋯ menu is gone.

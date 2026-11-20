@@ -1,6 +1,6 @@
 # Areas
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 04
 
 ## API
@@ -12,7 +12,7 @@ Blocked by: 04
 
 ## UI
 
-- **Areas** screen from the menu: a flat list showing each Area's parent; create, rename, set or clear the parent, and delete with a confirmation naming how many Chores use it.
+- **Areas** screen from the menu: a flat table of each Area's name, the Area it sits inside and how many Chores use it, a click on a row opening it; create, rename, set or clear the parent, and delete with a confirmation naming how many Chores use it.
 - An Area picker in the Chore form; Overview rows show the Area name, and so does the All Chores screen (09) as a column, whichever of 08 and 09 lands last adds it.
 - No filtering or grouping by Area (later effort).
 

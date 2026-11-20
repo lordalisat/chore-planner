@@ -13,6 +13,11 @@ function renderForm() {
   )
 }
 
+// The Chores the form saved, leaving out what it read, such as the Areas
+function sent(fetch: ReturnType<typeof stubApi>) {
+  return fetch.mock.calls.filter(([, init]) => init?.method === 'POST' || init?.method === 'PUT')
+}
+
 async function pick(field: string, option: string) {
   await userEvent.click(screen.getByRole('combobox', { name: field }))
   await userEvent.click(await screen.findByRole('option', { name: option }))
@@ -41,7 +46,7 @@ test('Save and add another keeps the Interval, Preferred Day and Season and star
 
   const name = screen.getByRole('textbox', { name: 'Name' })
   await expect.poll(() => name).toHaveValue('')
-  expect(JSON.parse(String(fetch.mock.calls[0]?.[1]?.body))).toMatchObject({
+  expect(JSON.parse(String(sent(fetch)[0]?.[1]?.body))).toMatchObject({
     name: 'Hoover upstairs',
     interval: { count: 2, unit: 'Week' },
     preferredDay: 'Tuesday',
@@ -57,6 +62,27 @@ test('Save and add another keeps the Interval, Preferred Day and Season and star
   expect(screen.getByRole('textbox', { name: 'Effort in minutes' })).toHaveValue('')
 })
 
+test('a Chore goes in the picked Area, which Save and add another keeps', async () => {
+  const fetch = stubApi({
+    '/api/chores/one-off': new Response('{}', { status: 201 }),
+    '/api/chores': [],
+    '/api/areas': [
+      { id: 2, name: 'Downstairs', parentId: null, choreCount: 0 },
+      { id: 3, name: 'Kitchen', parentId: 2, choreCount: 0 },
+    ],
+  })
+  renderForm()
+
+  await userEvent.click(screen.getByRole('radio', { name: 'One-off' }))
+  await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Clean the fridge')
+  await pick('Area', 'Kitchen')
+  await userEvent.click(screen.getByRole('button', { name: 'Save and add another' }))
+
+  await expect.poll(() => screen.getByRole('textbox', { name: 'Name' })).toHaveValue('')
+  expect(JSON.parse(String(sent(fetch)[0]?.[1]?.body))).toMatchObject({ name: 'Clean the fridge', areaId: 3 })
+  expect(screen.getByRole('combobox', { name: 'Area' })).toHaveTextContent('Kitchen')
+})
+
 test('switching Seasonal off makes a Chore all year again', async () => {
   const fetch = stubApi({ '/api/chores/recurring': new Response('{}', { status: 201 }), '/api/chores': [] })
   renderForm()
@@ -68,8 +94,8 @@ test('switching Seasonal off makes a Chore all year again', async () => {
   await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Dust{Enter}')
 
   expect(screen.queryByRole('combobox', { name: 'Season from' })).not.toBeInTheDocument()
-  await expect.poll(() => fetch.mock.calls.length).toBe(1)
-  expect(JSON.parse(String(fetch.mock.calls[0]?.[1]?.body))).toMatchObject({ name: 'Dust', season: null })
+  await expect.poll(() => sent(fetch).length).toBe(1)
+  expect(JSON.parse(String(sent(fetch)[0]?.[1]?.body))).toMatchObject({ name: 'Dust', season: null })
 })
 
 test('a field the API rejects shows why', async () => {
@@ -116,8 +142,32 @@ test('Any day clears a picked Preferred Day', async () => {
   await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Dust{Enter}')
 
   expect(screen.getByRole('combobox', { name: 'Preferred day' })).toHaveTextContent('Any day')
-  await expect.poll(() => fetch.mock.calls.length).toBe(1)
-  expect(JSON.parse(String(fetch.mock.calls[0]?.[1]?.body))).toMatchObject({ name: 'Dust', preferredDay: null })
+  await expect.poll(() => sent(fetch).length).toBe(1)
+  expect(JSON.parse(String(sent(fetch)[0]?.[1]?.body))).toMatchObject({ name: 'Dust', preferredDay: null })
+})
+
+test('a One-off Chore asks only for a Name, Due Date, Importance and Effort', async () => {
+  const fetch = stubApi({ '/api/chores/one-off': new Response('{}', { status: 201 }), '/api/chores': [] })
+  renderForm()
+
+  await userEvent.click(screen.getByRole('radio', { name: 'One-off' }))
+  await userEvent.type(screen.getByRole('textbox', { name: 'Effort in minutes' }), '15')
+  await userEvent.click(screen.getByRole('radio', { name: 'High' }))
+  await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Fix leaking tap{Enter}')
+
+  expect(screen.queryByRole('textbox', { name: 'Every' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('switch', { name: 'Seasonal' })).not.toBeInTheDocument()
+  expect(screen.queryByText('Last done')).not.toBeInTheDocument()
+  expect(screen.getByText('Due date')).toBeVisible()
+  await expect.poll(() => sent(fetch).length).toBe(1)
+  expect(sent(fetch)[0]?.[0]).toBe('/api/chores/one-off')
+  expect(JSON.parse(String(sent(fetch)[0]?.[1]?.body))).toEqual({
+    name: 'Fix leaking tap',
+    dueDate: null,
+    importance: 'High',
+    effort: 15,
+    areaId: null,
+  })
 })
 
 test('the first and last of the month are only offered for an Interval in months or years', async () => {
