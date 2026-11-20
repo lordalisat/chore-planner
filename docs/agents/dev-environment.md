@@ -1,6 +1,6 @@
 # Dev environment
 
-The host's .NET SDK doesn't match `global.json`, so run everything through `./dev <command>`, never bare `dotnet`. From a worktree, `./dev` runs in the main checkout's devcontainer, in the worktree's folder.
+Everything runs in the devcontainer: `dotnet`, `npm` and the app, through `./dev <command>`. From a worktree, `./dev` runs in the main checkout's devcontainer, in the worktree's folder.
 
 ## Checking
 
