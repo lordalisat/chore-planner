@@ -122,6 +122,8 @@ test('the filter marks only the one shown', async () => {
   expect((await filter()).getByRole('link', { name: 'Archived' })).not.toHaveAttribute('aria-current')
 })
 
+const columns = ['Name', 'Area', 'Kind', 'Interval', 'Season', 'Importance', 'Effort', 'Due', 'Urgency']
+
 test('every Chore that is not Archived is listed, Dormant and finished ones marked', async () => {
   stubApi({ '/api/session': 204, '/api/chores': [laundry, lawn, mirror] })
   renderAt('/chores')
@@ -138,34 +140,39 @@ test('every Chore that is not Archived is listed, Dormant and finished ones mark
   expect(within(t).getByRole('row', { name: /Laundry/ })).toHaveTextContent('every week on Tuesday')
   expect(within(t).getByRole('columnheader', { name: /Urgency/ })).toBeVisible()
   expect(within(t).getByRole('row', { name: /Laundry/ })).toHaveTextContent('1.5')
+  // Finished: no Due Date left to meet, so only the mark
   expect(within(t).getByRole('row', { name: /Hang the mirror/ })).toHaveTextContent('Done')
+  const due = columns.indexOf('Due')
+  expect(within(within(t).getByRole('row', { name: /Hang the mirror/ })).getAllByRole('cell')[due]).toBeEmptyDOMElement()
 })
 
-// Ties go by Name, and blanks (a One-off Chore's Interval, a Season all year) stay at the bottom either way
+// Ties go by Name, and blanks (a One-off Chore's Interval, a Season all year) stay at the bottom either way. Importance
+// and Urgency start highest first, the others lowest first.
 test.each([
   ['Name', ['Clean the gutters', 'Hang the mirror', 'Laundry', 'Mow the lawn'], ['Mow the lawn', 'Laundry', 'Hang the mirror', 'Clean the gutters']],
   ['Kind', ['Hang the mirror', 'Clean the gutters', 'Laundry', 'Mow the lawn'], ['Clean the gutters', 'Laundry', 'Mow the lawn', 'Hang the mirror']],
   ['Interval', ['Laundry', 'Mow the lawn', 'Clean the gutters', 'Hang the mirror'], ['Clean the gutters', 'Mow the lawn', 'Laundry', 'Hang the mirror']],
   ['Season', ['Mow the lawn', 'Clean the gutters', 'Hang the mirror', 'Laundry'], ['Mow the lawn', 'Clean the gutters', 'Hang the mirror', 'Laundry']],
-  ['Importance', ['Mow the lawn', 'Clean the gutters', 'Hang the mirror', 'Laundry'], ['Laundry', 'Clean the gutters', 'Hang the mirror', 'Mow the lawn']],
+  ['Importance', ['Laundry', 'Clean the gutters', 'Hang the mirror', 'Mow the lawn'], ['Mow the lawn', 'Clean the gutters', 'Hang the mirror', 'Laundry']],
   ['Effort', ['Hang the mirror', 'Laundry', 'Mow the lawn', 'Clean the gutters'], ['Clean the gutters', 'Mow the lawn', 'Laundry', 'Hang the mirror']],
   ['Due', ['Hang the mirror', 'Laundry', 'Mow the lawn', 'Clean the gutters'], ['Clean the gutters', 'Mow the lawn', 'Laundry', 'Hang the mirror']],
   ['Area', ['Mow the lawn', 'Hang the mirror', 'Laundry', 'Clean the gutters'], ['Laundry', 'Hang the mirror', 'Mow the lawn', 'Clean the gutters']],
-  ['Urgency', ['Clean the gutters', 'Laundry', 'Hang the mirror', 'Mow the lawn'], ['Laundry', 'Clean the gutters', 'Hang the mirror', 'Mow the lawn']],
-])('sorting by %s, then the other way round', async (column, ascending, descending) => {
+  ['Urgency', ['Laundry', 'Clean the gutters', 'Hang the mirror', 'Mow the lawn'], ['Clean the gutters', 'Laundry', 'Hang the mirror', 'Mow the lawn']],
+])('sorting by %s, then the other way round', async (column, first, second) => {
   stubApi({ '/api/session': 204, '/api/chores': [laundry, lawn, mirror, gutters] })
   renderAt('/chores')
   const t = await table()
   const header = within(t).getByRole('button', { name: column })
 
   // The list starts sorted by Name
+  const [firstSort, secondSort] = column === 'Importance' || column === 'Urgency' ? ['descending', 'ascending'] : ['ascending', 'descending']
   if (column !== 'Name') await userEvent.click(header)
-  expect(names(t)).toEqual(ascending)
-  expect(within(t).getByRole('columnheader', { name: column })).toHaveAttribute('aria-sort', 'ascending')
+  expect(names(t)).toEqual(first)
+  expect(within(t).getByRole('columnheader', { name: column })).toHaveAttribute('aria-sort', firstSort)
 
   await userEvent.click(header)
-  expect(names(t)).toEqual(descending)
-  expect(within(t).getByRole('columnheader', { name: column })).toHaveAttribute('aria-sort', 'descending')
+  expect(names(t)).toEqual(second)
+  expect(within(t).getByRole('columnheader', { name: column })).toHaveAttribute('aria-sort', secondSort)
 })
 
 test('Intervals sort by unit, then count, since a month has no fixed number of days', async () => {

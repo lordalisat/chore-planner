@@ -54,6 +54,8 @@ const sortKeys: Record<Column, (chore: Chore) => SortKey> = {
   Urgency: ({ urgency }) => urgency,
 }
 const columns = Object.keys(sortKeys) as Column[]
+// What matters most comes first: the most urgent and most important Chores at the top
+const highestFirst: Column[] = ['Importance', 'Urgency']
 
 type Sort = { column: Column; descending: boolean }
 
@@ -85,13 +87,14 @@ const filterClass =
 
 /**
  * Every Chore in one place, including the ones the Overview hides; Archived ones under their own filter. An Active
- * Chore opens in the Chore form, beside the list from lg up and on its own screen below.
+ * Chore opens in the Chore form: from lg up it slides over the right of the list, which keeps its full width; below
+ * that it takes the screen.
  */
 export function AllChores() {
   const { archived, chore } = route.useSearch()
   const open = !archived && chore !== undefined
   return (
-    <div className={open ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_28rem] lg:items-start lg:gap-6' : ''}>
+    <div>
       <section className={`flex-col gap-4 ${open ? 'hidden lg:flex' : 'flex'}`}>
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="flex-1 text-xl font-semibold text-brand">All Chores</h1>
@@ -120,7 +123,7 @@ function ChorePanel({ chore: id }: { chore: number | 'new' }) {
   const chore = id === 'new' ? undefined : chores.find((chore) => chore.id === id)
 
   return (
-    <aside className="flex flex-col gap-4 lg:sticky lg:top-4 lg:rounded-2xl lg:bg-white lg:p-6 lg:shadow-sm">
+    <aside className="flex flex-col gap-4 lg:fixed lg:top-18 lg:right-4 lg:z-10 lg:max-h-[calc(100dvh-5.5rem)] lg:w-md lg:overflow-y-auto lg:rounded-2xl lg:bg-white lg:p-6 lg:shadow-xl">
       <div className="flex items-center">
         <h2 className="flex-1 text-xl font-semibold text-brand">{id === 'new' ? 'New Chore' : 'Edit Chore'}</h2>
         <Link to="/chores" aria-label="Close" className="rounded-lg px-3 py-1 text-2xl leading-none hover:bg-black/5">
@@ -156,7 +159,7 @@ function ActiveChores() {
               <span className="flex items-baseline gap-2">
                 <span className="flex-1 font-medium">{chore.name}</span>
                 <Marks chore={chore} />
-                {chore.dueDate && <span className="text-sm text-ink/70">{relativeDate(chore.dueDate, now)}</span>}
+                {chore.dueDate && !chore.finished && <span className="text-sm text-ink/70">{relativeDate(chore.dueDate, now)}</span>}
               </span>
               <span className="text-sm text-ink/60">
                 {[chore.area?.name, kindName(chore), schedule(chore), seasonName(chore)].filter(Boolean).join(' · ')}
@@ -174,11 +177,14 @@ function ActiveChores() {
                 <th key={column} aria-sort={active ? (sort.descending ? 'descending' : 'ascending') : undefined} className="font-semibold">
                   <button
                     type="button"
-                    onClick={() => setSort({ column, descending: active && !sort.descending })}
-                    className="w-full px-3 py-2 text-left hover:text-brand"
+                    onClick={() => setSort({ column, descending: active ? !sort.descending : highestFirst.includes(column) })}
+                    className="w-full px-3 py-2 text-left whitespace-nowrap hover:text-brand"
                   >
                     {column}
-                    <span aria-hidden="true">{active ? (sort.descending ? ' ↓' : ' ↑') : ''}</span>
+                    {/* Room for the arrow on every header, so sorting doesn't shift the columns */}
+                    <span aria-hidden="true" className="inline-block w-4 text-center">
+                      {active ? (sort.descending ? '↓' : '↑') : ''}
+                    </span>
                   </button>
                 </th>
               )
@@ -205,7 +211,8 @@ function ActiveChores() {
               <td className="px-3 py-2">{seasonName(chore)}</td>
               <td className="px-3 py-2">{chore.importance}</td>
               <td className="px-3 py-2">{chore.effort != null && `${chore.effort} min`}</td>
-              <td className="px-3 py-2">{chore.dueDate && relativeDate(chore.dueDate, now)}</td>
+              {/* A finished Chore has no Due Date left to meet */}
+              <td className="px-3 py-2">{chore.dueDate && !chore.finished && relativeDate(chore.dueDate, now)}</td>
               <td className="px-3 py-2 tabular-nums">{chore.urgency != null && Number(chore.urgency.toFixed(2))}</td>
             </tr>
           ))}

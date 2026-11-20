@@ -25,6 +25,8 @@ export function Shell() {
   const [creating, setCreating] = useState(false)
   const wide = useRouterState({ select: (state) => state.matches.some((match) => match.staticData.wide) })
   const beside = useRouterState({ select: (state) => state.matches.some((match) => match.staticData.newChoreBeside) })
+  const form = useRouterState({ select: (state) => state.matches.some((match) => match.staticData.form) })
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
   const fromLgUp = useMediaQuery(fromLg)
   const newChore = () => (beside && fromLgUp ? void navigate({ to: '/chores', search: { chore: 'new' } }) : setCreating(true))
   // Refetched on focus, so a session ended elsewhere sends this device to the login. The route guard does the
@@ -71,24 +73,31 @@ export function Shell() {
               label="Menu"
               trigger={<MenuIcon />}
               entries={[
-                ...navLinks.map((link) => ({ label: link.label, onSelect: () => void navigate({ to: link.to }) })),
+                ...navLinks.map((link) => ({
+                  label: link.label,
+                  onSelect: () => void navigate({ to: link.to }),
+                  current: link.exact ? pathname === link.to : pathname.startsWith(link.to),
+                })),
                 { label: 'Log out', onSelect: () => logout.mutate() },
               ]}
             />
           </div>
         </div>
       </header>
-      <main className={`mx-auto px-4 py-6 ${wide ? 'max-w-7xl' : 'max-w-3xl'}`}>
+      {/* Below md, room at the bottom so the floating New Chore button never covers the last row */}
+      <main className={`mx-auto px-4 pt-6 pb-24 md:pb-6 ${wide ? 'max-w-7xl' : 'max-w-3xl'}`}>
         <Outlet />
       </main>
-      <button
-        type="button"
-        aria-label="New Chore"
-        onClick={newChore}
-        className="fixed right-4 bottom-6 flex size-14 items-center justify-center rounded-full bg-brand text-3xl text-white shadow-lg md:hidden"
-      >
-        +
-      </button>
+      {!form && (
+        <button
+          type="button"
+          aria-label="New Chore"
+          onClick={newChore}
+          className="fixed right-4 bottom-6 flex size-14 items-center justify-center rounded-full bg-brand text-3xl text-white shadow-lg md:hidden"
+        >
+          +
+        </button>
+      )}
       <Dialog open={creating} onOpenChange={setCreating} title="New Chore">
         {/* Mounted only while open, so each new Chore starts from an empty form */}
         {creating && <ChoreForm onDone={() => setCreating(false)} />}

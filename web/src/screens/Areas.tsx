@@ -50,9 +50,9 @@ export function Areas() {
                 onKeyDown={(event) => event.key === 'Enter' && setEditing(area)}
                 className="cursor-pointer border-b border-black/5 last:border-0 hover:bg-brand/5 focus-visible:bg-brand/5 focus-visible:outline-2 focus-visible:outline-brand"
               >
-                <td className="px-3 py-2 font-medium">{area.name}</td>
-                <td className="px-3 py-2">{nameOf(area.parentId)}</td>
-                <td className="px-3 py-2 text-right">{area.choreCount}</td>
+                <td className="px-3 py-3 font-medium">{area.name}</td>
+                <td className="px-3 py-3">{nameOf(area.parentId)}</td>
+                <td className="px-3 py-3 text-right">{area.choreCount}</td>
               </tr>
             ))}
           </tbody>
