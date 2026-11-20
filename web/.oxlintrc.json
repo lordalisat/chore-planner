@@ -3,6 +3,16 @@
   "plugins": ["react", "typescript", "oxc"],
   "rules": {
     "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
+    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+    "no-restricted-imports": [
+      "error",
+      { "patterns": [{ "group": ["@ui-sdk/*"], "message": "Screens use the wrappers in src/ui/; only src/ui/ imports the UI SDK." }] }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["src/ui/**"],
+      "rules": { "no-restricted-imports": "off" }
+    }
+  ]
 }
