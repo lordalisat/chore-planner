@@ -47,7 +47,7 @@ public class AuthTests(ApiFactory factory) : IClassFixture<ApiFactory>
         string cookie = Assert.Single(response.Headers.GetValues("Set-Cookie"));
         Assert.Contains("httponly", cookie, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("secure", cookie, StringComparison.OrdinalIgnoreCase);
-        DateTimeOffset expires = DateTimeOffset.Parse(cookie.Split("expires=", StringSplitOptions.None)[1].Split(';')[0]);
+        var expires = DateTimeOffset.Parse(cookie.Split("expires=", StringSplitOptions.None)[1].Split(';')[0]);
         // A year from now by the API's clock
         Assert.Equal(new FixedClock(ApiFactory.Today).GetUtcNow().AddDays(365), expires);
         Assert.Equal(HttpStatusCode.NoContent, (await client.GetAsync("/api/session", TestContext.Current.CancellationToken)).StatusCode);

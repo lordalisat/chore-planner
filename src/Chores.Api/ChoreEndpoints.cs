@@ -38,7 +38,7 @@ public static class ChoreEndpoints
 
             db.Add(chore);
             await db.SaveChangesAsync();
-            ChoreDto created = ChoreDto.From(chore, db.IdOf, clock);
+            var created = ChoreDto.From(chore, db.IdOf, clock);
             return TypedResults.Created($"/api/chores/{created.Id}", created);
         });
 
@@ -72,7 +72,7 @@ public static class ChoreEndpoints
 
             db.Add(chore);
             await db.SaveChangesAsync();
-            ChoreDto created = ChoreDto.From(chore, db.IdOf, clock);
+            var created = ChoreDto.From(chore, db.IdOf, clock);
             return TypedResults.Created($"/api/chores/{created.Id}", created);
         });
 
