@@ -1,6 +1,6 @@
 # Frontend tracer: the v1 stack on the existing login
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: —
 
 Prove the whole front-end stack from `spec.md` on what already works (login, logout, session) before any Chore slice depends on it. No new features.

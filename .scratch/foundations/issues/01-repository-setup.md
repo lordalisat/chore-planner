@@ -1,6 +1,6 @@
 # Repository setup
 
-Status: ready-for-agent
+Status: resolved
 
 The housekeeping files every later issue relies on, added before any code.
 

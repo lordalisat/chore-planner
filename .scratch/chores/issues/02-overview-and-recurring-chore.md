@@ -1,6 +1,6 @@
 # Overview and creating a Recurring Chore
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 01
 
 The first real slice: create Recurring Chores and see them on the Overview ordered by Urgency.
