@@ -1,0 +1,35 @@
+#!/bin/sh
+# Every check a PR must pass: .NET build (style included) and tests, web lint, types and tests.
+# One line per step; only a failing step prints its output. CI runs the same script.
+#   ./check            from the host (runs itself in the devcontainer) or inside it
+set -e
+cd "$(dirname "$0")"
+if [ -z "$CI" ] && [ ! -f /.dockerenv ] && [ ! -f /run/.containerenv ]; then
+  exec ./dev ./check "$@"
+fi
+
+log=$(mktemp)
+failed=0
+step() {
+  name=$1; shift
+  if "$@" >"$log" 2>&1; then
+    echo "ok    $name"
+  else
+    echo "FAIL  $name"
+    grep -E "error|FAIL|failed|✗|×|Assert|Expected|Actual" "$log" | awk '!seen[$0]++' | head -40
+    echo "      (full output: $*)"
+    failed=1
+  fi
+}
+
+[ -d web/node_modules ] || step "npm ci" npm ci --prefix web
+step "dotnet build" dotnet build --nologo -v q
+built=$((1 - failed))
+step "dotnet format" dotnet format --verify-no-changes --no-restore
+# Tests on a failed build would run the last good binaries
+if [ $built = 1 ]; then step "dotnet test" dotnet test --no-build; else echo "skip  dotnet test"; fi
+step "web lint" npm run --prefix web lint
+step "web types" sh -c 'cd web && npx tsc -b'
+step "web test" sh -c 'cd web && npx vitest run'
+rm -f "$log"
+exit $failed

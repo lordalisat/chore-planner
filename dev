@@ -2,14 +2,28 @@
 # Start the devcontainer if needed, then run a command in it (default: zsh).
 #   ./dev               open a shell
 #   ./dev dotnet test   run one command
+# From a git worktree it runs in the main checkout's container, in the worktree's folder:
+# a second devcontainer would fight the first over ports 5080/5173.
 set -e
 cd "$(dirname "$0")"
 [ $# -eq 0 ] && set -- zsh
+here=$(pwd -P)
+main=$(cd "$(git rev-parse --git-common-dir)/.." && pwd -P)
+
 # Rootless Podman: map the host user to the container's vscode user (uid 1000)
 # so the workspace is writable. Docker ignores this.
 export PODMAN_USERNS="${PODMAN_USERNS:-keep-id:uid=1000,gid=1000}"
 # Podman's builder can't read the BuildKit build contexts that features use
 buildkit=auto
 docker version 2>/dev/null | grep -q Podman && buildkit=never
-devcontainer up --workspace-folder . --buildkit "$buildkit" >/dev/null
-exec devcontainer exec --workspace-folder . "$@"
+
+container() { docker ps -q --filter "label=devcontainer.local_folder=$main"; }
+[ -n "$(container)" ] || devcontainer up --workspace-folder "$main" --buildkit "$buildkit" >/dev/null
+
+if [ "$here" = "$main" ]; then
+  exec devcontainer exec --workspace-folder . "$@"
+fi
+# The container mounts the main checkout, worktrees included, at /workspaces/<name>
+tty=-i
+[ -t 0 ] && [ -t 1 ] && tty=-it
+exec docker exec "$tty" -u vscode -w "/workspaces/$(basename "$main")${here#"$main"}" "$(container)" "$@"

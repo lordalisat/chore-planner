@@ -17,6 +17,8 @@ node_modules/
 *.db-wal
 # Anchored: unanchored data/ also matches EF Core's Data/ folders on case-insensitive filesystems
 /data/
+# Cookie keys the API writes next to its database when run from the project folder (macOS: data/ is Data/)
+/src/Chores.Api/[Dd]ata/keys/
 
 # Secrets
 .env

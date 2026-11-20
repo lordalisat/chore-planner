@@ -19,7 +19,7 @@ devcontainer up --workspace-folder .          # start (builds on first run)
 devcontainer exec --workspace-folder . zsh    # open a shell inside
 ```
 
-`./dev` does both in one go, and `./dev <command>` runs a single command inside. Edit with any editor on the host, in another terminal pane; editor language servers then need the .NET SDK and Node on the host.
+`./dev` does both in one go, and `./dev <command>` runs a single command inside. From a git worktree, `./dev` runs in the main checkout's container, in the worktree's folder, so worktrees share one container and its ports. Edit with any editor on the host, in another terminal pane; editor language servers then need the .NET SDK and Node on the host.
 
 **Podman** works instead of Docker, as long as a `docker` command reaches it (Podman's Docker shim or `podman-docker`), or pass `--docker-path podman` to the CLI. Rootless Podman also needs `PODMAN_USERNS=keep-id:uid=1000,gid=1000`, otherwise the workspace isn't writable inside the container. Its builder also can't install features through BuildKit, so pass `--buildkit never` to `devcontainer up`. `./dev` does both for you; when calling `devcontainer` or VS Code directly, set them yourself. On macOS the Podman machine must share the repo folder with its VM.
 
@@ -30,6 +30,7 @@ Install the Dev Containers extension, open the repo and run "Dev Containers: Reo
 **Inside the container**
 
 ```sh
+./check                                    # everything a PR must pass: build, style, tests, web lint/types/tests (CI runs it too)
 dotnet build                               # API, Domain and tests (Chores.slnx)
 dotnet test                                # all test projects
 dotnet run --project src/Chores.Api        # API on :5080, OpenAPI at /openapi/v1.json
