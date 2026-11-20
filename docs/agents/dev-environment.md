@@ -11,7 +11,7 @@ Everything runs in the devcontainer: `dotnet`, `npm` and the app, through `./dev
 Green tests have never caught a layout, navigation or empty-state bug in this repo; only the running app shows them. A change to `web/` gets two looks:
 
 - **Implementer:** before handing off, see that each touched screen renders at **phone width (390×844)** and **desktop width (1280×800)**.
-- **Review:** `/code-review`'s Experience axis walks every touched screen and state at both widths, and its screenshots go in the PR's Evidence.
+- **Review:** `/experience-review`, run after `/code-review`, walks every touched screen and state at both widths, and its screenshots go in the PR's Evidence.
 
 The recipe, for both:
 
