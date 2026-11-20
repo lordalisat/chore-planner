@@ -1,6 +1,6 @@
 ## Running and checking
 
-Run `dotnet`, `npm` and the app through `./dev`; check with `./check`; a `web/` change is done once seen in a browser at phone and desktop width. See `docs/agents/dev-environment.md`.
+Run `dotnet`, `npm` and the app through `./dev`; check with `./check`; a `web/` change is seen in a browser at phone and desktop width. See `docs/agents/dev-environment.md`.
 
 ## Agent skills
 

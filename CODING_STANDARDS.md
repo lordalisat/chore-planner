@@ -18,5 +18,5 @@ A domain concept that will gain kinds (a ticket, spec or `.scratch/` file hints 
 
 ## Evidence in the PR
 
-- A change under `web/` shows screenshots at phone and desktop width of every screen it touches (`docs/agents/dev-environment.md`, "Seeing it run").
+- A change under `web/` shows screenshots at phone and desktop width of every screen it touches, from `/code-review`'s Experience axis (`docs/agents/dev-environment.md`, "Seeing it run").
 - A change to the build environment (`.devcontainer/`, `Dockerfile`, `compose.yaml`, `dev`, `check`, `.github/`) shows output of it actually running: `devcontainer up`, `docker build`, a CI run. A syntax check isn't evidence.
