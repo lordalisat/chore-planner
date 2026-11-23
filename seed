@@ -1,0 +1,65 @@
+#!/bin/sh
+# Fills a running dev API with Areas and one Chore in every state a review needs, dated from today:
+# Overdue, due today, soon, Later, Anytime, One-off, finished, Dormant, missed inside its Season, Archived.
+# For an empty, throwaway database (docs/agents/dev-environment.md, "Seeing it run").
+#   ./seed            from the host (runs itself in the devcontainer) or inside it, with the API up
+set -e
+cd "$(dirname "$0")"
+if [ ! -f /.dockerenv ] && [ ! -f /run/.containerenv ]; then
+  exec ./dev ./seed "$@"
+fi
+
+api=${API:-http://localhost:5080/api}
+call() { # method path [json]
+  if [ -n "$3" ]; then
+    curl -sS --fail-with-body -H "X-Api-Key: dev-api-key" -H "Content-Type: application/json" -X "$1" "$api$2" -d "$3"
+  else
+    curl -sS --fail-with-body -H "X-Api-Key: dev-api-key" -X "$1" "$api$2"
+  fi
+}
+day() { date -d "$1" +%F; }
+m=$(date +%-m)
+month() { echo $((((m - 1 + $1) % 12 + 12) % 12 + 1)); } # this month plus $1, wrapping the year
+
+[ "$(call GET /chores | jq length)" = 0 ] || { echo "seed: the database already has Chores; seed a throwaway one" >&2; exit 1; }
+
+area() { call POST /areas "{\"name\":\"$1\",\"parentId\":${2:-null}}" | jq .id; }
+kitchen=$(area Kitchen)
+bathroom=$(area Bathroom)
+garden=$(area Garden)
+upstairs=$(area Upstairs)
+kids=$(area "Kids room" "$upstairs")
+area Hall >/dev/null # no Chores
+
+recurring() { # name area json-fields
+  call POST /chores/recurring "{\"name\":\"$1\",\"areaId\":$2,\"importance\":\"Normal\",$3}" | jq -c '{id, dueDate}'
+}
+oneoff() { # name area json-fields
+  call POST /chores/one-off "{\"name\":\"$1\",\"areaId\":$2,\"importance\":\"Normal\",$3}" | jq -c '{id, dueDate}'
+}
+complete() { # created-json date
+  call POST "/chores/$(echo "$1" | jq .id)/complete" "{\"dueDate\":$(echo "$1" | jq .dueDate),\"date\":\"$2\"}" >/dev/null
+}
+
+recurring "Wipe kitchen counters" "$kitchen" "\"interval\":{\"count\":3,\"unit\":\"Day\"},\"importance\":\"High\",\"effort\":5,\"lastDone\":\"$(day '-10 days')\"" >/dev/null
+recurring "Clean bathroom sink" "$bathroom" "\"interval\":{\"count\":1,\"unit\":\"Week\"},\"effort\":10,\"lastDone\":\"$(day '-7 days')\"" >/dev/null
+recurring "Vacuum the stairs" "$upstairs" "\"interval\":{\"count\":1,\"unit\":\"Week\"},\"effort\":15,\"lastDone\":\"$(day '-5 days')\"" >/dev/null
+recurring "Change bed sheets" "$kids" "\"interval\":{\"count\":2,\"unit\":\"Week\"},\"preferredDay\":\"Saturday\",\"effort\":20,\"lastDone\":\"$(day '-1 day')\"" >/dev/null
+recurring "Descale the coffee machine and kettle thoroughly before guests arrive" "$kitchen" "\"interval\":{\"count\":1,\"unit\":\"Month\"},\"preferredDay\":\"FirstOfMonth\",\"importance\":\"Low\",\"effort\":15" >/dev/null
+# Its Season starts in two months: Dormant, waiting for it
+recurring "Mow the lawn" "$garden" "\"interval\":{\"count\":1,\"unit\":\"Week\"},\"season\":{\"fromMonth\":$(month 2),\"toMonth\":$(month 5)},\"effort\":45" >/dev/null
+# Its Season ended last month with a Due Date missed inside it: Overdue, not Dormant
+recurring "Rake the leaves" "$garden" "\"interval\":{\"count\":1,\"unit\":\"Week\"},\"season\":{\"fromMonth\":$(month -4),\"toMonth\":$(month -1)},\"effort\":30,\"lastDone\":\"$(day "$(date +%Y-%m-01) -1 month")\"" >/dev/null
+
+oneoff "Fix leaking tap" "$bathroom" "\"dueDate\":\"$(day '+4 days')\",\"importance\":\"High\",\"effort\":30" >/dev/null
+oneoff "Sort out the attic" "$upstairs" "\"dueDate\":null,\"importance\":\"Low\",\"effort\":120" >/dev/null
+books=$(oneoff "Return library books" "null" "\"dueDate\":\"$(day '-2 days')\",\"effort\":10")
+complete "$books" "$(day '-1 day')"
+
+# Done once, then deleted: kept as Archived for its history
+gutters=$(recurring "Clean the gutters" "$garden" "\"interval\":{\"count\":1,\"unit\":\"Year\"},\"effort\":60,\"lastDone\":\"$(day '-400 days')\"")
+complete "$gutters" "$(day '-30 days')"
+call DELETE "/chores/$(echo "$gutters" | jq .id)" >/dev/null
+
+call GET /chores | jq -r '.[] | [.name, (.dueDate // "anytime"), (if .finished then "finished" elif .dormant then "Dormant" elif .overdue then "Overdue" else "" end)] | @tsv'
+echo "+ 1 Archived, 6 Areas (Kids room inside Upstairs, Hall empty)"
