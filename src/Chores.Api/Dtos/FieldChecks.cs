@@ -31,6 +31,15 @@ public static class FieldChecks
         return trimmed;
     }
 
+    /// <summary>Adds at "description" when the Description is longer than a Chore holds.</summary>
+    public static void CheckDescription(this List<FieldError> errors, string? description)
+    {
+        if (description?.Trim().Length > Chore.DescriptionMaxLength)
+        {
+            errors.Add(new FieldError("description", $"A Description holds at most {Chore.DescriptionMaxLength} characters."));
+        }
+    }
+
     /// <summary>Adds at "areaId" when the request names an Area that was not found.</summary>
     /// <param name="area">The Area found for <paramref name="areaId"/>, if any.</param>
     public static void CheckArea(this List<FieldError> errors, int? areaId, Area? area)

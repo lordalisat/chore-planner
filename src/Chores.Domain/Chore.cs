@@ -12,6 +12,27 @@ public abstract class Chore(string name, DateOnly createdOn)
     /// <summary>The estimated number of minutes the Chore takes.</summary>
     public int? Effort { get; set; }
 
+    /// <summary>The most characters a Description holds, after trimming.</summary>
+    public const int DescriptionMaxLength = 2000;
+
+    /// <summary>
+    /// What doing the Chore involves, as plain text with its line breaks; trimmed, and null when blank. At most
+    /// <see cref="DescriptionMaxLength"/> characters.
+    /// </summary>
+    public string? Description
+    {
+        get;
+        set
+        {
+            string? trimmed = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+            if (trimmed?.Length > DescriptionMaxLength)
+            {
+                throw new ArgumentException($"A Description holds at most {DescriptionMaxLength} characters.", nameof(value));
+            }
+            field = trimmed;
+        }
+    }
+
     public Area? Area { get; set; }
     public IReadOnlyList<Completion> Completions => _completions;
 

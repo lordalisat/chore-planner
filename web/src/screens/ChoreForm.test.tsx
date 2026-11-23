@@ -123,6 +123,43 @@ test('there is no Preferred Day for an Interval in days', async () => {
   expect(screen.queryByRole('combobox', { name: 'Preferred day' })).not.toBeInTheDocument()
 })
 
+test('a Description is sent with its line breaks, and Save and add another clears it', async () => {
+  const fetch = stubApi({ '/api/chores/recurring': new Response('{}', { status: 201 }), '/api/chores': [] })
+  renderForm()
+
+  await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Clean bathroom sink')
+  await userEvent.type(screen.getByRole('textbox', { name: 'Description' }), 'Descaler under the sink;{Enter}rinse the plug hole too')
+  await userEvent.click(screen.getByRole('button', { name: 'Save and add another' }))
+
+  await expect.poll(() => sent(fetch).length).toBe(1)
+  expect(JSON.parse(String(sent(fetch)[0]?.[1]?.body))).toMatchObject({
+    name: 'Clean bathroom sink',
+    description: 'Descaler under the sink;\nrinse the plug hole too',
+  })
+  await expect.poll(() => screen.getByRole('textbox', { name: 'Description' })).toHaveValue('')
+})
+
+test('Save and add another scrolls back to the top of what the form scrolls in', async () => {
+  stubApi({ '/api/chores/recurring': new Response('{}', { status: 201 }), '/api/chores': [] })
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <div data-testid="scroller" style={{ overflowY: 'auto' }}>
+        <h2>New Chore</h2>
+        <ChoreForm onDone={() => {}} />
+      </div>
+    </QueryClientProvider>,
+  )
+  const scroller = screen.getByTestId('scroller')
+  await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Hoover upstairs')
+  scroller.scrollTop = 400
+
+  await userEvent.click(screen.getByRole('button', { name: 'Save and add another' }))
+
+  await expect.poll(() => screen.getByRole('textbox', { name: 'Name' })).toHaveValue('')
+  expect(scroller.scrollTop).toBe(0)
+  expect(screen.getByRole('textbox', { name: 'Name' })).toHaveFocus()
+})
+
 test('a Preferred Day the new Interval does not allow is cleared', async () => {
   renderForm()
   await pick('Preferred day', 'Monday')
@@ -163,6 +200,7 @@ test('a One-off Chore asks only for a Name, Due Date, Importance and Effort', as
   expect(sent(fetch)[0]?.[0]).toBe('/api/chores/one-off')
   expect(JSON.parse(String(sent(fetch)[0]?.[1]?.body))).toEqual({
     name: 'Fix leaking tap',
+    description: '',
     dueDate: null,
     importance: 'High',
     effort: 15,

@@ -18,9 +18,11 @@ import {
 } from '../chores.ts'
 import { DateField } from '../ui/DateField.tsx'
 import { NumberField } from '../ui/NumberField.tsx'
+import { scrollToTop } from '../ui/scrollToTop.ts'
 import { SegmentedField } from '../ui/SegmentedField.tsx'
 import { SelectField, type Option } from '../ui/SelectField.tsx'
 import { SwitchField } from '../ui/SwitchField.tsx'
+import { TextAreaField } from '../ui/TextAreaField.tsx'
 import { TextField } from '../ui/TextField.tsx'
 import { toast } from '../ui/toast.ts'
 import { unreachableMessage } from './Unreachable.tsx'
@@ -46,6 +48,8 @@ const daysInMonth: Option<DayChoice>[] = [
   { value: 'WeekdayInMonth', label: 'A weekday in the month…' },
 ]
 const ordinals: Option<Ordinal>[] = ordinalNames.map((ordinal) => ({ value: ordinal, label: ordinal }))
+// As the API's Chore.DescriptionMaxLength; the API answers at the field if the two ever differ
+const descriptionMaxLength = 2000
 // A weekday in the month starts as the first Saturday
 const firstWeekdayInMonth = toWeekdayInMonth('First', 'Saturday')
 
@@ -72,6 +76,7 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
   const queryClient = useQueryClient()
   const [kind, setKind] = useState<Kind>(chore?.kind ?? 'Recurring')
   const [name, setName] = useState(chore?.name ?? '')
+  const [description, setDescription] = useState(chore?.description ?? '')
   const [count, setCount] = useState<number | null>(chore?.interval?.count ?? 1)
   const [unit, setUnit] = useState<Unit>(chore?.interval?.unit ?? 'Week')
   const [preferredDay, setPreferredDay] = useState<PreferredDay | null>(chore?.preferredDay ?? null)
@@ -90,6 +95,7 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
   const [dueDate, setDueDate] = useState<string | null>(chore?.kind === 'OneOff' ? (chore.dueDate ?? null) : null)
   const [errors, setErrors] = useState<FieldErrors>({})
   const nameInput = useRef<HTMLInputElement>(null)
+  const form = useRef<HTMLFormElement>(null)
 
   const preferredDays = preferredDaysFor(unit)
   const inMonth = weekdayInMonth(preferredDay)
@@ -116,11 +122,14 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
       // Setting up many Chores at once: the next one most likely shares the schedule
       toast.success(`Added ${request.name}`)
       setName('')
+      setDescription('')
       setImportance('Normal')
       setEffort(null)
       setLastDone(null)
       setDueDate(null)
-      nameInput.current?.focus()
+      // Back to the top for the next one, where the title and Name are
+      nameInput.current?.focus({ preventScroll: true })
+      if (form.current) scrollToTop(form.current)
     },
     onError: (error) => {
       if (error instanceof ApiError && error.status === 400) setErrors(error.errors)
@@ -133,7 +142,7 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
     const area = areaId === null ? null : Number(areaId)
     if (kind === 'OneOff') {
       setErrors({})
-      save.mutate({ another, kind, request: { name, dueDate, importance, effort, areaId: area } })
+      save.mutate({ another, kind, request: { name, description, dueDate, importance, effort, areaId: area } })
       return
     }
     // A Season needs both months; the API can only judge a whole one
@@ -147,6 +156,7 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
       kind,
       request: {
         name,
+        description,
         interval: { count: count ?? 0, unit },
         preferredDay,
         season: seasonal && seasonFrom && seasonTo ? { fromMonth: Number(seasonFrom), toMonth: Number(seasonTo) } : null,
@@ -159,10 +169,17 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-4">
+    <form ref={form} onSubmit={submit} className="flex flex-col gap-4">
       {/* A Chore's kind can't change */}
       {!chore && <SegmentedField label="Kind" options={kinds} value={kind} onValueChange={setKind} />}
       <TextField ref={nameInput} label="Name" autoFocus value={name} onValueChange={setName} error={errors.name?.[0]} />
+      <TextAreaField
+        label="Description"
+        value={description}
+        onValueChange={setDescription}
+        maxLength={descriptionMaxLength}
+        error={errors.description?.[0]}
+      />
       {kind === 'OneOff' && (
         <DateField label="Due date" value={dueDate} onValueChange={setDueDate} error={errors.dueDate?.[0]} />
       )}

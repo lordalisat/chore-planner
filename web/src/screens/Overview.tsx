@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { useState, type FormEvent } from 'react'
+import { useLayoutEffect, useRef, useState, type FormEvent } from 'react'
 import { api, ApiError } from '../api/client.ts'
 import { choresQuery, urgencyBand, type Chore, type UrgencyBand } from '../chores.ts'
 import { relativeDate, shortDate, today } from '../dates.ts'
@@ -167,6 +167,7 @@ function ChoreRow({ chore, today, open, onToggle, onClose, onDone, onDoneOn, onS
           )}
         </button>
       </div>
+      {open && chore.description && <Description text={chore.description} />}
       {open && (
         <div className="flex flex-wrap gap-2 border-t border-black/5 px-3 py-2">
           <RowAction onClick={act(onDoneOn)}>Done on…</RowAction>
@@ -177,6 +178,50 @@ function ChoreRow({ chore, today, open, onToggle, onClose, onDone, onDoneOn, onS
         </div>
       )}
     </li>
+  )
+}
+
+/** A Chore's Description, capped at three lines until Show more; the button shows only when the text is cut off. */
+function Description({ text }: { text: string }) {
+  const paragraph = useRef<HTMLParagraphElement>(null)
+  const [cutOff, setCutOff] = useState(false)
+  const [whole, setWhole] = useState(false)
+  // A changed Description starts capped again
+  const [shown, setShown] = useState(text)
+  if (text !== shown) {
+    setShown(text)
+    setWhole(false)
+  }
+  // Measured while capped, and again whenever its size changes (a turned phone, a resized window): taller than its
+  // three lines means some is hidden
+  useLayoutEffect(() => {
+    const element = paragraph.current
+    if (!element || whole) return
+    const measure = () => setCutOff(element.scrollHeight > element.clientHeight)
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(measure)
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [text, whole])
+
+  return (
+    <div className="flex flex-col items-start border-t border-black/5 px-3 py-2">
+      <p ref={paragraph} className={`text-sm whitespace-pre-line text-ink/80 ${whole ? '' : 'line-clamp-3'}`}>
+        {text}
+      </p>
+      {cutOff && (
+        <button
+          type="button"
+          aria-expanded={whole}
+          onClick={() => setWhole(!whole)}
+          // A 44px tap target that overlaps the padding around it, so it doesn't push the row apart
+          className="-mx-2 -my-2 min-h-11 px-2 text-sm font-medium text-brand hover:underline"
+        >
+          {whole ? 'Show less' : 'Show more'}
+        </button>
+      )}
+    </div>
   )
 }
 

@@ -853,6 +853,7 @@ export interface components {
             importance: components["schemas"]["Importance"];
             /** Format: int32 */
             effort: null | number;
+            description: null | string;
             area: null | components["schemas"]["AreaRefDto"];
             interval: null | components["schemas"]["IntervalDto"];
             /** @enum {null|string} */
@@ -888,6 +889,7 @@ export interface components {
             effort?: null | number;
             /** Format: int32 */
             areaId?: null | number;
+            description?: null | string;
         };
         CreateRecurringChoreRequest: {
             name: string;
@@ -902,6 +904,7 @@ export interface components {
             lastDone?: null | string;
             /** Format: int32 */
             areaId?: null | number;
+            description?: null | string;
         };
         DeleteChoreResponse: {
             archived: boolean;
@@ -919,6 +922,7 @@ export interface components {
             effort?: null | number;
             /** Format: int32 */
             areaId?: null | number;
+            description?: null | string;
         };
         HttpValidationProblemDetails: {
             type?: null | string;

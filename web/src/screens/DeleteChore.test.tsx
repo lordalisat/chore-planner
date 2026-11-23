@@ -20,6 +20,7 @@ const laundry: Chore = {
   dueDate: '2027-03-16',
   urgency: 0,
   overdue: false,
+  description: null,
   dormant: false,
   finished: false,
   canSkip: true,

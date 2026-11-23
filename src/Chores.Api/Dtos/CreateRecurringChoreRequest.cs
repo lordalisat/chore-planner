@@ -12,7 +12,8 @@ public sealed record CreateRecurringChoreRequest(
     Importance Importance = Importance.Normal,
     int? Effort = null,
     DateOnly? LastDone = null,
-    int? AreaId = null)
+    int? AreaId = null,
+    string? Description = null)
 {
     /// <summary>
     /// The Chore this asks for, or what is wrong with which field. The Domain decides what is valid; each rejection
@@ -25,6 +26,7 @@ public sealed record CreateRecurringChoreRequest(
         List<FieldError> errors = [];
         string name = errors.CheckName(Name, takenNames);
         errors.CheckArea(AreaId, area);
+        errors.CheckDescription(Description);
         (Interval? interval, PreferredDay? preferredDay, Season? season) = errors.CheckSchedule(Interval, PreferredDay, Season);
         // Result only builds the Chore when nothing was wrong, so the Interval is there
         return new Result<RecurringChore>(errors, () =>
@@ -36,6 +38,7 @@ public sealed record CreateRecurringChoreRequest(
                 Importance = Importance,
                 Effort = Effort,
                 Area = area,
+                Description = Description,
             };
             if (LastDone is { } lastDone)
             {

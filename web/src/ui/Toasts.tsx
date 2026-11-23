@@ -1,5 +1,6 @@
 import type { ToastType } from '@ui-sdk/react/toast'
 import { Toast, ToastAction, ToastClose, ToastDescription, ToastRegion, ToastTitle } from '@ui-sdk/react/toast'
+import { toast as toaster } from './toast.ts'
 
 // What each kind of toast looks like, so what happened shows at a glance and not by colour alone
 const looks: Partial<Record<ToastType, { icon: string; className: string }>> = {
@@ -15,6 +16,8 @@ export function Toasts() {
     // The UI SDK centres the region itself (left 50%, translated back by half its width); setting left or right breaks that.
     // Always expanded, so toasts list one above the other instead of collapsing into a stack that grows on hover.
     <ToastRegion
+      // The app's toaster, whose toasts close after 15 seconds
+      toaster={toaster}
       side="bottom"
       align="center"
       expanded

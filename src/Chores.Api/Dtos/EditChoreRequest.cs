@@ -14,7 +14,8 @@ public sealed record EditChoreRequest(
     DateOnly? DueDate = null,
     Importance Importance = Importance.Normal,
     int? Effort = null,
-    int? AreaId = null)
+    int? AreaId = null,
+    string? Description = null)
 {
     /// <summary>The Chore with these values, or what is wrong with which field, leaving the Chore as it was.</summary>
     /// <param name="takenNames">The Names of the other Chores, which this one may not share.</param>
@@ -24,6 +25,7 @@ public sealed record EditChoreRequest(
         List<FieldError> errors = [];
         string name = errors.CheckName(Name, takenNames);
         errors.CheckArea(AreaId, area);
+        errors.CheckDescription(Description);
         (Interval? interval, PreferredDay? preferredDay, Season? season) = chore is RecurringChore
             ? errors.CheckSchedule(Interval, PreferredDay, Season)
             : default;
@@ -34,6 +36,7 @@ public sealed record EditChoreRequest(
             chore.Importance = Importance;
             chore.Effort = Effort;
             chore.Area = area;
+            chore.Description = Description;
             // Which fields apply depends on the kind; the Domain has no use for a request's spare ones
             switch (chore)
             {

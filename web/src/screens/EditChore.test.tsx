@@ -21,6 +21,7 @@ const laundry: Chore = {
   dueDate: '2027-03-16',
   urgency: 0.5,
   overdue: false,
+  description: null,
   dormant: false,
   finished: false,
   canSkip: true,
@@ -95,6 +96,7 @@ test('saving an edited Chore sends its fields and returns to the Overview', asyn
   const put = fetch.mock.calls.find(([, init]) => init?.method === 'PUT')
   expect(JSON.parse(String(put?.[1]?.body))).toEqual({
     name: 'Laundry',
+    description: '',
     interval: { count: 1, unit: 'Week' },
     preferredDay: 'Saturday',
     season: { fromMonth: 4, toMonth: 10 },
@@ -104,11 +106,12 @@ test('saving an edited Chore sends its fields and returns to the Overview', asyn
   })
 })
 
-test('a One-off Chore stays one and keeps its Due Date', async () => {
+test('a One-off Chore stays one and keeps its Due Date and its untouched Description', async () => {
+  const describedTap: Chore = { ...tap, description: 'Washer is in the drawer.\nTurn the water off first.' }
   const fetch = stubApi({
     '/api/session': 204,
-    '/api/chores': [tap],
-    '/api/chores/9': (init) => Response.json(init?.method === 'PUT' ? { ...tap, name: 'Fix the kitchen tap' } : tap),
+    '/api/chores': [describedTap],
+    '/api/chores/9': (init) => Response.json(init?.method === 'PUT' ? { ...describedTap, name: 'Fix the kitchen tap' } : describedTap),
   })
   const router = renderAt('/chores/9')
   const name = await screen.findByRole('textbox', { name: 'Name' })
@@ -123,6 +126,7 @@ test('a One-off Chore stays one and keeps its Due Date', async () => {
   const put = fetch.mock.calls.find(([, init]) => init?.method === 'PUT')
   expect(JSON.parse(String(put?.[1]?.body))).toEqual({
     name: 'Fix the kitchen tap',
+    description: 'Washer is in the drawer.\nTurn the water off first.',
     dueDate: '2027-03-20',
     importance: 'Normal',
     effort: null,

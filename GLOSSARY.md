@@ -24,6 +24,10 @@ _Avoid_: Priority
 The estimated number of minutes a Chore takes.
 _Avoid_: Duration, cost
 
+**Description**:
+Optional free text on a Chore saying what doing it involves, such as which cleaner to use.
+_Avoid_: Notes, details
+
 **Area**:
 A part of the house a Chore belongs to, such as the kitchen or the garden; an Area may sit inside one parent Area, such as the kitchen inside downstairs.
 _Avoid_: Room, location, zone, area group
