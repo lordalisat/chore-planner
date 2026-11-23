@@ -11,7 +11,7 @@ type TextAreaFieldProps = Omit<ComponentProps<typeof Textarea>, 'value' | 'defau
 }
 
 /**
- * A labelled text area that grows with its text and shows its own error. Enter adds a line; Ctrl or Cmd with Enter
+ * A labelled text area that grows with its text and shows its own error. Enter adds a line; Cmd+Enter on a Mac, Ctrl+Enter elsewhere,
  * submits the form, as Enter does in a one-line field.
  */
 export function TextAreaField({ label, error, className, ...textarea }: TextAreaFieldProps) {
@@ -23,7 +23,7 @@ export function TextAreaField({ label, error, className, ...textarea }: TextArea
         submitShortcut="mod+enter"
         rows={2}
         {...textarea}
-        className="rounded-lg border border-black/20 bg-white px-3 py-2 focus:outline-2 focus:outline-brand data-invalid:border-red-700"
+        className="min-h-18 rounded-lg border border-black/20 bg-white px-3 py-2 focus:outline-2 focus:outline-brand data-invalid:border-red-700"
       />
       {error && (
         <FieldError match className="text-sm text-red-700">
