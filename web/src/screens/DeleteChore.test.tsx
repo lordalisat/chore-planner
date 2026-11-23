@@ -21,6 +21,7 @@ const laundry: Chore = {
   urgency: 0,
   overdue: false,
   description: null,
+  items: [],
   dormant: false,
   finished: false,
   canSkip: true,

@@ -25,6 +25,7 @@ import { SwitchField } from '../ui/SwitchField.tsx'
 import { TextAreaField } from '../ui/TextAreaField.tsx'
 import { TextField } from '../ui/TextField.tsx'
 import { toast } from '../ui/toast.ts'
+import { itemDraft, ItemsField, type ItemDraft } from './ItemsField.tsx'
 import { unreachableMessage } from './Unreachable.tsx'
 
 type RecurringRequest = components['schemas']['CreateRecurringChoreRequest']
@@ -77,6 +78,7 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
   const [kind, setKind] = useState<Kind>(chore?.kind ?? 'Recurring')
   const [name, setName] = useState(chore?.name ?? '')
   const [description, setDescription] = useState(chore?.description ?? '')
+  const [items, setItems] = useState<ItemDraft[]>(() => chore?.items.map(itemDraft) ?? [])
   const [count, setCount] = useState<number | null>(chore?.interval?.count ?? 1)
   const [unit, setUnit] = useState<Unit>(chore?.interval?.unit ?? 'Week')
   const [preferredDay, setPreferredDay] = useState<PreferredDay | null>(chore?.preferredDay ?? null)
@@ -123,6 +125,7 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
       toast.success(`Added ${request.name}`)
       setName('')
       setDescription('')
+      setItems([])
       setImportance('Normal')
       setEffort(null)
       setLastDone(null)
@@ -140,9 +143,10 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
   function submit(event: FormEvent, another = false) {
     event.preventDefault()
     const area = areaId === null ? null : Number(areaId)
+    const itemRequests = items.map(({ id, name, description }) => ({ id, name, description }))
     if (kind === 'OneOff') {
       setErrors({})
-      save.mutate({ another, kind, request: { name, description, dueDate, importance, effort, areaId: area } })
+      save.mutate({ another, kind, request: { name, description, items: itemRequests, dueDate, importance, effort, areaId: area } })
       return
     }
     // A Season needs both months; the API can only judge a whole one
@@ -157,6 +161,7 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
       request: {
         name,
         description,
+        items: itemRequests,
         interval: { count: count ?? 0, unit },
         preferredDay,
         season: seasonal && seasonFrom && seasonTo ? { fromMonth: Number(seasonFrom), toMonth: Number(seasonTo) } : null,
@@ -180,6 +185,7 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
         maxLength={descriptionMaxLength}
         error={errors.description?.[0]}
       />
+      <ItemsField items={items} onItemsChange={setItems} error={errors.items?.[0]} />
       {kind === 'OneOff' && (
         <DateField label="Due date" value={dueDate} onValueChange={setDueDate} error={errors.dueDate?.[0]} />
       )}

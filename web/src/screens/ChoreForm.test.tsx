@@ -160,6 +160,28 @@ test('Save and add another scrolls back to the top of what the form scrolls in',
   expect(screen.getByRole('textbox', { name: 'Name' })).toHaveFocus()
 })
 
+test('Items are added, moved and removed, sent in that order, and Save and add another clears them', async () => {
+  const fetch = stubApi({ '/api/chores/recurring': new Response('{}', { status: 201 }), '/api/chores': [] })
+  renderForm()
+  await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Clean the bathroom')
+
+  for (const name of ['Sink', 'Toilet', 'Mirror']) {
+    await userEvent.click(screen.getByRole('button', { name: 'Add item' }))
+    await userEvent.type(screen.getAllByRole('textbox', { name: /^Item \d+$/ }).at(-1)!, name)
+  }
+  await userEvent.type(screen.getByRole('textbox', { name: 'Item 2 description' }), 'Blue cleaner')
+  await userEvent.click(screen.getByRole('button', { name: 'Move Mirror up' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Remove Sink' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Save and add another' }))
+
+  await expect.poll(() => sent(fetch).length).toBe(1)
+  expect(JSON.parse(String(sent(fetch)[0]?.[1]?.body)).items).toEqual([
+    { id: null, name: 'Mirror', description: '' },
+    { id: null, name: 'Toilet', description: 'Blue cleaner' },
+  ])
+  await expect.poll(() => screen.queryAllByRole('textbox', { name: /^Item \d+$/ })).toHaveLength(0)
+})
+
 test('a Preferred Day the new Interval does not allow is cleared', async () => {
   renderForm()
   await pick('Preferred day', 'Monday')
@@ -201,6 +223,7 @@ test('a One-off Chore asks only for a Name, Due Date, Importance and Effort', as
   expect(JSON.parse(String(sent(fetch)[0]?.[1]?.body))).toEqual({
     name: 'Fix leaking tap',
     description: '',
+    items: [],
     dueDate: null,
     importance: 'High',
     effort: 15,
