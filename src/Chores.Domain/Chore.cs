@@ -12,6 +12,7 @@ public abstract class Chore(string name, DateOnly createdOn)
     /// <summary>The estimated number of minutes the Chore takes.</summary>
     public int? Effort { get; set; }
 
+    /// <summary>The most characters a Description holds, after trimming.</summary>
     public const int DescriptionMaxLength = 2000;
 
     /// <summary>

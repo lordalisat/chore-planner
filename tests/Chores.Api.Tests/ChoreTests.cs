@@ -378,6 +378,17 @@ public class ChoreTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task An_edit_changes_a_One_off_Chores_Description_too()
+    {
+        HttpResponseMessage created = await CreateOneOff(new { name = "Hang the bathroom mirror", description = "Plugs in the toolbox" });
+        int id = (await created.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken)).GetProperty("id").GetInt32();
+
+        (await Edit(id, new { name = "Hang the bathroom mirror", description = "Use the 6 mm drill bit" })).EnsureSuccessStatusCode();
+
+        Assert.Equal("Use the 6 mm drill bit", (await Listed("Hang the bathroom mirror")).GetProperty("description").GetString());
+    }
+
+    [Fact]
     public async Task A_Description_over_2000_characters_answers_a_validation_problem_at_that_field()
     {
         HttpResponseMessage response = await Create(new { name = "Wipe the skirting boards", interval = new { count = 1, unit = "Week" }, description = new string('a', 2001) });
