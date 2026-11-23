@@ -31,7 +31,7 @@ Install the Dev Containers extension, open the repo and run "Dev Containers: Reo
 
 ```sh
 ./check                                    # everything a PR must pass: build, style, tests, web lint/types/tests (CI runs it too)
-./seed                                     # a running API on an empty database: Areas and a Chore in every state
+./seed                                     # needs the API running on an empty database: adds Areas and a Chore in every state
 dotnet build                               # API, Domain and tests (Chores.slnx)
 dotnet test                                # all test projects
 dotnet run --project src/Chores.Api        # API on :5080, OpenAPI at /openapi/v1.json

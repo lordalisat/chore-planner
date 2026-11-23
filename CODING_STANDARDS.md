@@ -19,4 +19,4 @@ A domain concept that will gain kinds (a ticket, spec or `.scratch/` file hints 
 ## Evidence in the PR
 
 - A change under `web/` says what `/experience-review` saw at phone and desktop width on every screen it touches: its hard findings (none, or how they were fixed) and what was checked. Screenshots stay with the review; `gh` can't attach them.
-- A change to the build environment (`.devcontainer/`, `Dockerfile`, `compose.yaml`, `dev`, `check`, `.github/`) shows output of it actually running: `devcontainer up`, `docker build`, a CI run. A syntax check isn't evidence.
+- A change to the build environment (`.devcontainer/`, `Dockerfile`, `compose.yaml`, `dev`, `check`, `seed`, `.github/`) shows output of it actually running: `devcontainer up`, `docker build`, a CI run. A syntax check isn't evidence.
