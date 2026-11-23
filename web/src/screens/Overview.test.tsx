@@ -2,7 +2,7 @@ import { QueryClient } from '@tanstack/react-query'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import App from '../App.tsx'
 import type { Chore } from '../chores.ts'
 import { createAppRouter } from '../router.tsx'
@@ -244,6 +244,28 @@ test('an unfolded row shows its Description, line breaks and all; a folded one d
   const description = await screen.findByText(/Darks on 30 degrees/)
   expect(description.textContent).toBe('Darks on 30 degrees.\nTowels on 60.')
   expect(description).toHaveClass('whitespace-pre-line')
+  // Short enough to show whole
+  expect(screen.queryByRole('button', { name: 'Show more' })).not.toBeInTheDocument()
+})
+
+test('a Description longer than three lines is capped until Show more, and Show less caps it again', async () => {
+  // jsdom lays nothing out, so say the text is taller than the three lines it gets
+  vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(200)
+  vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(60)
+  const described = { ...laundry, description: 'Darks on 30.\nTowels on 60.\nWool by hand.\nSheets on Saturday.' }
+  stubApi({ '/api/session': 204, '/api/chores': [described] })
+  renderOverview()
+
+  await userEvent.click(await screen.findByRole('button', { name: /^Laundry/, expanded: false }))
+  const description = await screen.findByText(/Darks on 30/)
+  expect(description).toHaveClass('line-clamp-3')
+
+  await userEvent.click(screen.getByRole('button', { name: 'Show more' }))
+  expect(description).not.toHaveClass('line-clamp-3')
+
+  await userEvent.click(screen.getByRole('button', { name: 'Show less' }))
+  expect(description).toHaveClass('line-clamp-3')
+  vi.restoreAllMocks()
 })
 
 test('tapping an expanded row again folds its actions away', async () => {

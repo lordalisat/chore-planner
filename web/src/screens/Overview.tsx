@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { useState, type FormEvent } from 'react'
+import { useLayoutEffect, useRef, useState, type FormEvent } from 'react'
 import { api, ApiError } from '../api/client.ts'
 import { choresQuery, urgencyBand, type Chore, type UrgencyBand } from '../chores.ts'
 import { relativeDate, shortDate, today } from '../dates.ts'
@@ -167,9 +167,7 @@ function ChoreRow({ chore, today, open, onToggle, onClose, onDone, onDoneOn, onS
           )}
         </button>
       </div>
-      {open && chore.description && (
-        <p className="border-t border-black/5 px-3 py-2 text-sm whitespace-pre-line text-ink/80">{chore.description}</p>
-      )}
+      {open && chore.description && <Description text={chore.description} />}
       {open && (
         <div className="flex flex-wrap gap-2 border-t border-black/5 px-3 py-2">
           <RowAction onClick={act(onDoneOn)}>Done on…</RowAction>
@@ -180,6 +178,33 @@ function ChoreRow({ chore, today, open, onToggle, onClose, onDone, onDoneOn, onS
         </div>
       )}
     </li>
+  )
+}
+
+/** A Chore's Description, capped at three lines until Show more; the button shows only when the text is cut off. */
+function Description({ text }: { text: string }) {
+  const paragraph = useRef<HTMLParagraphElement>(null)
+  const [cutOff, setCutOff] = useState(false)
+  const [whole, setWhole] = useState(false)
+  // Measured while capped: taller than its three lines means some is hidden
+  useLayoutEffect(() => {
+    const element = paragraph.current
+    if (element) setCutOff(element.scrollHeight > element.clientHeight)
+  }, [text])
+
+  return (
+    <div className="flex flex-col items-start border-t border-black/5 px-3 pt-2">
+      <p ref={paragraph} className={`text-sm whitespace-pre-line text-ink/80 ${whole ? '' : 'line-clamp-3'}`}>
+        {text}
+      </p>
+      {cutOff ? (
+        <button type="button" aria-expanded={whole} onClick={() => setWhole(!whole)} className="min-h-11 text-sm font-medium text-brand hover:underline">
+          {whole ? 'Show less' : 'Show more'}
+        </button>
+      ) : (
+        <span className="pb-2" />
+      )}
+    </div>
   )
 }
 
