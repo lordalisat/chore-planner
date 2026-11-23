@@ -1,9 +1,16 @@
 #!/bin/sh
 # Remove every worktree whose branch is merged into origin/main, with its branch and the
 # processes it left running in the devcontainer. Run from the main checkout.
-#   clean-up -n   only print what it would do
+#   clean-up -n            only print what it would do
+#   clean-up --stop-here   only stop the processes of the worktree it runs in, so it can be removed
 set -e
-dry=; [ "$1" = -n ] && dry=1
+dry= here=
+for arg; do
+  case "$arg" in
+    -n) dry=1 ;;
+    --stop-here) here=$(git rev-parse --show-toplevel) ;;
+  esac
+done
 run() { if [ -n "$dry" ]; then echo "  would: $*"; else "$@"; fi; }
 
 main=$(cd "$(git rev-parse --git-common-dir)/.." && pwd -P)
@@ -23,6 +30,13 @@ stop() { # stop every process under worktree $1 (relative path)
   [ -n "$pids" ] && { echo "  stop processes:" $pids; run docker exec -u vscode "$container" kill $pids; }
   return 0
 }
+
+if [ -n "$here" ]; then
+  [ "$here" != "$main" ] || { echo "clean-up: --stop-here runs in a worktree, not the main checkout" >&2; exit 1; }
+  echo "stop processes of ${here#"$main"/}"
+  stop "${here#"$main"/}"
+  exit 0
+fi
 
 git worktree list --porcelain | awk '/^worktree /{w=substr($0,10)} /^branch /{b=substr($0,19)} /^locked/{l=1} /^$/{print w"\t"b"\t"l; w=b=l=""}' |
 while IFS="$(printf '\t')" read -r path branch locked; do

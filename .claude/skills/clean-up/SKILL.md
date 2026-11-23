@@ -7,7 +7,7 @@ A worktree is **done** when its branch is an ancestor of `origin/main`: PRs are 
 
 1. **Leave your own worktree.** If this session is in one:
    - `git fetch -q origin`, then `git merge-base --is-ancestor HEAD origin/main`.
-   - Exit 0 means done: `ExitWorktree` with `action: remove`, `discard_changes: true`.
+   - Exit 0 means done. Run `.claude/skills/clean-up/clean-up --stop-here` to stop what this worktree still runs in the devcontainer, such as servers for a hand test (`ExitWorktree` refuses while they run), then `ExitWorktree` with `action: remove`, `discard_changes: true`.
    - Any other exit: say it isn't merged and stop.
 2. **Sweep.** From the main checkout, run `.claude/skills/clean-up/clean-up` as a plain command. For every done worktree that no running session has locked, it:
    - stops its processes in the devcontainer
