@@ -1,21 +1,21 @@
 #!/bin/sh
 # Remove every worktree whose branch is merged into origin/main, with its branch and the
-# processes it left running in the devcontainer. Run from the main checkout.
+# processes it left running in the devcontainer. The sweep runs from the main checkout.
 #   clean-up -n            only print what it would do
-#   clean-up --stop-here   only stop the processes of the worktree it runs in, so it can be removed
+#   clean-up --stop-here   from a worktree: only stop its own processes, so it can be removed
 set -e
 dry= here=
 for arg; do
   case "$arg" in
     -n) dry=1 ;;
-    --stop-here) here=$(git rev-parse --show-toplevel) ;;
+    --stop-here) here=$(cd "$(git rev-parse --show-toplevel)" && pwd -P) ;;
+    # A typo must not fall through to the sweep
+    *) echo "clean-up: unknown option $arg (use -n or --stop-here)" >&2; exit 1 ;;
   esac
 done
 run() { if [ -n "$dry" ]; then echo "  would: $*"; else "$@"; fi; }
 
 main=$(cd "$(git rev-parse --git-common-dir)/.." && pwd -P)
-cd "$main"
-git fetch -q --prune origin
 container=$(docker ps -q --filter "label=devcontainer.local_folder=$main")
 ws="/workspaces/$(basename "$main")"
 
@@ -25,18 +25,32 @@ procs() {
   docker exec -u vscode "$container" sh -c 'for p in /proc/[0-9]*; do c=$(readlink "$p/cwd" 2>/dev/null) || continue
     case "$c" in '"$ws"'/.claude/worktrees/*) r=${c#'"$ws"'/}; echo "${p#/proc/} $(echo "$r" | cut -d/ -f1-3)";; esac; done'
 }
-stop() { # stop every process under worktree $1 (relative path)
+stop() { # stop every process under worktree $1 (relative path), and wait up to 10 s for them to go
   pids=$(procs | awk -v w="$1" '$2 == w { print $1 }')
-  [ -n "$pids" ] && { echo "  stop processes:" $pids; run docker exec -u vscode "$container" kill $pids; }
-  return 0
+  [ -n "$pids" ] || return 0
+  echo "  stop processes:" $pids
+  run docker exec -u vscode "$container" kill $pids
+  [ -z "$dry" ] || return 0
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    [ -n "$(procs | awk -v w="$1" '$2 == w')" ] || return 0
+    sleep 1
+  done
+  echo "  still running after 10 s:" $(procs | awk -v w="$1" '$2 == w { print $1 }') >&2
 }
 
 if [ -n "$here" ]; then
-  [ "$here" != "$main" ] || { echo "clean-up: --stop-here runs in a worktree, not the main checkout" >&2; exit 1; }
+  case "$here" in
+    "$main") echo "clean-up: --stop-here runs in a worktree, not the main checkout" >&2; exit 1 ;;
+    "$main"/.claude/worktrees/*) ;;
+    *) echo "clean-up: $here is not under $main/.claude/worktrees" >&2; exit 1 ;;
+  esac
   echo "stop processes of ${here#"$main"/}"
   stop "${here#"$main"/}"
   exit 0
 fi
+
+cd "$main"
+git fetch -q --prune origin
 
 git worktree list --porcelain | awk '/^worktree /{w=substr($0,10)} /^branch /{b=substr($0,19)} /^locked/{l=1} /^$/{print w"\t"b"\t"l; w=b=l=""}' |
 while IFS="$(printf '\t')" read -r path branch locked; do
