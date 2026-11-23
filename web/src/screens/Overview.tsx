@@ -167,6 +167,9 @@ function ChoreRow({ chore, today, open, onToggle, onClose, onDone, onDoneOn, onS
           )}
         </button>
       </div>
+      {open && chore.description && (
+        <p className="border-t border-black/5 px-3 py-2 text-sm whitespace-pre-line text-ink/80">{chore.description}</p>
+      )}
       {open && (
         <div className="flex flex-wrap gap-2 border-t border-black/5 px-3 py-2">
           <RowAction onClick={act(onDoneOn)}>Done on…</RowAction>

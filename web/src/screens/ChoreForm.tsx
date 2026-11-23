@@ -21,6 +21,7 @@ import { NumberField } from '../ui/NumberField.tsx'
 import { SegmentedField } from '../ui/SegmentedField.tsx'
 import { SelectField, type Option } from '../ui/SelectField.tsx'
 import { SwitchField } from '../ui/SwitchField.tsx'
+import { TextAreaField } from '../ui/TextAreaField.tsx'
 import { TextField } from '../ui/TextField.tsx'
 import { toast } from '../ui/toast.ts'
 import { unreachableMessage } from './Unreachable.tsx'
@@ -72,6 +73,7 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
   const queryClient = useQueryClient()
   const [kind, setKind] = useState<Kind>(chore?.kind ?? 'Recurring')
   const [name, setName] = useState(chore?.name ?? '')
+  const [description, setDescription] = useState(chore?.description ?? '')
   const [count, setCount] = useState<number | null>(chore?.interval?.count ?? 1)
   const [unit, setUnit] = useState<Unit>(chore?.interval?.unit ?? 'Week')
   const [preferredDay, setPreferredDay] = useState<PreferredDay | null>(chore?.preferredDay ?? null)
@@ -116,6 +118,7 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
       // Setting up many Chores at once: the next one most likely shares the schedule
       toast.success(`Added ${request.name}`)
       setName('')
+      setDescription('')
       setImportance('Normal')
       setEffort(null)
       setLastDone(null)
@@ -133,7 +136,7 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
     const area = areaId === null ? null : Number(areaId)
     if (kind === 'OneOff') {
       setErrors({})
-      save.mutate({ another, kind, request: { name, dueDate, importance, effort, areaId: area } })
+      save.mutate({ another, kind, request: { name, description, dueDate, importance, effort, areaId: area } })
       return
     }
     // A Season needs both months; the API can only judge a whole one
@@ -147,6 +150,7 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
       kind,
       request: {
         name,
+        description,
         interval: { count: count ?? 0, unit },
         preferredDay,
         season: seasonal && seasonFrom && seasonTo ? { fromMonth: Number(seasonFrom), toMonth: Number(seasonTo) } : null,
@@ -163,6 +167,13 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
       {/* A Chore's kind can't change */}
       {!chore && <SegmentedField label="Kind" options={kinds} value={kind} onValueChange={setKind} />}
       <TextField ref={nameInput} label="Name" autoFocus value={name} onValueChange={setName} error={errors.name?.[0]} />
+      <TextAreaField
+        label="Description"
+        value={description}
+        onValueChange={setDescription}
+        maxLength={2000}
+        error={errors.description?.[0]}
+      />
       {kind === 'OneOff' && (
         <DateField label="Due date" value={dueDate} onValueChange={setDueDate} error={errors.dueDate?.[0]} />
       )}

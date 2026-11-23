@@ -21,6 +21,7 @@ const laundry: Chore = {
   dueDate: '2027-03-16',
   urgency: 0.5,
   overdue: false,
+  description: null,
   dormant: false,
   finished: false,
   canSkip: true,
@@ -95,6 +96,7 @@ test('saving an edited Chore sends its fields and returns to the Overview', asyn
   const put = fetch.mock.calls.find(([, init]) => init?.method === 'PUT')
   expect(JSON.parse(String(put?.[1]?.body))).toEqual({
     name: 'Laundry',
+    description: '',
     interval: { count: 1, unit: 'Week' },
     preferredDay: 'Saturday',
     season: { fromMonth: 4, toMonth: 10 },
@@ -123,6 +125,7 @@ test('a One-off Chore stays one and keeps its Due Date', async () => {
   const put = fetch.mock.calls.find(([, init]) => init?.method === 'PUT')
   expect(JSON.parse(String(put?.[1]?.body))).toEqual({
     name: 'Fix the kitchen tap',
+    description: '',
     dueDate: '2027-03-20',
     importance: 'Normal',
     effort: null,

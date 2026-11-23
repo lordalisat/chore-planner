@@ -26,6 +26,7 @@ function chore(name: string, details: Partial<Chore>): Chore {
     dueDate: null,
     urgency: null,
     overdue: false,
+    description: null,
     dormant: false,
     finished: false,
     canSkip: details.kind === 'Recurring',
@@ -229,6 +230,20 @@ test('tapping a row shows its actions and opens no screen; Edit opens the Chore'
   await userEvent.click(await screen.findByRole('button', { name: 'Edit' }))
 
   await expect.poll(() => router.state.location.pathname).toBe('/chores/7')
+})
+
+test('an unfolded row shows its Description, line breaks and all; a folded one does not', async () => {
+  const described = { ...laundry, description: 'Darks on 30 degrees.\nTowels on 60.' }
+  stubApi({ '/api/session': 204, '/api/chores': [described] })
+  renderOverview()
+
+  await screen.findByText('Laundry')
+  expect(screen.queryByText(/Darks on 30 degrees/)).not.toBeInTheDocument()
+
+  await userEvent.click(screen.getByRole('button', { name: /^Laundry/, expanded: false }))
+  const description = await screen.findByText(/Darks on 30 degrees/)
+  expect(description.textContent).toBe('Darks on 30 degrees.\nTowels on 60.')
+  expect(description).toHaveClass('whitespace-pre-line')
 })
 
 test('tapping an expanded row again folds its actions away', async () => {

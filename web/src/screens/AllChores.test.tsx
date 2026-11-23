@@ -22,6 +22,7 @@ function chore(id: number, name: string, details: Partial<Chore> = {}): Chore {
     dueDate: null,
     urgency: null,
     overdue: false,
+    description: null,
     dormant: false,
     finished: false,
     canSkip: details.kind === 'Recurring',
