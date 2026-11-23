@@ -3,7 +3,19 @@ import { useRef, useState, type FormEvent } from 'react'
 import { api, ApiError, type FieldErrors } from '../api/client.ts'
 import type { components } from '../api/schema'
 import { areasQuery } from '../areas.ts'
-import { choresQuery, kindLabels, unitLabels, type Chore, type Unit } from '../chores.ts'
+import {
+  choresQuery,
+  kindLabels,
+  unitLabels,
+  ordinalNames,
+  toWeekdayInMonth,
+  weekdayInMonth,
+  weekdayNames,
+  type Chore,
+  type Ordinal,
+  type PreferredDay,
+  type Unit,
+} from '../chores.ts'
 import { DateField } from '../ui/DateField.tsx'
 import { NumberField } from '../ui/NumberField.tsx'
 import { SegmentedField } from '../ui/SegmentedField.tsx'
@@ -17,7 +29,6 @@ type RecurringRequest = components['schemas']['CreateRecurringChoreRequest']
 type OneOffRequest = components['schemas']['CreateOneOffChoreRequest']
 type EditRequest = components['schemas']['EditChoreRequest']
 type Kind = components['schemas']['ChoreDto']['kind']
-type PreferredDay = NonNullable<RecurringRequest['preferredDay']>
 type Importance = NonNullable<RecurringRequest['importance']>
 type Submission = { another: boolean } & (
   | { kind: 'Recurring'; request: RecurringRequest }
@@ -26,13 +37,20 @@ type Submission = { another: boolean } & (
 
 const kinds: Option<Kind>[] = (['Recurring', 'OneOff'] as const).map((kind) => ({ value: kind, label: kindLabels[kind] }))
 const units: Option<Unit>[] = (['Day', 'Week', 'Month', 'Year'] as const).map((unit) => ({ value: unit, label: unitLabels[unit] }))
-const weekdays: Option<PreferredDay>[] = (
-  ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const
-).map((day) => ({ value: day, label: day }))
-const daysInMonth: Option<PreferredDay>[] = [
+// What the Preferred day list offers: a Preferred Day, or the way to a weekday in the month, picked in two more lists
+type DayChoice = PreferredDay | 'WeekdayInMonth'
+const weekdays = weekdayNames.map((day) => ({ value: day, label: day }))
+const daysInMonth: Option<DayChoice>[] = [
   { value: 'FirstOfMonth', label: 'First of the month' },
   { value: 'LastOfMonth', label: 'Last of the month' },
+  { value: 'WeekdayInMonth', label: 'A weekday in the month…' },
 ]
+const ordinals: Option<Ordinal>[] = ordinalNames.map((ordinal) => ({ value: ordinal, label: ordinal }))
+// A weekday in the month starts as the first Saturday
+const firstWeekdayInMonth = toWeekdayInMonth('First', 'Saturday')
+
+/** The Preferred day list's choice for a Preferred Day: a weekday in the month shows as the way to it. */
+const dayChoice = (day: PreferredDay | null): DayChoice | null => (weekdayInMonth(day) ? 'WeekdayInMonth' : day)
 const months: Option<string>[] = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
@@ -44,8 +62,8 @@ const importances: Option<Importance>[] = [
 ]
 
 // The Preferred Days an Interval's unit allows, as the API's own rule: a weekday needs weeks, months or years, the
-// first or last of the month months or years
-function preferredDaysFor(unit: Unit): Option<PreferredDay>[] {
+// first or last of the month, or a weekday in it, months or years
+function preferredDaysFor(unit: Unit): Option<DayChoice>[] {
   return [...(unit === 'Day' ? [] : weekdays), ...(unit === 'Month' || unit === 'Year' ? daysInMonth : [])]
 }
 
@@ -74,10 +92,11 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
   const nameInput = useRef<HTMLInputElement>(null)
 
   const preferredDays = preferredDaysFor(unit)
+  const inMonth = weekdayInMonth(preferredDay)
 
   function changeUnit(next: Unit) {
     setUnit(next)
-    if (!preferredDaysFor(next).some((day) => day.value === preferredDay)) setPreferredDay(null)
+    if (!preferredDaysFor(next).some((day) => day.value === dayChoice(preferredDay))) setPreferredDay(null)
   }
 
   const save = useMutation({
@@ -161,11 +180,39 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
             <SelectField
               label="Preferred day"
               options={preferredDays}
-              value={preferredDay}
-              onValueChange={setPreferredDay}
+              value={dayChoice(preferredDay)}
+              onValueChange={(choice) =>
+                setPreferredDay(choice === 'WeekdayInMonth' ? (inMonth ? preferredDay : firstWeekdayInMonth) : choice)
+              }
               noneLabel="Any day"
-              error={errors.preferredDay?.[0]}
+              error={inMonth ? undefined : errors.preferredDay?.[0]}
             />
+          )}
+          {inMonth && (
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <SelectField
+                  label={`Which ${inMonth.day}`}
+                  hideLabel
+                  options={ordinals}
+                  value={inMonth.ordinal}
+                  onValueChange={(ordinal) => ordinal && setPreferredDay(toWeekdayInMonth(ordinal, inMonth.day))}
+                  invalid={!!errors.preferredDay}
+                  className="flex-1"
+                />
+                <SelectField
+                  label="Weekday"
+                  hideLabel
+                  options={weekdays}
+                  value={inMonth.day}
+                  onValueChange={(day) => day && setPreferredDay(toWeekdayInMonth(inMonth.ordinal, day))}
+                  invalid={!!errors.preferredDay}
+                  className="flex-1"
+                />
+                <span className="text-sm text-ink/70">of the month</span>
+              </div>
+              {errors.preferredDay && <p className="text-sm text-red-700">{errors.preferredDay[0]}</p>}
+            </div>
           )}
           <div className="flex flex-col gap-2">
             <SwitchField

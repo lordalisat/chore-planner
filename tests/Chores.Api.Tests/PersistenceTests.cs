@@ -91,6 +91,17 @@ public sealed class PersistenceTests : IDisposable
     }
 
     [Fact]
+    public void A_Recurring_Chore_keeps_a_weekday_in_the_month_as_Preferred_Day()
+    {
+        Save(new RecurringChore("Check the smoke alarms", new Interval(1, IntervalUnit.Month), new DateOnly(2027, 1, 1))
+        {
+            PreferredDay = new PreferredDay.WeekdayInMonth(Ordinal.Last, DayOfWeek.Friday),
+        });
+
+        Assert.Equal(new PreferredDay.WeekdayInMonth(Ordinal.Last, DayOfWeek.Friday), LoadChore<RecurringChore>("Check the smoke alarms").PreferredDay);
+    }
+
+    [Fact]
     public void A_Recurring_Chore_keeps_a_last_of_month_Preferred_Day()
     {
         Save(new RecurringChore("Pay the rent", new Interval(1, IntervalUnit.Month), new DateOnly(2027, 1, 1))

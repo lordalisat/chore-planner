@@ -90,6 +90,8 @@ public class ChoreTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
     [Theory]
     [InlineData("preferredDay", 1, "Week", "FirstOfMonth", 1, 12)]
+    [InlineData("preferredDay", 1, "Week", "FirstSaturday", 1, 12)]
+    [InlineData("preferredDay", 1, "Month", "FifthSaturday", 1, 12)]
     [InlineData("preferredDay", 1, "Week", "Tuesdays", 1, 12)]
     [InlineData("preferredDay", 1, "Day", "Monday", 1, 12)]
     [InlineData("interval", 0, "Week", null, 1, 12)]
@@ -195,6 +197,14 @@ public class ChoreTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal("2027-06-01", oven.GetProperty("dueDate").GetString());
         Assert.Equal("2027-03-01", oven.GetProperty("lastDone").GetString());
         Assert.Equal("Normal", oven.GetProperty("importance").GetString());
+    }
+
+    [Fact]
+    public async Task A_weekday_in_the_month_goes_in_and_out_as_text()
+    {
+        await Create(new { name = "Check the smoke alarms", interval = new { count = 1, unit = "Month" }, preferredDay = "FirstSaturday" });
+
+        Assert.Equal("FirstSaturday", (await Listed("Check the smoke alarms")).GetProperty("preferredDay").GetString());
     }
 
     [Fact]

@@ -2,7 +2,7 @@ import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-q
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import { useState, type ReactNode } from 'react'
 import { api, ApiError } from '../api/client.ts'
-import { archivedChoresQuery, choresQuery, kindLabels, unitLabels, type Chore, type Unit } from '../chores.ts'
+import { archivedChoresQuery, choresQuery, kindLabels, preferredDayName, unitLabels, type Chore, type Unit } from '../chores.ts'
 import { longDate, monthNames, relativeDate, today } from '../dates.ts'
 import { toast } from '../ui/toast.ts'
 import { fromLg, useMediaQuery } from '../ui/useMediaQuery.ts'
@@ -12,24 +12,12 @@ import { unreachableMessage } from './Unreachable.tsx'
 
 const route = getRouteApi('/authenticated/chores')
 
-const preferredDayNames: Record<NonNullable<Chore['preferredDay']>, string> = {
-  Monday: 'Monday',
-  Tuesday: 'Tuesday',
-  Wednesday: 'Wednesday',
-  Thursday: 'Thursday',
-  Friday: 'Friday',
-  Saturday: 'Saturday',
-  Sunday: 'Sunday',
-  FirstOfMonth: 'the first',
-  LastOfMonth: 'the last',
-}
-
 /** "every 2 weeks on Tuesday", or nothing for a One-off Chore. */
 function schedule({ interval, preferredDay }: Chore) {
   if (!interval) return ''
   const units = unitLabels[interval.unit]
   const every = interval.count === 1 ? `every ${units.slice(0, -1)}` : `every ${interval.count} ${units}`
-  return preferredDay ? `${every} on ${preferredDayNames[preferredDay]}` : every
+  return preferredDay ? `${every} on ${preferredDayName(preferredDay)}` : every
 }
 
 const seasonName = ({ season }: Chore) =>

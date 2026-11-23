@@ -86,10 +86,63 @@ public class RecurringChoreTests
         Assert.Equal(CreatedOn, NewChore(1, IntervalUnit.Year, new PreferredDay.FirstOfMonth()).DueDate);
     }
 
+    private static readonly PreferredDay FirstSaturday = new PreferredDay.WeekdayInMonth(Ordinal.First, DayOfWeek.Saturday);
+
+    [Theory]
+    [InlineData(2027, 1, 2, 2027, 2, 6)] // done on time, Sat 2 Jan
+    [InlineData(2027, 1, 10, 2027, 2, 6)] // done late: 10 Feb is nearest to Sat 6 Feb
+    [InlineData(2027, 1, 25, 2027, 3, 6)] // done very late: 25 Feb is nearest to Sat 6 Mar
+    public void Every_month_on_the_first_Saturday_is_due_on_the_one_nearest_a_month_later(int y, int m, int d, int dueY, int dueM, int dueD)
+    {
+        Assert.Equal(new DateOnly(dueY, dueM, dueD), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Month, FirstSaturday), new DateOnly(y, m, d)));
+    }
+
+    [Fact]
+    public void Every_3_months_on_the_first_Saturday_can_be_due_before_Last_Done_plus_the_Interval()
+    {
+        // 10 April is nearest to Saturday 3 April
+        Assert.Equal(new DateOnly(2027, 4, 3), DueDateAfterDoneOn(NewChore(3, IntervalUnit.Month, FirstSaturday), new DateOnly(2027, 1, 10)));
+    }
+
+    [Fact]
+    public void Every_month_on_the_last_Friday_done_on_the_last_Friday_of_March_is_due_on_the_last_of_April()
+    {
+        var lastFriday = new PreferredDay.WeekdayInMonth(Ordinal.Last, DayOfWeek.Friday);
+        Assert.Equal(new DateOnly(2027, 4, 30), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Month, lastFriday), new DateOnly(2027, 3, 26)));
+    }
+
+    [Fact]
+    public void Every_month_on_the_second_Tuesday_done_on_the_second_of_February_is_due_on_the_second_of_March()
+    {
+        var secondTuesday = new PreferredDay.WeekdayInMonth(Ordinal.Second, DayOfWeek.Tuesday);
+        Assert.Equal(new DateOnly(2027, 3, 9), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Month, secondTuesday), new DateOnly(2027, 2, 9)));
+    }
+
+    [Fact]
+    public void Without_a_Completion_a_weekday_in_the_month_is_due_on_the_first_one_from_creation()
+    {
+        // Created 1 January 2027: the fourth Monday of January is the 25th
+        var fourthMonday = new PreferredDay.WeekdayInMonth(Ordinal.Fourth, DayOfWeek.Monday);
+        Assert.Equal(new DateOnly(2027, 1, 25), NewChore(1, IntervalUnit.Month, fourthMonday).DueDate);
+    }
+
+    [Fact]
+    public void Due_Date_outside_the_Season_lands_on_the_first_such_day_in_it()
+    {
+        var smokeAlarms = new RecurringChore("Check the smoke alarms", new Interval(1, IntervalUnit.Month), new DateOnly(2026, 12, 1))
+        {
+            PreferredDay = FirstSaturday,
+            Season = new Season(4, 10),
+        };
+
+        Assert.Equal(new DateOnly(2027, 4, 3), smokeAlarms.DueDate);
+    }
+
     public static TheoryData<IntervalUnit, PreferredDay> DayOrWeekWithDayInMonth => new()
     {
         { IntervalUnit.Day, new PreferredDay.FirstOfMonth() },
         { IntervalUnit.Week, new PreferredDay.LastOfMonth() },
+        { IntervalUnit.Week, new PreferredDay.WeekdayInMonth(Ordinal.First, DayOfWeek.Saturday) },
     };
 
     [Theory]

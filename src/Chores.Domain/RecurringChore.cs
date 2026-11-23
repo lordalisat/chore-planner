@@ -18,7 +18,7 @@ public sealed class RecurringChore(string name, Interval interval, DateOnly crea
         }
     } = interval;
 
-    /// <summary>A weekday, or the first or last of the month for an Interval in months or years.</summary>
+    /// <summary>A weekday, or for an Interval in months or years a day in the month: the first or last, or a weekday in it such as the first Saturday.</summary>
     public PreferredDay? PreferredDay
     {
         get;
