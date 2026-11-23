@@ -18,6 +18,7 @@ import {
 } from '../chores.ts'
 import { DateField } from '../ui/DateField.tsx'
 import { NumberField } from '../ui/NumberField.tsx'
+import { scrollToTop } from '../ui/scrollToTop.ts'
 import { SegmentedField } from '../ui/SegmentedField.tsx'
 import { SelectField, type Option } from '../ui/SelectField.tsx'
 import { SwitchField } from '../ui/SwitchField.tsx'
@@ -51,17 +52,6 @@ const ordinals: Option<Ordinal>[] = ordinalNames.map((ordinal) => ({ value: ordi
 const descriptionMaxLength = 2000
 // A weekday in the month starts as the first Saturday
 const firstWeekdayInMonth = toWeekdayInMonth('First', 'Saturday')
-
-/** Scrolls the nearest thing that scrolls around `element` (a dialog, a side panel, or else the page) to its top. */
-function scrollToTop(element: HTMLElement) {
-  for (let parent = element.parentElement; parent; parent = parent.parentElement) {
-    if (/auto|scroll/.test(getComputedStyle(parent).overflowY)) {
-      parent.scrollTop = 0
-      return
-    }
-  }
-  if (document.scrollingElement) document.scrollingElement.scrollTop = 0
-}
 
 /** The Preferred day list's choice for a Preferred Day: a weekday in the month shows as the way to it. */
 const dayChoice = (day: PreferredDay | null): DayChoice | null => (weekdayInMonth(day) ? 'WeekdayInMonth' : day)

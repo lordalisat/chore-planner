@@ -186,23 +186,39 @@ function Description({ text }: { text: string }) {
   const paragraph = useRef<HTMLParagraphElement>(null)
   const [cutOff, setCutOff] = useState(false)
   const [whole, setWhole] = useState(false)
-  // Measured while capped: taller than its three lines means some is hidden
+  // A changed Description starts capped again
+  const [shown, setShown] = useState(text)
+  if (text !== shown) {
+    setShown(text)
+    setWhole(false)
+  }
+  // Measured while capped, and again whenever its size changes (a turned phone, a resized window): taller than its
+  // three lines means some is hidden
   useLayoutEffect(() => {
     const element = paragraph.current
-    if (element) setCutOff(element.scrollHeight > element.clientHeight)
-  }, [text])
+    if (!element || whole) return
+    const measure = () => setCutOff(element.scrollHeight > element.clientHeight)
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(measure)
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [text, whole])
 
   return (
-    <div className="flex flex-col items-start border-t border-black/5 px-3 pt-2">
+    <div className={`flex flex-col items-start border-t border-black/5 px-3 ${cutOff ? 'pt-2' : 'py-2'}`}>
       <p ref={paragraph} className={`text-sm whitespace-pre-line text-ink/80 ${whole ? '' : 'line-clamp-3'}`}>
         {text}
       </p>
-      {cutOff ? (
-        <button type="button" aria-expanded={whole} onClick={() => setWhole(!whole)} className="min-h-11 text-sm font-medium text-brand hover:underline">
+      {cutOff && (
+        <button
+          type="button"
+          aria-expanded={whole}
+          onClick={() => setWhole(!whole)}
+          className="-ml-2 min-h-11 rounded-lg px-2 text-sm font-medium text-brand hover:bg-brand/10"
+        >
           {whole ? 'Show less' : 'Show more'}
         </button>
-      ) : (
-        <span className="pb-2" />
       )}
     </div>
   )

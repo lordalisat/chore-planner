@@ -16,6 +16,7 @@ export function Toasts() {
     // The UI SDK centres the region itself (left 50%, translated back by half its width); setting left or right breaks that.
     // Always expanded, so toasts list one above the other instead of collapsing into a stack that grows on hover.
     <ToastRegion
+      // The app's toaster, whose toasts close after 15 seconds
       toaster={toaster}
       side="bottom"
       align="center"

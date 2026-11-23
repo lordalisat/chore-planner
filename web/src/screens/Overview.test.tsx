@@ -1,8 +1,8 @@
 import { QueryClient } from '@tanstack/react-query'
 import { createMemoryHistory } from '@tanstack/react-router'
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expect, test, vi } from 'vitest'
+import { afterEach, expect, test, vi } from 'vitest'
 import App from '../App.tsx'
 import type { Chore } from '../chores.ts'
 import { createAppRouter } from '../router.tsx'
@@ -58,6 +58,12 @@ const commands = (fetch: ReturnType<typeof stubApi>) =>
   fetch.mock.calls
     .filter(([, init]) => init?.method !== 'GET')
     .map(([path, init]) => ({ path: String(path), method: init?.method, body: init?.body && JSON.parse(String(init.body)) }))
+
+
+afterEach(() => {
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
+})
 
 test('One-off Chores without a Due Date wait under Anytime; finished ones are gone', async () => {
   stubApi({
@@ -265,7 +271,33 @@ test('a Description longer than three lines is capped until Show more, and Show 
 
   await userEvent.click(screen.getByRole('button', { name: 'Show less' }))
   expect(description).toHaveClass('line-clamp-3')
-  vi.restoreAllMocks()
+})
+
+test('a Description that becomes cut off when the row narrows gets Show more then', async () => {
+  // jsdom has no ResizeObserver; this one lets the test say when the row resized
+  const resized: (() => void)[] = []
+  vi.stubGlobal('ResizeObserver', class {
+    constructor(callback: () => void) {
+      resized.push(callback)
+    }
+    observe() {}
+    disconnect() {}
+  })
+  const height = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(60)
+  vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(60)
+  const described = { ...laundry, description: 'Darks on 30.\nTowels on 60.\nWool by hand.' }
+  stubApi({ '/api/session': 204, '/api/chores': [described] })
+  renderOverview()
+
+  await userEvent.click(await screen.findByRole('button', { name: /^Laundry/, expanded: false }))
+  await screen.findByText(/Darks on 30/)
+  expect(screen.queryByRole('button', { name: 'Show more' })).not.toBeInTheDocument()
+
+  // Narrower: the same text now needs more than its three lines
+  height.mockReturnValue(200)
+  act(() => resized.forEach((callback) => callback()))
+
+  expect(screen.getByRole('button', { name: 'Show more' })).toBeInTheDocument()
 })
 
 test('tapping an expanded row again folds its actions away', async () => {
