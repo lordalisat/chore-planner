@@ -53,6 +53,9 @@ namespace Chores.Api.Data.Migrations
                     b.Property<DateOnly>("CreatedOn")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Description")
+                        .HasColumnType("TEXT");
+
                     b.Property<int?>("Effort")
                         .HasColumnType("INTEGER");
 

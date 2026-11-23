@@ -355,6 +355,38 @@ public class ChoreTests(ApiFactory factory) : IClassFixture<ApiFactory>
     private Task<HttpResponseMessage> CreateOneOff(object chore) =>
         _client.PostAsJsonAsync("/api/chores/one-off", chore, TestContext.Current.CancellationToken);
 
+    [Fact]
+    public async Task A_Description_goes_in_with_either_kind_and_comes_back_out()
+    {
+        await Create(new { name = "Scrub the bathtub", interval = new { count = 1, unit = "Week" }, description = "Descaler under the sink;\nrinse the plug hole too" });
+        (await CreateOneOff(new { name = "Fix the dripping tap", description = "Washer is in the drawer" })).EnsureSuccessStatusCode();
+
+        Assert.Equal("Descaler under the sink;\nrinse the plug hole too", (await Listed("Scrub the bathtub")).GetProperty("description").GetString());
+        Assert.Equal("Washer is in the drawer", (await Listed("Fix the dripping tap")).GetProperty("description").GetString());
+    }
+
+    [Fact]
+    public async Task An_edit_changes_the_Description_and_blank_clears_it()
+    {
+        int id = await Created(new { name = "Dust the bookshelves", interval = new { count = 1, unit = "Week" }, description = "Top shelves first" });
+
+        (await Edit(id, new { name = "Dust the bookshelves", interval = new { count = 1, unit = "Week" }, description = "Microfibre cloth" })).EnsureSuccessStatusCode();
+        Assert.Equal("Microfibre cloth", (await Listed("Dust the bookshelves")).GetProperty("description").GetString());
+
+        (await Edit(id, new { name = "Dust the bookshelves", interval = new { count = 1, unit = "Week" }, description = "  " })).EnsureSuccessStatusCode();
+        Assert.Equal(JsonValueKind.Null, (await Listed("Dust the bookshelves")).GetProperty("description").ValueKind);
+    }
+
+    [Fact]
+    public async Task A_Description_over_2000_characters_answers_a_validation_problem_at_that_field()
+    {
+        HttpResponseMessage response = await Create(new { name = "Wipe the skirting boards", interval = new { count = 1, unit = "Week" }, description = new string('a', 2001) });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        JsonElement problem = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+        Assert.Equal(["description"], problem.GetProperty("errors").EnumerateObject().Select(e => e.Name));
+    }
+
     private Task<HttpResponseMessage> Edit(int id, object chore) =>
         _client.PutAsJsonAsync($"/api/chores/{id}", chore, TestContext.Current.CancellationToken);
 

@@ -4,6 +4,7 @@ namespace Chores.Api.Dtos;
 
 /// <summary>A Chore as the front end sees it, with its scheduling computed for today.</summary>
 /// <param name="Kind">"Recurring" or "OneOff".</param>
+/// <param name="Description">What doing the Chore involves, as plain text with line breaks; null without one.</param>
 /// <param name="PreferredDay">"Monday" to "Sunday", "FirstOfMonth", "LastOfMonth", or a weekday in the month such as "FirstSaturday" or "LastFriday".</param>
 /// <param name="Urgency">How pressing the Chore is today; null without a Due Date.</param>
 /// <param name="Dormant">Outside its Season; the Overview hides it.</param>
@@ -17,6 +18,7 @@ public sealed record ChoreDto(
     string Name,
     Importance Importance,
     int? Effort,
+    string? Description,
     AreaRefDto? Area,
     IntervalDto? Interval,
     string? PreferredDay,
@@ -41,6 +43,7 @@ public sealed record ChoreDto(
             chore.Name,
             chore.Importance,
             chore.Effort,
+            chore.Description,
             chore.Area is null ? null : new AreaRefDto(idOf(chore.Area), chore.Area.Name),
             recurring is null ? null : new IntervalDto(recurring.Interval.Count, recurring.Interval.Unit),
             recurring?.PreferredDay is { } day ? PreferredDayText.ToText(day) : null,

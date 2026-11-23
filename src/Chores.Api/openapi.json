@@ -732,6 +732,7 @@
           "name",
           "importance",
           "effort",
+          "description",
           "area",
           "interval",
           "preferredDay",
@@ -771,6 +772,12 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "area": {
             "oneOf": [
@@ -955,6 +962,12 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -1057,6 +1070,12 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -1176,6 +1195,12 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
