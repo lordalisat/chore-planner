@@ -50,7 +50,7 @@ public static class ChoreEndpoints
                 return TypedResults.NotFound();
             }
             List<string> takenNames = await db.Chores.Where(c => EF.Property<int>(c, "Id") != id).Select(c => c.Name).ToListAsync();
-            Result<Chore> result = request.ApplyTo(chore, takenNames, await FindArea(db, request.AreaId));
+            Result<Chore> result = request.ApplyTo(chore, takenNames, await FindArea(db, request.AreaId), db.IdOf);
             if (result.Value is not { } edited)
             {
                 return result.ToProblem();
@@ -130,6 +130,27 @@ public static class ChoreEndpoints
 
         chores.MapPost("/{id:int}/postpone", (int id, PostponeChoreRequest request, ChoresDbContext db, TimeProvider clock) =>
             ActOn(db, id, request.DueDate, chore => request.PostponeOn(chore, clock.Today()), chore => ChoreDto.From(chore, db.IdOf, clock)));
+
+        // Ticking records no Completion, so it needs no Due Date check: any device may tick or untick any time
+        chores.MapPut("/{id:int}/items/{itemId:int}", async Task<Results<Ok<ChoreDto>, NotFound>> (
+            int id, int itemId, TickItemRequest request, ChoresDbContext db, TimeProvider clock) =>
+        {
+            if (await Find(db, id) is not { } chore || chore.Items.FirstOrDefault(i => db.IdOf(i) == itemId) is not { } item)
+            {
+                return TypedResults.NotFound();
+            }
+
+            if (request.Ticked)
+            {
+                item.Tick();
+            }
+            else
+            {
+                item.Untick();
+            }
+            await db.SaveChangesAsync();
+            return TypedResults.Ok(ChoreDto.From(chore, db.IdOf, clock));
+        });
 
         // Undo for a Completion, done or skipped
         chores.MapDelete("/{id:int}/completions/{completionId:int}", async Task<Results<Ok<ChoreDto>, NotFound>> (

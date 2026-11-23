@@ -4,6 +4,9 @@ namespace Chores.Domain;
 public abstract class Chore(string name, DateOnly createdOn)
 {
     private readonly List<Completion> _completions = [];
+    private readonly List<Item> _items = [];
+
+    public const int MaxItems = 20;
 
     public string Name { get; set; } = name;
     public DateOnly CreatedOn { get; } = createdOn;
@@ -22,14 +25,42 @@ public abstract class Chore(string name, DateOnly createdOn)
     public string? Description
     {
         get;
-        set
+        set => field = DescriptionText(value);
+    }
+
+    /// <summary>A Description as a Chore or Item keeps it: trimmed, null when blank, at most <see cref="DescriptionMaxLength"/>.</summary>
+    public static string? DescriptionText(string? value)
+    {
+        string? trimmed = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        return trimmed?.Length > DescriptionMaxLength
+            ? throw new ArgumentException($"A Description holds at most {DescriptionMaxLength} characters.")
+            : trimmed;
+    }
+
+    /// <summary>What doing the Chore involves, in the household's order; ticked in any order.</summary>
+    public IReadOnlyList<Item> Items => _items;
+
+    /// <summary>
+    /// Replaces the Items, in this order; at most <see cref="MaxItems"/>, no two with the same Name. A kept Item is passed
+    /// in again, so its tick stays with it.
+    /// </summary>
+    public void SetItems(IReadOnlyList<Item> items)
+    {
+        EnsureAllowed(items);
+        _items.Clear();
+        _items.AddRange(items);
+    }
+
+    /// <summary>Throws when a Chore can't have these Items: too many, or two with the same Name.</summary>
+    public static void EnsureAllowed(IReadOnlyList<Item> items)
+    {
+        if (items.Count > MaxItems)
         {
-            string? trimmed = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-            if (trimmed?.Length > DescriptionMaxLength)
-            {
-                throw new ArgumentException($"A Description holds at most {DescriptionMaxLength} characters.", nameof(value));
-            }
-            field = trimmed;
+            throw new ArgumentException($"A Chore holds at most {MaxItems} Items.");
+        }
+        if (items.GroupBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase).FirstOrDefault(names => names.Count() > 1) is { } twice)
+        {
+            throw new ArgumentException($"Two Items are called {twice.Key}.");
         }
     }
 
@@ -104,7 +135,13 @@ public abstract class Chore(string name, DateOnly createdOn)
     protected void Add(Completion completion)
     {
         _completions.Add(completion);
+        OnRecorded();
         OnCompletionsChanged();
+    }
+
+    /// <summary>After a Completion, done or skipped, is recorded; not when one is undone.</summary>
+    protected virtual void OnRecorded()
+    {
     }
 
     protected virtual void OnCompletionsChanged()

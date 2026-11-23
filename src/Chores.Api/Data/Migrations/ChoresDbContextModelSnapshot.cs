@@ -171,9 +171,40 @@ namespace Chores.Api.Data.Migrations
                                 .HasForeignKey("ChoreId");
                         });
 
+                    b.OwnsMany("Chores.Domain.Item", "Items", b1 =>
+                        {
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<int>("ChoreId")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<string>("Description")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("Name")
+                                .IsRequired()
+                                .HasColumnType("TEXT");
+
+                            b1.Property<bool>("Ticked")
+                                .HasColumnType("INTEGER");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("ChoreId");
+
+                            b1.ToTable("Items", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("ChoreId");
+                        });
+
                     b.Navigation("Area");
 
                     b.Navigation("Completions");
+
+                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }

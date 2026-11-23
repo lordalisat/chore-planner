@@ -77,6 +77,15 @@ public sealed class RecurringChore(string name, Interval interval, DateOnly crea
 
     protected override void OnCompletionsChanged() => PostponedTo = null;
 
+    // The next time starts with nothing ticked
+    protected override void OnRecorded()
+    {
+        foreach (Item item in Items)
+        {
+            item.Untick();
+        }
+    }
+
     private DateOnly CalculatedDueDate()
     {
         // The latest Completion moves the schedule on: a done one from its date, a skipped one from the Due Date it skipped

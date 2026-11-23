@@ -40,6 +40,37 @@ public static class FieldChecks
         }
     }
 
+    /// <summary>
+    /// The Items a request gives, in its order, or null and what is wrong at "items". An Item given with the id of one the
+    /// Chore has keeps that one's tick.
+    /// </summary>
+    /// <param name="existing">The Chore's Item with an id, if it has one.</param>
+    public static List<Item>? CheckItems(this List<FieldError> errors, IReadOnlyList<ItemRequest>? requested, Func<int, Item?> existing)
+    {
+        try
+        {
+            List<Item> items = [];
+            foreach (ItemRequest given in requested ?? [])
+            {
+                // Missing when the JSON leaves the name out, whatever its type says
+                var item = new Item(given.Name ?? "", given.Description);
+                if (given.Id is { } id && existing(id) is { Ticked: true })
+                {
+                    item.Tick();
+                }
+                items.Add(item);
+            }
+            Chore.EnsureAllowed(items);
+            return items;
+        }
+        catch (ArgumentException exception)
+        {
+            // The Domain says which rule an Item broke, in words for the household
+            errors.Add(new FieldError("items", exception.Message));
+            return null;
+        }
+    }
+
     /// <summary>Adds at "areaId" when the request names an Area that was not found.</summary>
     /// <param name="area">The Area found for <paramref name="areaId"/>, if any.</param>
     public static void CheckArea(this List<FieldError> errors, int? areaId, Area? area)
