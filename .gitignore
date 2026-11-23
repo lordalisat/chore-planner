@@ -25,3 +25,5 @@ node_modules/
 
 # Claude Code
 .claude/worktrees/
+# Screenshots from /experience-review; the PR describes them instead
+/.scratch/experience-review/

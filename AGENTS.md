@@ -2,9 +2,12 @@
 
 Run `dotnet`, `npm` and the app through `./dev`; check with `./check`; a `web/` change is seen in a browser at phone and desktop width. See `docs/agents/dev-environment.md`.
 
-## Reviewing
+## Before a PR
 
-A review of a diff that touches `web/` runs `/experience-review` after `/code-review`, and reports both.
+1. `./check` passes.
+2. `/code-review` against `main`.
+3. For a diff touching `web/`: `/experience-review` after it.
+4. `/pr` writes the body, with what both reviews found as Evidence.
 
 ## Agent skills
 

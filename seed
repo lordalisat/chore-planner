@@ -1,0 +1,71 @@
+#!/bin/sh
+# Fills a running dev API with Areas and one Chore in every state a review needs, dated from today:
+# Overdue, due today, soon, Later, Anytime, One-off, finished, Dormant, missed inside its Season, Archived.
+# For an empty, throwaway database (docs/agents/dev-environment.md, "Seeing it run").
+#   ./seed            from the host (runs itself in the devcontainer) or inside it, with the API up
+set -e
+cd "$(dirname "$0")"
+if [ ! -f /.dockerenv ] && [ ! -f /run/.containerenv ]; then
+  exec ./dev ./seed "$@"
+fi
+# The server's today, not the container's UTC one
+export TZ=Europe/Amsterdam
+
+api=${API:-http://localhost:5080/api}
+call() { # method path [json]
+  if [ -n "$3" ]; then
+    curl -sS --fail-with-body -H "X-Api-Key: dev-api-key" -X "$1" "$api$2" --json "$3"
+  else
+    curl -sS --fail-with-body -H "X-Api-Key: dev-api-key" -X "$1" "$api$2"
+  fi
+}
+day() { date -d "$1" +%F; }
+this_month=$(date +%-m)
+month() { echo $((((this_month - 1 + $1) % 12 + 12) % 12 + 1)); } # this month plus $1, wrapping the year
+
+[ "$(call GET /chores | jq length)" = 0 ] || { echo "seed: the database already has Chores; seed a throwaway one" >&2; exit 1; }
+
+area() { call POST /areas "$(jq -nc --arg name "$1" --argjson parent "${2:-null}" '{name: $name, parentId: $parent}')" | jq .id; }
+kitchen=$(area Kitchen)
+bathroom=$(area Bathroom)
+garden=$(area Garden)
+upstairs=$(area Upstairs)
+kids=$(area "Kids room" "$upstairs")
+area Hall >/dev/null # no Chores
+
+# chore recurring|one-off name area-id jq-object [jq args]: prints {id, dueDate} of the new Chore
+chore() {
+  kind=$1 name=$2 areaId=$3 fields=$4
+  shift 4
+  call POST "/chores/$kind" "$(jq -nc --arg name "$name" --argjson area "$areaId" "$@" "{name: \$name, areaId: \$area, importance: \"Normal\"} + $fields")" |
+    jq -c '{id, dueDate}'
+}
+complete() { # created-chore on-date
+  call POST "/chores/$(echo "$1" | jq .id)/complete" "$(echo "$1" | jq -c --arg date "$2" '{dueDate, date: $date}')" >/dev/null
+}
+
+chore recurring "Wipe kitchen counters" "$kitchen" '{interval: {count: 3, unit: "Day"}, importance: "High", effort: 5, lastDone: $d}' --arg d "$(day '-10 days')" >/dev/null
+chore recurring "Clean bathroom sink" "$bathroom" '{interval: {count: 1, unit: "Week"}, effort: 10, lastDone: $d}' --arg d "$(day '-7 days')" >/dev/null
+chore recurring "Vacuum the stairs" "$upstairs" '{interval: {count: 1, unit: "Week"}, effort: 15, lastDone: $d}' --arg d "$(day '-5 days')" >/dev/null
+chore recurring "Change bed sheets" "$kids" '{interval: {count: 2, unit: "Week"}, preferredDay: "Saturday", effort: 20, lastDone: $d}' --arg d "$(day '-1 day')" >/dev/null
+# A long name; due on the next 1st, so Later for most of the month
+chore recurring "Descale the coffee machine and kettle thoroughly before guests arrive" "$kitchen" '{interval: {count: 1, unit: "Month"}, preferredDay: "FirstOfMonth", importance: "Low", effort: 15}' >/dev/null
+# Its Season starts in two months: Dormant, waiting for it
+chore recurring "Mow the lawn" "$garden" '{interval: {count: 1, unit: "Week"}, season: {fromMonth: $from, toMonth: $to}, effort: 45}' \
+  --argjson from "$(month 2)" --argjson to "$(month 5)" >/dev/null
+# Its Season ended last month with a Due Date missed inside it: Overdue, not Dormant
+chore recurring "Rake the leaves" "$garden" '{interval: {count: 1, unit: "Week"}, season: {fromMonth: $from, toMonth: $to}, effort: 30, lastDone: $d}' \
+  --argjson from "$(month -4)" --argjson to "$(month -1)" --arg d "$(day "$(date +%Y-%m-01) -1 month")" >/dev/null
+
+chore one-off "Fix leaking tap" "$bathroom" '{dueDate: $d, importance: "High", effort: 30}' --arg d "$(day '+4 days')" >/dev/null
+chore one-off "Sort out the attic" "$upstairs" '{dueDate: null, importance: "Low", effort: 120}' >/dev/null
+books=$(chore one-off "Return library books" null '{dueDate: $d, effort: 10}' --arg d "$(day '-2 days')")
+complete "$books" "$(day '-1 day')"
+
+# Done before, then Archived: its Completions kept for history
+gutters=$(chore recurring "Clean the gutters" "$garden" '{interval: {count: 1, unit: "Year"}, effort: 60, lastDone: $d}' --arg d "$(day '-400 days')")
+complete "$gutters" "$(day '-30 days')"
+call DELETE "/chores/$(echo "$gutters" | jq .id)" >/dev/null
+
+call GET /chores | jq -r '.[] | [.name, (.dueDate // "anytime"), (if .finished then "finished" elif .dormant then "Dormant" elif .overdue then "Overdue" else "" end)] | @tsv'
+echo "+ $(call GET '/chores?archived=true' | jq length) Archived, $(call GET /areas | jq length) Areas"
