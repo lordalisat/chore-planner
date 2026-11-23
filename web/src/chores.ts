@@ -11,6 +11,30 @@ export const kindLabels: Record<Chore['kind'], string> = { Recurring: 'Recurring
 /** Interval units as counted, "2 weeks"; one of them drops the s. */
 export const unitLabels: Record<Unit, string> = { Day: 'days', Week: 'weeks', Month: 'months', Year: 'years' }
 
+export type PreferredDay = NonNullable<Chore['preferredDay']>
+export type Weekday = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday'
+export type WeekOfMonth = 'First' | 'Second' | 'Third' | 'Fourth' | 'Last'
+export const weekdayNames: Weekday[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+export const weekOfMonthNames: WeekOfMonth[] = ['First', 'Second', 'Third', 'Fourth', 'Last']
+
+/** A weekday in the month, such as "FirstSaturday", split into its week and day; null for any other Preferred Day. */
+export function weekdayInMonth(day: PreferredDay | null): { week: WeekOfMonth; day: Weekday } | null {
+  for (const week of weekOfMonthNames) {
+    for (const weekday of weekdayNames) {
+      if (day === `${week}${weekday}`) return { week, day: weekday }
+    }
+  }
+  return null
+}
+
+/** How a Preferred Day reads after "every month on": "Tuesday", "the first", "the first Saturday". */
+export function preferredDayName(day: PreferredDay): string {
+  if (day === 'FirstOfMonth') return 'the first'
+  if (day === 'LastOfMonth') return 'the last'
+  const inMonth = weekdayInMonth(day)
+  return inMonth ? `the ${inMonth.week.toLowerCase()} ${inMonth.day}` : day
+}
+
 /** Every Chore, with its scheduling as the server computed it. */
 export const choresQuery = queryOptions({
   queryKey: ['chores'],

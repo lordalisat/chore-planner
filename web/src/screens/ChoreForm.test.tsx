@@ -178,3 +178,37 @@ test('the first and last of the month are only offered for an Interval in months
   await pick('Unit', 'months')
   expect(await preferredDayOptions()).toEqual(expect.arrayContaining(['Tuesday', 'First of the month', 'Last of the month']))
 })
+
+test('a weekday in the month is picked as its week and day, starting on the first Saturday, and saved as one Preferred Day', async () => {
+  const fetch = stubApi({ '/api/chores/recurring': new Response('{}', { status: 201 }), '/api/chores': [] })
+  renderForm()
+  await pick('Unit', 'months')
+
+  await pick('Preferred day', 'A weekday in the month…')
+  expect(screen.getByRole('combobox', { name: 'Week of the month' })).toHaveTextContent('First')
+  expect(screen.getByRole('combobox', { name: 'Weekday' })).toHaveTextContent('Saturday')
+  await pick('Week of the month', 'Last')
+  await pick('Weekday', 'Friday')
+  await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Check the smoke alarms{Enter}')
+
+  expect(screen.getByRole('combobox', { name: 'Preferred day' })).toHaveTextContent('A weekday in the month…')
+  await expect.poll(() => sent(fetch).length).toBe(1)
+  expect(JSON.parse(String(sent(fetch)[0]?.[1]?.body))).toMatchObject({
+    interval: { count: 1, unit: 'Month' },
+    preferredDay: 'LastFriday',
+  })
+})
+
+test('a weekday in the month stays for an Interval in years and is cleared for one in weeks', async () => {
+  renderForm()
+  await pick('Unit', 'months')
+  await pick('Preferred day', 'A weekday in the month…')
+  await pick('Weekday', 'Sunday')
+
+  await pick('Unit', 'years')
+  expect(screen.getByRole('combobox', { name: 'Weekday' })).toHaveTextContent('Sunday')
+
+  await pick('Unit', 'weeks')
+  expect(screen.queryByRole('combobox', { name: 'Weekday' })).not.toBeInTheDocument()
+  expect(screen.getByRole('combobox', { name: 'Preferred day' })).toHaveTextContent('Any day')
+})

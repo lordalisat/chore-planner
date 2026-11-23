@@ -856,7 +856,7 @@ export interface components {
             area: null | components["schemas"]["AreaRefDto"];
             interval: null | components["schemas"]["IntervalDto"];
             /** @enum {null|string} */
-            preferredDay: "Sunday" | "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "FirstOfMonth" | "LastOfMonth" | null;
+            preferredDay: "Sunday" | "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "FirstOfMonth" | "LastOfMonth" | "FirstSunday" | "FirstMonday" | "FirstTuesday" | "FirstWednesday" | "FirstThursday" | "FirstFriday" | "FirstSaturday" | "SecondSunday" | "SecondMonday" | "SecondTuesday" | "SecondWednesday" | "SecondThursday" | "SecondFriday" | "SecondSaturday" | "ThirdSunday" | "ThirdMonday" | "ThirdTuesday" | "ThirdWednesday" | "ThirdThursday" | "ThirdFriday" | "ThirdSaturday" | "FourthSunday" | "FourthMonday" | "FourthTuesday" | "FourthWednesday" | "FourthThursday" | "FourthFriday" | "FourthSaturday" | "LastSunday" | "LastMonday" | "LastTuesday" | "LastWednesday" | "LastThursday" | "LastFriday" | "LastSaturday" | null;
             season: null | components["schemas"]["SeasonDto"];
             /** Format: date */
             dueDate: null | string;
@@ -893,7 +893,7 @@ export interface components {
             name: string;
             interval: components["schemas"]["IntervalDto"];
             /** @enum {null|string} */
-            preferredDay?: "Sunday" | "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "FirstOfMonth" | "LastOfMonth" | null;
+            preferredDay?: "Sunday" | "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "FirstOfMonth" | "LastOfMonth" | "FirstSunday" | "FirstMonday" | "FirstTuesday" | "FirstWednesday" | "FirstThursday" | "FirstFriday" | "FirstSaturday" | "SecondSunday" | "SecondMonday" | "SecondTuesday" | "SecondWednesday" | "SecondThursday" | "SecondFriday" | "SecondSaturday" | "ThirdSunday" | "ThirdMonday" | "ThirdTuesday" | "ThirdWednesday" | "ThirdThursday" | "ThirdFriday" | "ThirdSaturday" | "FourthSunday" | "FourthMonday" | "FourthTuesday" | "FourthWednesday" | "FourthThursday" | "FourthFriday" | "FourthSaturday" | "LastSunday" | "LastMonday" | "LastTuesday" | "LastWednesday" | "LastThursday" | "LastFriday" | "LastSaturday" | null;
             season?: null | components["schemas"]["SeasonDto"];
             importance?: components["schemas"]["Importance"];
             /** Format: int32 */
@@ -910,7 +910,7 @@ export interface components {
             name: string;
             interval?: null | components["schemas"]["IntervalDto"];
             /** @enum {null|string} */
-            preferredDay?: "Sunday" | "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "FirstOfMonth" | "LastOfMonth" | null;
+            preferredDay?: "Sunday" | "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "FirstOfMonth" | "LastOfMonth" | "FirstSunday" | "FirstMonday" | "FirstTuesday" | "FirstWednesday" | "FirstThursday" | "FirstFriday" | "FirstSaturday" | "SecondSunday" | "SecondMonday" | "SecondTuesday" | "SecondWednesday" | "SecondThursday" | "SecondFriday" | "SecondSaturday" | "ThirdSunday" | "ThirdMonday" | "ThirdTuesday" | "ThirdWednesday" | "ThirdThursday" | "ThirdFriday" | "ThirdSaturday" | "FourthSunday" | "FourthMonday" | "FourthTuesday" | "FourthWednesday" | "FourthThursday" | "FourthFriday" | "FourthSaturday" | "LastSunday" | "LastMonday" | "LastTuesday" | "LastWednesday" | "LastThursday" | "LastFriday" | "LastSaturday" | null;
             season?: null | components["schemas"]["SeasonDto"];
             /** Format: date */
             dueDate?: null | string;
