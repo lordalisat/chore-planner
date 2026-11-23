@@ -16,6 +16,10 @@ A domain concept that will gain kinds (a ticket, spec or `.scratch/` file hints 
 - A request DTO validates itself and returns a `Result<T>`: it collects a local `List<FieldError>` (`errors.Try(field, message, build)` wraps throwing Domain constructors) and ends in `return new Result<T>(errors, () => build)`. It doesn't take an error collection to fill. Facts from the database (taken Names) come in as arguments.
 - Endpoints stay thin: load, `if (result.Value is not { } x) return result.ToProblem();`, save, answer.
 
+## Seed data
+
+A change that adds a state a screen can show (a new kind of Preferred Day, a new Overview section, a new mark on a row) adds a Chore in that state to `./seed`, so every later review gets it in one step.
+
 ## Evidence in the PR
 
 - A change under `web/` says what `/experience-review` saw at phone and desktop width on every screen it touches: its hard findings (none, or how they were fixed) and what was checked. Screenshots stay with the review; `gh` can't attach them.
