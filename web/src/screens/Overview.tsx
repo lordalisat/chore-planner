@@ -206,7 +206,7 @@ function Description({ text }: { text: string }) {
   }, [text, whole])
 
   return (
-    <div className={`flex flex-col items-start border-t border-black/5 px-3 ${cutOff ? 'pt-2' : 'py-2'}`}>
+    <div className="flex flex-col items-start border-t border-black/5 px-3 py-2">
       <p ref={paragraph} className={`text-sm whitespace-pre-line text-ink/80 ${whole ? '' : 'line-clamp-3'}`}>
         {text}
       </p>
@@ -215,7 +215,8 @@ function Description({ text }: { text: string }) {
           type="button"
           aria-expanded={whole}
           onClick={() => setWhole(!whole)}
-          className="-ml-2 min-h-11 rounded-lg px-2 text-sm font-medium text-brand hover:bg-brand/10"
+          // A 44px tap target that overlaps the padding around it, so it doesn't push the row apart
+          className="-mx-2 -my-2 min-h-11 px-2 text-sm font-medium text-brand hover:underline"
         >
           {whole ? 'Show less' : 'Show more'}
         </button>
