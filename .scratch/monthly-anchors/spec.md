@@ -1,17 +1,17 @@
-# Day-of-month preferences for monthly Chores
+# A weekday in the month as Preferred Day
 
-Not scheduled yet; to be grilled before it gets issues. Builds on Foundations issue 04. First and last of month landed as Preferred Days in Foundations issue 08; what remains is "first Saturday of the month" and the like.
+Builds on Foundations issue 04 and issue 08 (first and last of the month as Preferred Days). Grilled 2026-11-23; small enough to implement in one go, without tickets.
 
-## Want
+## Decisions
 
-Recurring Chores with a month or year Interval can prefer a position in the month instead of (or on top of) a Preferred Day:
-
-- "first day of the month", "last day of the month"
-- best: "first Saturday of the month" (and presumably second/third/last Saturday)
-
-## Open questions
-
-- Does this replace Preferred Day for such Chores, or combine with it? (Probably replace: one preference per Chore.)
-- With "every 3 months, first Saturday": is the Due Date the first Saturday of the month that Last Done + Interval lands in, even when that's earlier than Last Done + Interval?
-- Done late (on the 10th instead of the 1st): next one due on the 1st of next month, or on the 1st of the month after that?
-- Is this a glossary term of its own (working name: Monthly Anchor), or a kind of Preferred Day?
+1. **A kind of Preferred Day, no new term.** The first, second, third, fourth or last Monday to Sunday of the month is one more kind of Preferred Day, next to the weekdays and the first and last of the month. A Chore has at most one Preferred Day. (Working name "Monthly Anchor" dropped.)
+2. **Intervals in months or years only**, like the first and last of the month.
+3. **Scheduling as for every Preferred Day** (ADR 0002): Last Done plus the Interval, moved to the nearest such day, even when that is earlier. Monthly "first Saturday" in 2027:
+   - done on time, Sat 2 Jan → due Sat 6 Feb
+   - done late, Sun 10 Jan → due Sat 6 Feb (10 Feb is nearest to 6 Feb)
+   - done very late, Mon 25 Jan → due Sat 6 Mar
+   - every 3 months, done 10 Jan → due Sat 3 Apr, a week before Last Done plus the Interval
+4. **Seasons**: nothing new; a Due Date moved to a Season's start lands on the first such day on or after it.
+5. **Form**: the Preferred day dropdown gains "A weekday in the month…", which shows **[First ▾] [Saturday ▾] of the month**. Switching to an Interval in days or weeks clears it, as it does for the first and last of the month.
+6. **Lists** read "every month on the first Saturday", "every 3 months on the last Friday".
+7. **Seed**: "Check the smoke alarms", monthly on the first Saturday, in Upstairs; Hall stays the Area without Chores.

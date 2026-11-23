@@ -1,6 +1,7 @@
 #!/bin/sh
 # Fills a running dev API with Areas and one Chore in every state a review needs, dated from today:
-# Overdue, due today, soon, Later, Anytime, One-off, finished, Dormant, missed inside its Season, Archived.
+# Overdue, due today, soon, Later, Anytime, One-off, finished, Dormant, missed inside its Season, Archived,
+# and a weekday in the month as Preferred Day.
 # For an empty, throwaway database (docs/agents/dev-environment.md, "Seeing it run").
 #   ./seed            from the host (runs itself in the devcontainer) or inside it, with the API up
 set -e
@@ -50,6 +51,7 @@ chore recurring "Vacuum the stairs" "$upstairs" '{interval: {count: 1, unit: "We
 chore recurring "Change bed sheets" "$kids" '{interval: {count: 2, unit: "Week"}, preferredDay: "Saturday", effort: 20, lastDone: $d}' --arg d "$(day '-1 day')" >/dev/null
 # A long name; due on the next 1st, so Later for most of the month
 chore recurring "Descale the coffee machine and kettle thoroughly before guests arrive" "$kitchen" '{interval: {count: 1, unit: "Month"}, preferredDay: "FirstOfMonth", importance: "Low", effort: 15}' >/dev/null
+chore recurring "Check the smoke alarms" "$upstairs" '{interval: {count: 1, unit: "Month"}, preferredDay: "FirstSaturday", effort: 10}' >/dev/null
 # Its Season starts in two months: Dormant, waiting for it
 chore recurring "Mow the lawn" "$garden" '{interval: {count: 1, unit: "Week"}, season: {fromMonth: $from, toMonth: $to}, effort: 45}' \
   --argjson from "$(month 2)" --argjson to "$(month 5)" >/dev/null
