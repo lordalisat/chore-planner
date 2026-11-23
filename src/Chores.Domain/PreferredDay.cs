@@ -62,7 +62,7 @@ public abstract record PreferredDay
     }
 
     /// <summary>A weekday in the month, such as the first Saturday or the last Friday.</summary>
-    public sealed record WeekdayInMonth(WeekOfMonth Week, DayOfWeek Day) : DayInMonth
+    public sealed record WeekdayInMonth(Ordinal Ordinal, DayOfWeek Day) : DayInMonth
     {
         public override DateOnly OnOrAfter(DateOnly date) =>
             InMonthOf(date) is var day && day >= date ? day : InMonthOf(FirstOf(date).AddMonths(1));
@@ -73,9 +73,9 @@ public abstract record PreferredDay
         private DateOnly InMonthOf(DateOnly date)
         {
             var weekday = new Weekday(Day);
-            return Week is WeekOfMonth.Last
+            return Ordinal is Ordinal.Last
                 ? weekday.OnOrBefore(FirstOf(date).AddMonths(1).AddDays(-1))
-                : weekday.OnOrAfter(FirstOf(date)).AddDays(7 * ((int)Week - 1));
+                : weekday.OnOrAfter(FirstOf(date)).AddDays(7 * ((int)Ordinal - 1));
         }
     }
 }

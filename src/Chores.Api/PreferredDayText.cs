@@ -13,8 +13,8 @@ public static class PreferredDayText
         .. Enum.GetValues<DayOfWeek>().Select(day => (day.ToString(), (PreferredDay)day)),
         (nameof(PreferredDay.FirstOfMonth), new PreferredDay.FirstOfMonth()),
         (nameof(PreferredDay.LastOfMonth), new PreferredDay.LastOfMonth()),
-        .. Enum.GetValues<WeekOfMonth>().SelectMany(week => Enum.GetValues<DayOfWeek>().Select(day =>
-            ($"{week}{day}", (PreferredDay)new PreferredDay.WeekdayInMonth(week, day)))),
+        .. Enum.GetValues<Ordinal>().SelectMany(ordinal => Enum.GetValues<DayOfWeek>().Select(day =>
+            ($"{ordinal}{day}", (PreferredDay)new PreferredDay.WeekdayInMonth(ordinal, day)))),
     ];
 
     /// <summary>Every text a Preferred Day can have, which OpenAPI documents as an enum.</summary>

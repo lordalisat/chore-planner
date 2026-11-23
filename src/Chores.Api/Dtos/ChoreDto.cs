@@ -4,7 +4,7 @@ namespace Chores.Api.Dtos;
 
 /// <summary>A Chore as the front end sees it, with its scheduling computed for today.</summary>
 /// <param name="Kind">"Recurring" or "OneOff".</param>
-/// <param name="PreferredDay">"Monday" to "Sunday", "FirstOfMonth", "LastOfMonth", or a weekday in the month from "FirstMonday" to "LastSunday".</param>
+/// <param name="PreferredDay">"Monday" to "Sunday", "FirstOfMonth", "LastOfMonth", or a weekday in the month such as "FirstSaturday" or "LastFriday".</param>
 /// <param name="Urgency">How pressing the Chore is today; null without a Due Date.</param>
 /// <param name="Dormant">Outside its Season; the Overview hides it.</param>
 /// <param name="Finished">A One-off Chore that was completed; the Overview hides it.</param>

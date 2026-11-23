@@ -7,14 +7,14 @@ import {
   choresQuery,
   kindLabels,
   unitLabels,
+  ordinalNames,
+  toWeekdayInMonth,
   weekdayInMonth,
   weekdayNames,
-  weekOfMonthNames,
   type Chore,
+  type Ordinal,
   type PreferredDay,
   type Unit,
-  type Weekday,
-  type WeekOfMonth,
 } from '../chores.ts'
 import { DateField } from '../ui/DateField.tsx'
 import { NumberField } from '../ui/NumberField.tsx'
@@ -39,16 +39,15 @@ const kinds: Option<Kind>[] = (['Recurring', 'OneOff'] as const).map((kind) => (
 const units: Option<Unit>[] = (['Day', 'Week', 'Month', 'Year'] as const).map((unit) => ({ value: unit, label: unitLabels[unit] }))
 // What the Preferred day list offers: a Preferred Day, or the way to a weekday in the month, picked in two more lists
 type DayChoice = PreferredDay | 'WeekdayInMonth'
-const weekdays: Option<DayChoice>[] = weekdayNames.map((day) => ({ value: day, label: day }))
+const weekdays = weekdayNames.map((day) => ({ value: day, label: day }))
 const daysInMonth: Option<DayChoice>[] = [
   { value: 'FirstOfMonth', label: 'First of the month' },
   { value: 'LastOfMonth', label: 'Last of the month' },
   { value: 'WeekdayInMonth', label: 'A weekday in the month…' },
 ]
-const weeksOfMonth: Option<WeekOfMonth>[] = weekOfMonthNames.map((week) => ({ value: week, label: week }))
-const weekdaysOfMonth: Option<Weekday>[] = weekdayNames.map((day) => ({ value: day, label: day }))
+const ordinals: Option<Ordinal>[] = ordinalNames.map((ordinal) => ({ value: ordinal, label: ordinal }))
 // A weekday in the month starts as the first Saturday
-const firstWeekdayInMonth: PreferredDay = 'FirstSaturday'
+const firstWeekdayInMonth = toWeekdayInMonth('First', 'Saturday')
 
 /** The Preferred day list's choice for a Preferred Day: a weekday in the month shows as the way to it. */
 const dayChoice = (day: PreferredDay | null): DayChoice | null => (weekdayInMonth(day) ? 'WeekdayInMonth' : day)
@@ -193,20 +192,20 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
                 <SelectField
-                  label="Week of the month"
+                  label={`Which ${inMonth.day}`}
                   hideLabel
-                  options={weeksOfMonth}
-                  value={inMonth.week}
-                  onValueChange={(week) => week && setPreferredDay(`${week}${inMonth.day}`)}
+                  options={ordinals}
+                  value={inMonth.ordinal}
+                  onValueChange={(ordinal) => ordinal && setPreferredDay(toWeekdayInMonth(ordinal, inMonth.day))}
                   invalid={!!errors.preferredDay}
                   className="flex-1"
                 />
                 <SelectField
                   label="Weekday"
                   hideLabel
-                  options={weekdaysOfMonth}
+                  options={weekdays}
                   value={inMonth.day}
-                  onValueChange={(day) => day && setPreferredDay(`${inMonth.week}${day}`)}
+                  onValueChange={(day) => day && setPreferredDay(toWeekdayInMonth(inMonth.ordinal, day))}
                   invalid={!!errors.preferredDay}
                   className="flex-1"
                 />

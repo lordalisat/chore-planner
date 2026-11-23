@@ -86,7 +86,7 @@ public class RecurringChoreTests
         Assert.Equal(CreatedOn, NewChore(1, IntervalUnit.Year, new PreferredDay.FirstOfMonth()).DueDate);
     }
 
-    private static readonly PreferredDay FirstSaturday = new PreferredDay.WeekdayInMonth(WeekOfMonth.First, DayOfWeek.Saturday);
+    private static readonly PreferredDay FirstSaturday = new PreferredDay.WeekdayInMonth(Ordinal.First, DayOfWeek.Saturday);
 
     [Theory]
     [InlineData(2027, 1, 2, 2027, 2, 6)] // done on time, Sat 2 Jan
@@ -107,14 +107,14 @@ public class RecurringChoreTests
     [Fact]
     public void Every_month_on_the_last_Friday_done_on_the_last_Friday_of_March_is_due_on_the_last_of_April()
     {
-        var lastFriday = new PreferredDay.WeekdayInMonth(WeekOfMonth.Last, DayOfWeek.Friday);
+        var lastFriday = new PreferredDay.WeekdayInMonth(Ordinal.Last, DayOfWeek.Friday);
         Assert.Equal(new DateOnly(2027, 4, 30), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Month, lastFriday), new DateOnly(2027, 3, 26)));
     }
 
     [Fact]
     public void Every_month_on_the_second_Tuesday_done_on_the_second_of_February_is_due_on_the_second_of_March()
     {
-        var secondTuesday = new PreferredDay.WeekdayInMonth(WeekOfMonth.Second, DayOfWeek.Tuesday);
+        var secondTuesday = new PreferredDay.WeekdayInMonth(Ordinal.Second, DayOfWeek.Tuesday);
         Assert.Equal(new DateOnly(2027, 3, 9), DueDateAfterDoneOn(NewChore(1, IntervalUnit.Month, secondTuesday), new DateOnly(2027, 2, 9)));
     }
 
@@ -122,7 +122,7 @@ public class RecurringChoreTests
     public void Without_a_Completion_a_weekday_in_the_month_is_due_on_the_first_one_from_creation()
     {
         // Created 1 January 2027: the fourth Monday of January is the 25th
-        var fourthMonday = new PreferredDay.WeekdayInMonth(WeekOfMonth.Fourth, DayOfWeek.Monday);
+        var fourthMonday = new PreferredDay.WeekdayInMonth(Ordinal.Fourth, DayOfWeek.Monday);
         Assert.Equal(new DateOnly(2027, 1, 25), NewChore(1, IntervalUnit.Month, fourthMonday).DueDate);
     }
 
@@ -142,7 +142,7 @@ public class RecurringChoreTests
     {
         { IntervalUnit.Day, new PreferredDay.FirstOfMonth() },
         { IntervalUnit.Week, new PreferredDay.LastOfMonth() },
-        { IntervalUnit.Week, new PreferredDay.WeekdayInMonth(WeekOfMonth.First, DayOfWeek.Saturday) },
+        { IntervalUnit.Week, new PreferredDay.WeekdayInMonth(Ordinal.First, DayOfWeek.Saturday) },
     };
 
     [Theory]

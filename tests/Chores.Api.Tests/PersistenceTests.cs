@@ -95,10 +95,10 @@ public sealed class PersistenceTests : IDisposable
     {
         Save(new RecurringChore("Check the smoke alarms", new Interval(1, IntervalUnit.Month), new DateOnly(2027, 1, 1))
         {
-            PreferredDay = new PreferredDay.WeekdayInMonth(WeekOfMonth.Last, DayOfWeek.Friday),
+            PreferredDay = new PreferredDay.WeekdayInMonth(Ordinal.Last, DayOfWeek.Friday),
         });
 
-        Assert.Equal(new PreferredDay.WeekdayInMonth(WeekOfMonth.Last, DayOfWeek.Friday), LoadChore<RecurringChore>("Check the smoke alarms").PreferredDay);
+        Assert.Equal(new PreferredDay.WeekdayInMonth(Ordinal.Last, DayOfWeek.Friday), LoadChore<RecurringChore>("Check the smoke alarms").PreferredDay);
     }
 
     [Fact]

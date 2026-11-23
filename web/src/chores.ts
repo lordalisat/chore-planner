@@ -12,16 +12,21 @@ export const kindLabels: Record<Chore['kind'], string> = { Recurring: 'Recurring
 export const unitLabels: Record<Unit, string> = { Day: 'days', Week: 'weeks', Month: 'months', Year: 'years' }
 
 export type PreferredDay = NonNullable<Chore['preferredDay']>
-export type Weekday = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday'
-export type WeekOfMonth = 'First' | 'Second' | 'Third' | 'Fourth' | 'Last'
+// Taken from the API's Preferred Days, so a change there fails the type check here
+export type Weekday = Extract<PreferredDay, 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday'>
+/** Which of a weekday's days in a month. */
+export type Ordinal = 'First' | 'Second' | 'Third' | 'Fourth' | 'Last'
 export const weekdayNames: Weekday[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-export const weekOfMonthNames: WeekOfMonth[] = ['First', 'Second', 'Third', 'Fourth', 'Last']
+export const ordinalNames: Ordinal[] = ['First', 'Second', 'Third', 'Fourth', 'Last']
 
-/** A weekday in the month, such as "FirstSaturday", split into its week and day; null for any other Preferred Day. */
-export function weekdayInMonth(day: PreferredDay | null): { week: WeekOfMonth; day: Weekday } | null {
-  for (const week of weekOfMonthNames) {
-    for (const weekday of weekdayNames) {
-      if (day === `${week}${weekday}`) return { week, day: weekday }
+/** The Preferred Day for a weekday in the month, such as "FirstSaturday"; the type check holds it to the API's list. */
+export const toWeekdayInMonth = (ordinal: Ordinal, day: Weekday): PreferredDay => `${ordinal}${day}`
+
+/** A weekday in the month split into its ordinal and day; null for any other Preferred Day. */
+export function weekdayInMonth(preferred: PreferredDay | null): { ordinal: Ordinal; day: Weekday } | null {
+  for (const ordinal of ordinalNames) {
+    for (const day of weekdayNames) {
+      if (preferred === toWeekdayInMonth(ordinal, day)) return { ordinal, day }
     }
   }
   return null
@@ -32,7 +37,7 @@ export function preferredDayName(day: PreferredDay): string {
   if (day === 'FirstOfMonth') return 'the first'
   if (day === 'LastOfMonth') return 'the last'
   const inMonth = weekdayInMonth(day)
-  return inMonth ? `the ${inMonth.week.toLowerCase()} ${inMonth.day}` : day
+  return inMonth ? `the ${inMonth.ordinal.toLowerCase()} ${inMonth.day}` : day
 }
 
 /** Every Chore, with its scheduling as the server computed it. */

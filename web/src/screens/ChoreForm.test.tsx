@@ -185,10 +185,11 @@ test('a weekday in the month is picked as its week and day, starting on the firs
   await pick('Unit', 'months')
 
   await pick('Preferred day', 'A weekday in the month…')
-  expect(screen.getByRole('combobox', { name: 'Week of the month' })).toHaveTextContent('First')
+  expect(screen.getByRole('combobox', { name: 'Which Saturday' })).toHaveTextContent('First')
   expect(screen.getByRole('combobox', { name: 'Weekday' })).toHaveTextContent('Saturday')
-  await pick('Week of the month', 'Last')
+  await pick('Which Saturday', 'Last')
   await pick('Weekday', 'Friday')
+  expect(screen.getByRole('combobox', { name: 'Which Friday' })).toHaveTextContent('Last')
   await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Check the smoke alarms{Enter}')
 
   expect(screen.getByRole('combobox', { name: 'Preferred day' })).toHaveTextContent('A weekday in the month…')

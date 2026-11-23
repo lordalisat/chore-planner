@@ -11,8 +11,8 @@ test.each([
   expect(preferredDayName(day)).toBe(name)
 })
 
-test('only a weekday in the month splits into its week and day', () => {
-  expect(weekdayInMonth('SecondTuesday')).toEqual({ week: 'Second', day: 'Tuesday' })
+test('only a weekday in the month splits into its ordinal and day', () => {
+  expect(weekdayInMonth('SecondTuesday')).toEqual({ ordinal: 'Second', day: 'Tuesday' })
   expect(weekdayInMonth('Tuesday')).toBeNull()
   expect(weekdayInMonth('FirstOfMonth')).toBeNull()
   expect(weekdayInMonth(null)).toBeNull()
