@@ -52,6 +52,17 @@ const descriptionMaxLength = 2000
 // A weekday in the month starts as the first Saturday
 const firstWeekdayInMonth = toWeekdayInMonth('First', 'Saturday')
 
+/** Scrolls the nearest thing that scrolls around `element` (a dialog, a side panel, or else the page) to its top. */
+function scrollToTop(element: HTMLElement) {
+  for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+    if (/auto|scroll/.test(getComputedStyle(parent).overflowY)) {
+      parent.scrollTop = 0
+      return
+    }
+  }
+  if (document.scrollingElement) document.scrollingElement.scrollTop = 0
+}
+
 /** The Preferred day list's choice for a Preferred Day: a weekday in the month shows as the way to it. */
 const dayChoice = (day: PreferredDay | null): DayChoice | null => (weekdayInMonth(day) ? 'WeekdayInMonth' : day)
 const months: Option<string>[] = [
@@ -94,6 +105,7 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
   const [dueDate, setDueDate] = useState<string | null>(chore?.kind === 'OneOff' ? (chore.dueDate ?? null) : null)
   const [errors, setErrors] = useState<FieldErrors>({})
   const nameInput = useRef<HTMLInputElement>(null)
+  const form = useRef<HTMLFormElement>(null)
 
   const preferredDays = preferredDaysFor(unit)
   const inMonth = weekdayInMonth(preferredDay)
@@ -125,7 +137,9 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
       setEffort(null)
       setLastDone(null)
       setDueDate(null)
-      nameInput.current?.focus()
+      // Back to the top for the next one, where the title and Name are
+      nameInput.current?.focus({ preventScroll: true })
+      if (form.current) scrollToTop(form.current)
     },
     onError: (error) => {
       if (error instanceof ApiError && error.status === 400) setErrors(error.errors)
@@ -165,7 +179,7 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-4">
+    <form ref={form} onSubmit={submit} className="flex flex-col gap-4">
       {/* A Chore's kind can't change */}
       {!chore && <SegmentedField label="Kind" options={kinds} value={kind} onValueChange={setKind} />}
       <TextField ref={nameInput} label="Name" autoFocus value={name} onValueChange={setName} error={errors.name?.[0]} />

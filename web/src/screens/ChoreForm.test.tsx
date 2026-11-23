@@ -139,6 +139,27 @@ test('a Description is sent with its line breaks, and Save and add another clear
   await expect.poll(() => screen.getByRole('textbox', { name: 'Description' })).toHaveValue('')
 })
 
+test('Save and add another scrolls back to the top of what the form scrolls in', async () => {
+  stubApi({ '/api/chores/recurring': new Response('{}', { status: 201 }), '/api/chores': [] })
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <div data-testid="scroller" style={{ overflowY: 'auto' }}>
+        <h2>New Chore</h2>
+        <ChoreForm onDone={() => {}} />
+      </div>
+    </QueryClientProvider>,
+  )
+  const scroller = screen.getByTestId('scroller')
+  await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Hoover upstairs')
+  scroller.scrollTop = 400
+
+  await userEvent.click(screen.getByRole('button', { name: 'Save and add another' }))
+
+  await expect.poll(() => screen.getByRole('textbox', { name: 'Name' })).toHaveValue('')
+  expect(scroller.scrollTop).toBe(0)
+  expect(screen.getByRole('textbox', { name: 'Name' })).toHaveFocus()
+})
+
 test('a Preferred Day the new Interval does not allow is cleared', async () => {
   renderForm()
   await pick('Preferred day', 'Monday')
