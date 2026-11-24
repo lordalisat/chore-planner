@@ -1,4 +1,4 @@
-import { Button } from '@ui-sdk/react/button'
+import { Button } from './Button.tsx'
 
 /**
  * A table row's name, as the button that opens it from the keyboard or for an agent; it reads as plain text, since a

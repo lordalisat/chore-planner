@@ -152,7 +152,7 @@ function ChoreRow({ chore, today, open, onOpenChange, onClose, onDone, onDoneOn,
     <Collapsible
       render={<li />}
       open={open}
-      onOpenChange={(next) => onOpenChange(next)}
+      onOpenChange={onOpenChange}
       data-urgency={band}
       className={`rounded-lg border-l-4 bg-white shadow-sm ${bandBorder[band]}`}
     >
@@ -228,6 +228,7 @@ function Description({ text }: { text: string }) {
       <p ref={paragraph} className={`text-sm whitespace-pre-line text-ink/80 ${whole ? '' : 'line-clamp-3'}`}>
         {text}
       </p>
+      {/* A Button, not a Collapsible: the text is always in view, only unclamped */}
       {cutOff && (
         <Button
           aria-expanded={whole}

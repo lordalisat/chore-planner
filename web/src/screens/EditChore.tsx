@@ -1,9 +1,9 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { choreQuery, type Chore } from '../chores.ts'
+import { Button } from '../ui/Button.tsx'
 import { ChoreForm } from './ChoreForm.tsx'
 import { DeleteChore } from './DeleteChore.tsx'
-import { Button } from '../ui/Button.tsx'
 
 const route = getRouteApi('/authenticated/chores/$id')
 

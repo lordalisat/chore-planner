@@ -1,11 +1,11 @@
 import { createMemoryHistory } from '@tanstack/react-router'
 import { QueryClient } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
-import { createAgent } from '@ui-sdk/react/agent'
 import { beforeEach, expect, test } from 'vitest'
 import App from './App.tsx'
 import { createAppRouter } from './router.tsx'
 import { choreFixture, stubApi } from './test-api.ts'
+import { createAgent } from './ui/agent.ts'
 
 // One bridge for the file: it has no way to be destroyed, and remembers what earlier tests removed as off the page
 let approve = false
@@ -32,9 +32,9 @@ function expectNamed(...labels: string[]) {
 }
 
 // Where a name is shared with a control jsdom can't hide, such as the phone layout's, a step names the control by ref
-const ref = (label: string) => onPage().find((entry) => entry.label === label)!.ref
+const refOf = (label: string) => onPage().find((entry) => entry.label === label)!.ref
 
-async function act(...steps: { ref: string; action: string; args?: unknown[] }[]) {
+async function agentAct(...steps: { ref: string; action: string; args?: unknown[] }[]) {
   const result = await agent.act({ steps })
   expect(result.ok, result.error?.message).toBe(true)
   return result
@@ -61,7 +61,7 @@ test('an agent can log in', async () => {
   await screen.findByLabelText('Household password')
 
   expectNamed('Household password', 'Log in')
-  await act({ ref: 'Household password', action: 'setValue', args: ['secret'] }, { ref: 'Log in', action: 'press' })
+  await agentAct({ ref: 'Household password', action: 'setValue', args: ['secret'] }, { ref: 'Log in', action: 'press' })
 
   await expect.poll(() => sent(fetch, 'POST')).toEqual([{ path: '/api/login', body: { password: 'secret' } }])
 })
@@ -79,10 +79,10 @@ test('an agent can mark a Chore done, open it and tick its Items, and log out', 
   await screen.findByText('Laundry')
 
   expectNamed('Mark Laundry done', 'Open Laundry Tue 9 Mar', 'Later (1)', 'Log out')
-  await act({ ref: 'Mark Laundry done', action: 'press' })
+  await agentAct({ ref: 'Mark Laundry done', action: 'press' })
   await expect.poll(() => sent(fetch, 'POST').map((request) => request.path)).toEqual(['/api/chores/7/complete'])
 
-  await act(
+  await agentAct(
     { ref: 'Open Laundry', action: 'setOpen', args: [true] },
     { ref: 'Sheets', action: 'setChecked', args: [true] },
     { ref: 'Description of Sheets', action: 'setOpen', args: [true] },
@@ -92,7 +92,7 @@ test('an agent can mark a Chore done, open it and tick its Items, and log out', 
   expect(screen.getByText('Hot wash')).toBeVisible()
   expect(screen.getByText('Clean the gutters')).toBeVisible()
 
-  await act({ ref: ref('Log out'), action: 'press' })
+  await agentAct({ ref: refOf('Log out'), action: 'press' })
   await expect.poll(() => sent(fetch, 'POST').map((request) => request.path)).toContain('/api/logout')
 })
 
@@ -103,7 +103,7 @@ test('an agent can sort All Chores and open one', async () => {
 
   expectNamed('Active', 'Archived', 'Urgency', 'Laundry')
   // Each header's row is the other headers, so a name alone finds them all
-  await act({ ref: ref('Urgency'), action: 'press' }, { ref: ref('Laundry'), action: 'press' })
+  await agentAct({ ref: refOf('Urgency'), action: 'press' }, { ref: refOf('Laundry'), action: 'press' })
 
   // Narrower than lg, so the Chore opens on its own screen
   await expect.poll(() => router.state.location.pathname).toBe('/chores/7')
@@ -121,21 +121,21 @@ test('an agent can rename an Area, and deletes one only once the person agrees',
   await screen.findByRole('table', { name: 'Areas' })
 
   expectNamed('New Area', 'Kitchen')
-  await act({ ref: 'Kitchen', action: 'press' })
+  await agentAct({ ref: 'Kitchen', action: 'press' })
   await screen.findByRole('dialog', { name: 'Edit Area' })
   expectNamed('Name', 'Inside', 'Save', 'Delete')
-  await act({ ref: 'Name', action: 'setValue', args: ['Scullery'] }, { ref: 'Save', action: 'press' })
+  await agentAct({ ref: 'Name', action: 'setValue', args: ['Scullery'] }, { ref: 'Save', action: 'press' })
   await expect.poll(() => sent(fetch, 'PUT')).toEqual([{ path: '/api/areas/3', body: { name: 'Scullery', parentId: null } }])
 
-  await act({ ref: 'Kitchen', action: 'press' })
-  await act({ ref: ref('Delete'), action: 'press' })
+  await agentAct({ ref: 'Kitchen', action: 'press' })
+  await agentAct({ ref: refOf('Delete'), action: 'press' })
   const confirm = { steps: [{ ref: 'Delete Kitchen?', action: 'press', args: ['Delete for good'] }] }
   const refused = await agent.act(confirm)
   expect(refused.ok).toBe(false)
   expect(sent(fetch, 'DELETE')).toEqual([])
 
   approve = true
-  if (!screen.queryByRole('alertdialog')) await act({ ref: ref('Delete'), action: 'press' })
+  if (!screen.queryByRole('alertdialog')) await agentAct({ ref: refOf('Delete'), action: 'press' })
   expect((await agent.act(confirm)).ok).toBe(true)
   await expect.poll(() => sent(fetch, 'DELETE')).toEqual([{ path: '/api/areas/3', body: undefined }])
 })
@@ -151,7 +151,7 @@ test('an agent can edit a Chore', async () => {
   await screen.findByRole('textbox', { name: 'Name' })
 
   expectNamed('Back', 'Name', 'Description', 'Item 1', 'Add item', 'Every', 'Unit', 'Preferred day', 'Seasonal', 'Area', 'Importance', 'Effort in minutes', 'Save', 'Delete')
-  await act(
+  await agentAct(
     { ref: 'Name', action: 'setValue', args: ['Washing'] },
     { ref: 'Every', action: 'setValue', args: [2] },
     { ref: 'Unit', action: 'setValue', args: ['months'] },
@@ -163,4 +163,77 @@ test('an agent can edit a Chore', async () => {
     path: '/api/chores/7',
     body: { name: 'Washing', interval: { count: 2, unit: 'Month' }, importance: 'High' },
   })
+})
+
+test('an agent can add a Chore', async () => {
+  const fetch = stubApi({
+    '/api/session': 204,
+    '/api/chores': [],
+    '/api/chores/recurring': new Response('{}', { status: 201 }),
+    '/api/areas': [],
+  })
+  renderAt('/')
+  await screen.findByText(/Nothing to do yet/)
+
+  await agentAct({ ref: refOf('New Chore'), action: 'press' })
+  await screen.findByRole('dialog', { name: 'New Chore' })
+  expectNamed('Kind', 'Name', 'Every', 'Unit', 'Save', 'Save and add another')
+  await agentAct({ ref: 'Name', action: 'setValue', args: ['Water the plants'] }, { ref: refOf('Save'), action: 'press' })
+
+  await expect.poll(() => sent(fetch, 'POST')[0]).toMatchObject({ path: '/api/chores/recurring', body: { name: 'Water the plants' } })
+})
+
+test('an agent can postpone a Chore', async () => {
+  const fetch = stubApi({ '/api/session': 204, '/api/chores': [laundry], '/api/chores/7/postpone': laundry })
+  renderAt('/')
+  await screen.findByText('Laundry')
+
+  await agentAct({ ref: 'Open Laundry', action: 'setOpen', args: [true] })
+  // A row's actions each have the others as row text, so a name alone finds them all
+  await agentAct({ ref: refOf('Postpone…'), action: 'press' })
+  await screen.findByRole('dialog', { name: 'Postpone Laundry' })
+  expectNamed('Postpone to', 'Save')
+  await agentAct({ ref: 'Postpone to', action: 'setValue', args: ['2030-01-15'] }, { ref: 'Save', action: 'press' })
+
+  await expect.poll(() => sent(fetch, 'POST')).toEqual([
+    { path: '/api/chores/7/postpone', body: { dueDate: '2027-03-09', to: '2030-01-15' } },
+  ])
+})
+
+test('an agent can restore an Archived Chore', async () => {
+  const fetch = stubApi({
+    '/api/session': 204,
+    '/api/chores': [],
+    '/api/chores?archived=true': [{ ...laundry, archivedOn: '2026-11-01' }],
+    '/api/chores/7/restore': laundry,
+  })
+  renderAt('/chores?archived=true')
+  await screen.findByRole('table', { name: 'Archived Chores' })
+
+  expectNamed('Active', 'Archived', 'Restore')
+  await agentAct({ ref: refOf('Restore'), action: 'press' })
+
+  await expect.poll(() => sent(fetch, 'POST').map((request) => request.path)).toEqual(['/api/chores/7/restore'])
+})
+
+test('an agent deletes a Chore that was never done only once the person agrees', async () => {
+  const fresh = { ...laundry, completionCount: 0 }
+  const fetch = stubApi({
+    '/api/session': 204,
+    '/api/chores': [fresh],
+    '/api/chores/7': (init) => (init?.method === 'DELETE' ? Response.json({ archived: false }) : Response.json(fresh)),
+    '/api/areas': [],
+  })
+  renderAt('/chores/7')
+  await screen.findByRole('textbox', { name: 'Name' })
+
+  await agentAct({ ref: refOf('Delete'), action: 'press' })
+  const confirm = { steps: [{ ref: 'Delete Laundry?', action: 'press', args: ['Delete for good'] }] }
+  expect((await agent.act(confirm)).ok).toBe(false)
+  expect(sent(fetch, 'DELETE')).toEqual([])
+
+  approve = true
+  if (!screen.queryByRole('alertdialog')) await agentAct({ ref: refOf('Delete'), action: 'press' })
+  expect((await agent.act(confirm)).ok).toBe(true)
+  await expect.poll(() => sent(fetch, 'DELETE').map((request) => request.path)).toEqual(['/api/chores/7'])
 })
