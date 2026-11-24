@@ -631,6 +631,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chores/{id}/items/{itemId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                    itemId: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TickItemRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ChoreDto"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/chores/{id}/completions/{completionId}": {
         parameters: {
             query?: never;
@@ -854,6 +903,7 @@ export interface components {
             /** Format: int32 */
             effort: null | number;
             description: null | string;
+            items: components["schemas"]["ItemDto"][];
             area: null | components["schemas"]["AreaRefDto"];
             interval: null | components["schemas"]["IntervalDto"];
             /** @enum {null|string} */
@@ -890,6 +940,7 @@ export interface components {
             /** Format: int32 */
             areaId?: null | number;
             description?: null | string;
+            items?: null | components["schemas"]["ItemRequest"][];
         };
         CreateRecurringChoreRequest: {
             name: string;
@@ -905,6 +956,7 @@ export interface components {
             /** Format: int32 */
             areaId?: null | number;
             description?: null | string;
+            items?: null | components["schemas"]["ItemRequest"][];
         };
         DeleteChoreResponse: {
             archived: boolean;
@@ -923,6 +975,7 @@ export interface components {
             /** Format: int32 */
             areaId?: null | number;
             description?: null | string;
+            items?: null | components["schemas"]["ItemRequest"][];
         };
         HttpValidationProblemDetails: {
             type?: null | string;
@@ -944,6 +997,19 @@ export interface components {
         };
         /** @enum {unknown} */
         IntervalUnit: "Day" | "Week" | "Month" | "Year";
+        ItemDto: {
+            /** Format: int32 */
+            id: number;
+            name: string;
+            description: null | string;
+            ticked: boolean;
+        };
+        ItemRequest: {
+            /** Format: int32 */
+            id: null | number;
+            name: string;
+            description?: null | string;
+        };
         LoginRequest: {
             password: null | string;
         };
@@ -972,6 +1038,9 @@ export interface components {
         SkipChoreRequest: {
             /** Format: date */
             dueDate: null | string;
+        };
+        TickItemRequest: {
+            ticked: boolean;
         };
     };
     responses: never;

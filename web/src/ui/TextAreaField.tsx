@@ -4,6 +4,8 @@ import type { ComponentProps } from 'react'
 
 type TextAreaFieldProps = Omit<ComponentProps<typeof Textarea>, 'value' | 'defaultValue' | 'onValueChange'> & {
   label: string
+  /** For a field its neighbours already explain, such as an Item's Description under its Name. */
+  hideLabel?: boolean
   value: string
   onValueChange: (value: string) => void
   /** An error from the API for this field, such as a validation problem. */
@@ -14,10 +16,10 @@ type TextAreaFieldProps = Omit<ComponentProps<typeof Textarea>, 'value' | 'defau
  * A labelled text area that grows with its text and shows its own error. Enter adds a line; Cmd+Enter on a Mac, Ctrl+Enter elsewhere,
  * submits the form, as Enter does in a one-line field.
  */
-export function TextAreaField({ label, error, className, ...textarea }: TextAreaFieldProps) {
+export function TextAreaField({ label, hideLabel, error, className, ...textarea }: TextAreaFieldProps) {
   return (
     <Field invalid={error ? true : undefined} className={`flex flex-col gap-1 ${className ?? ''}`}>
-      <FieldLabel className="text-sm font-medium">{label}</FieldLabel>
+      <FieldLabel className={hideLabel ? 'sr-only' : 'text-sm font-medium'}>{label}</FieldLabel>
       <Textarea
         autoResize
         submitShortcut="mod+enter"

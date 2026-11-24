@@ -8,6 +8,9 @@ export type Unit = NonNullable<Chore['interval']>['unit']
 /** How each kind of Chore is named on screen. */
 export const kindLabels: Record<Chore['kind'], string> = { Recurring: 'Recurring', OneOff: 'One-off' }
 
+/** The API's limits (Chore.DescriptionMaxLength, Item.NameMaxLength, Chore.MaxItems); it answers at the field if they ever differ. */
+export const limits = { description: 2000, itemName: 200, items: 20 }
+
 /** Interval units as counted, "2 weeks"; one of them drops the s. */
 export const unitLabels: Record<Unit, string> = { Day: 'days', Week: 'weeks', Month: 'months', Year: 'years' }
 

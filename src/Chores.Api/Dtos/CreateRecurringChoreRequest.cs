@@ -13,7 +13,8 @@ public sealed record CreateRecurringChoreRequest(
     int? Effort = null,
     DateOnly? LastDone = null,
     int? AreaId = null,
-    string? Description = null)
+    string? Description = null,
+    IReadOnlyList<ItemRequest>? Items = null)
 {
     /// <summary>
     /// The Chore this asks for, or what is wrong with which field. The Domain decides what is valid; each rejection
@@ -27,6 +28,7 @@ public sealed record CreateRecurringChoreRequest(
         string name = errors.CheckName(Name, takenNames);
         errors.CheckArea(AreaId, area);
         errors.CheckDescription(Description);
+        List<Func<Item>>? items = errors.CheckItems(Items, _ => null);
         (Interval? interval, PreferredDay? preferredDay, Season? season) = errors.CheckSchedule(Interval, PreferredDay, Season);
         // Result only builds the Chore when nothing was wrong, so the Interval is there
         return new Result<RecurringChore>(errors, () =>
@@ -40,6 +42,7 @@ public sealed record CreateRecurringChoreRequest(
                 Area = area,
                 Description = Description,
             };
+            chore.SetItems([.. items!.Select(build => build())]);
             if (LastDone is { } lastDone)
             {
                 chore.Complete(lastDone);

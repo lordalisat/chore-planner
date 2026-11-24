@@ -22,6 +22,7 @@ const laundry: Chore = {
   urgency: 0.5,
   overdue: false,
   description: null,
+  items: [],
   dormant: false,
   finished: false,
   canSkip: true,
@@ -97,6 +98,7 @@ test('saving an edited Chore sends its fields and returns to the Overview', asyn
   expect(JSON.parse(String(put?.[1]?.body))).toEqual({
     name: 'Laundry',
     description: '',
+    items: [],
     interval: { count: 1, unit: 'Week' },
     preferredDay: 'Saturday',
     season: { fromMonth: 4, toMonth: 10 },
@@ -106,8 +108,12 @@ test('saving an edited Chore sends its fields and returns to the Overview', asyn
   })
 })
 
-test('a One-off Chore stays one and keeps its Due Date and its untouched Description', async () => {
-  const describedTap: Chore = { ...tap, description: 'Washer is in the drawer.\nTurn the water off first.' }
+test('a One-off Chore stays one and keeps its Due Date, its untouched Description and its Items', async () => {
+  const describedTap: Chore = {
+    ...tap,
+    description: 'Washer is in the drawer.\nTurn the water off first.',
+    items: [{ id: 5, name: 'New washer', description: null, ticked: true }],
+  }
   const fetch = stubApi({
     '/api/session': 204,
     '/api/chores': [describedTap],
@@ -127,6 +133,8 @@ test('a One-off Chore stays one and keeps its Due Date and its untouched Descrip
   expect(JSON.parse(String(put?.[1]?.body))).toEqual({
     name: 'Fix the kitchen tap',
     description: 'Washer is in the drawer.\nTurn the water off first.',
+    // The Item it has goes back with its id, so it keeps its tick
+    items: [{ id: 5, name: 'New washer', description: '' }],
     dueDate: '2027-03-20',
     importance: 'Normal',
     effort: null,

@@ -6,6 +6,7 @@ import { choresQuery, urgencyBand, type Chore, type UrgencyBand } from '../chore
 import { relativeDate, shortDate, today } from '../dates.ts'
 import { DateField } from '../ui/DateField.tsx'
 import { Dialog } from '../ui/Dialog.tsx'
+import { TickBox } from '../ui/TickBox.tsx'
 import { toast } from '../ui/toast.ts'
 import { unreachableMessage } from './Unreachable.tsx'
 
@@ -140,6 +141,8 @@ function ChoreRow({ chore, today, open, onToggle, onClose, onDone, onDoneOn, onS
   const navigate = useNavigate()
   const band = urgencyBand(chore.urgency)
   const details = [chore.area?.name, chore.effort != null ? `${chore.effort} min` : null].filter(Boolean).join(' · ')
+  // Shown once something is ticked, so an untouched Chore's row stays as it was
+  const ticked = chore.items.filter((item) => item.ticked).length
   const act = (action: (chore: Chore) => void) => () => {
     onClose()
     action(chore)
@@ -160,14 +163,19 @@ function ChoreRow({ chore, today, open, onToggle, onClose, onDone, onDoneOn, onS
             <span className="flex-1 truncate font-medium">{chore.name}</span>
             {details && <span className="text-sm text-ink/60">{details}</span>}
           </span>
-          {chore.dueDate && (
-            <span className={`text-sm ${chore.overdue ? 'font-semibold text-red-700' : 'text-ink/70'}`}>
-              {relativeDate(chore.dueDate, today)}
+          {(chore.dueDate || ticked > 0) && (
+            <span className="text-sm text-ink/70">
+              {chore.dueDate && (
+                <span className={chore.overdue ? 'font-semibold text-red-700' : undefined}>{relativeDate(chore.dueDate, today)}</span>
+              )}
+              {chore.dueDate && ticked > 0 && ' · '}
+              {ticked > 0 && `${ticked} of ${chore.items.length} items`}
             </span>
           )}
         </button>
       </div>
       {open && chore.description && <Description text={chore.description} />}
+      {open && chore.items.length > 0 && <Items chore={chore} />}
       {open && (
         <div className="flex flex-wrap gap-2 border-t border-black/5 px-3 py-2">
           <RowAction onClick={act(onDoneOn)}>Done on…</RowAction>
@@ -224,6 +232,56 @@ function Description({ text }: { text: string }) {
     </div>
   )
 }
+
+/** A Chore's Items to tick while working on it; tapping one with a Description shows it. */
+function Items({ chore }: { chore: Chore }) {
+  const queryClient = useQueryClient()
+  const [shown, setShown] = useState<number | null>(null)
+  const tick = useMutation({
+    mutationFn: ({ itemId, ticked }: { itemId: number; ticked: boolean }) =>
+      api('/api/chores/{id}/items/{itemId}', 'put', { ticked }, { id: chore.id, itemId }),
+    // Gone when someone removed the Item since; the list then shows what is there now
+    onError: (error) =>
+      error instanceof ApiError && error.status === 404
+        ? toast.info(`${chore.name} changed since; here it is as it is now.`)
+        : toast.error(unreachableMessage),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: choresQuery.queryKey }),
+  })
+
+  return (
+    <ul className="flex flex-col border-t border-black/5 px-1 py-1">
+      {chore.items.map((item) => (
+        <li key={item.id} className="flex flex-col">
+          <div className="flex items-center gap-1">
+            <TickBox label={item.name} checked={item.ticked} onCheckedChange={(ticked) => tick.mutate({ itemId: item.id, ticked })} />
+            {item.description ? (
+              <button
+                type="button"
+                aria-expanded={shown === item.id}
+                onClick={() => setShown(shown === item.id ? null : item.id)}
+                className="flex min-h-11 flex-1 items-center gap-2 text-left text-sm"
+              >
+                <span className={tickedName(item.ticked)}>{item.name}</span>
+                {/* Outside the struck-through Name, so a ticked Item still shows it has a Description */}
+                <span aria-hidden className="rounded bg-black/5 px-1.5 text-xs text-ink/60">
+                  {shown === item.id ? 'less' : 'more'}
+                </span>
+              </button>
+            ) : (
+              <span className={`flex-1 text-sm ${tickedName(item.ticked)}`}>{item.name}</span>
+            )}
+          </div>
+          {item.description && shown === item.id && (
+            <p className="pb-2 pl-12 pr-3 text-sm whitespace-pre-line text-ink/80">{item.description}</p>
+          )}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+// A ticked Item reads as done
+const tickedName = (ticked: boolean) => (ticked ? 'text-ink/50 line-through' : '')
 
 function RowAction({ onClick, children }: { onClick: () => void; children: string }) {
   return (

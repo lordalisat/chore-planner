@@ -9,7 +9,7 @@ public sealed class ChoresDbContext(DbContextOptions<ChoresDbContext> options) :
     public DbSet<Area> Areas => Set<Area>();
     public DbSet<Chore> Chores => Set<Chore>();
 
-    /// <summary>The key of a Chore, Area or Completion, which the Domain does not hold.</summary>
+    /// <summary>The key of a Chore, Area, Completion or Item, which the Domain does not hold.</summary>
     public int IdOf(object entity) => (int)Entry(entity).Property("Id").CurrentValue!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -35,6 +35,16 @@ public sealed class ChoresDbContext(DbContextOptions<ChoresDbContext> options) :
                 completion.HasKey("Id");
             });
             chore.Navigation(c => c.Completions).UsePropertyAccessMode(PropertyAccessMode.Field);
+            // An edit changes kept Items in place, so they keep their key; Position keeps the household's order
+            chore.OwnsMany(c => c.Items, item =>
+            {
+                item.ToTable("Items");
+                item.Property<int>("Id");
+                item.HasKey("Id");
+                item.Property(i => i.Ticked);
+                item.Property<int>("Position");
+            });
+            chore.Navigation(c => c.Items).UsePropertyAccessMode(PropertyAccessMode.Field);
         });
 
         modelBuilder.Entity<RecurringChore>(chore =>

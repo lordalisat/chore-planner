@@ -10,7 +10,8 @@ public sealed record CreateOneOffChoreRequest(
     Importance Importance = Importance.Normal,
     int? Effort = null,
     int? AreaId = null,
-    string? Description = null)
+    string? Description = null,
+    IReadOnlyList<ItemRequest>? Items = null)
 {
     /// <summary>The Chore this asks for, or what is wrong with which field.</summary>
     /// <param name="takenNames">The Names of the other Chores, which this one may not share.</param>
@@ -21,13 +22,19 @@ public sealed record CreateOneOffChoreRequest(
         string name = errors.CheckName(Name, takenNames);
         errors.CheckArea(AreaId, area);
         errors.CheckDescription(Description);
-        return new Result<OneOffChore>(errors, () => new OneOffChore(name, createdOn)
+        List<Func<Item>>? items = errors.CheckItems(Items, _ => null);
+        return new Result<OneOffChore>(errors, () =>
         {
-            DueDate = DueDate,
-            Importance = Importance,
-            Effort = Effort,
-            Area = area,
-            Description = Description,
+            var chore = new OneOffChore(name, createdOn)
+            {
+                DueDate = DueDate,
+                Importance = Importance,
+                Effort = Effort,
+                Area = area,
+                Description = Description,
+            };
+            chore.SetItems([.. items!.Select(build => build())]);
+            return chore;
         });
     }
 }

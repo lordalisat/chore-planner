@@ -40,6 +40,39 @@ public static class FieldChecks
         }
     }
 
+    /// <summary>
+    /// How to build the Items a request gives, in its order, or null and what is wrong at "items". An Item given with the
+    /// id of one the Chore has changes that one, so it stays the same Item with its tick; nothing changes until built.
+    /// </summary>
+    /// <param name="existing">The Chore's Item with an id, if it has one.</param>
+    public static List<Func<Item>>? CheckItems(this List<FieldError> errors, IReadOnlyList<ItemRequest>? requested, Func<int, Item?> existing)
+    {
+        List<ItemRequest> given = [.. requested ?? []];
+        // Missing when the JSON leaves the name out, whatever its type says
+        List<string> names = [.. given.Select(item => item.Name?.Trim() ?? "")];
+        string? problem =
+            given.Count > Chore.MaxItems ? $"A Chore holds at most {Chore.MaxItems} Items."
+            : names.Any(name => name.Length == 0) ? "Every Item needs a name."
+            : names.FirstOrDefault(name => name.Length > Item.NameMaxLength) is not null ? $"An Item's name holds at most {Item.NameMaxLength} characters."
+            : given.Any(item => item.Description?.Trim().Length > Chore.DescriptionMaxLength) ? $"An Item's Description holds at most {Chore.DescriptionMaxLength} characters."
+            : names.GroupBy(name => name, StringComparer.CurrentCultureIgnoreCase).FirstOrDefault(same => same.Count() > 1) is { } twice ? $"Two Items are called {twice.Key}."
+            : null;
+        if (problem is not null)
+        {
+            errors.Add(new FieldError("items", problem));
+            return null;
+        }
+        return [.. given.Select(item => (Func<Item>)(() =>
+        {
+            if (item.Id is { } id && existing(id) is { } kept)
+            {
+                kept.Change(item.Name, item.Description);
+                return kept;
+            }
+            return new Item(item.Name, item.Description);
+        }))];
+    }
+
     /// <summary>Adds at "areaId" when the request names an Area that was not found.</summary>
     /// <param name="area">The Area found for <paramref name="areaId"/>, if any.</param>
     public static void CheckArea(this List<FieldError> errors, int? areaId, Area? area)

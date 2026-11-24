@@ -25,8 +25,16 @@ The estimated number of minutes a Chore takes.
 _Avoid_: Duration, cost
 
 **Description**:
-Optional free text on a Chore saying what doing it involves, such as which cleaner to use.
+Optional free text on a Chore or an Item saying what doing it involves, such as which cleaner to use.
 _Avoid_: Notes, details
+
+**Item**:
+One of the things doing a Chore involves, such as the mirror when cleaning the bathroom: a Name and optionally a Description, with no schedule of its own. A Chore's Items are listed in the household's order but can be done in any order.
+_Avoid_: Sub-chore, step, subtask, checklist item
+
+**Ticked**:
+An Item marked done while working on its Chore. Ticking records no Completion; doing or skipping a Recurring Chore unticks all its Items for the next time.
+_Avoid_: Completed, checked off
 
 **Area**:
 A part of the house a Chore belongs to, such as the kitchen or the garden; an Area may sit inside one parent Area, such as the kitchen inside downstairs.

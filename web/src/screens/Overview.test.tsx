@@ -27,6 +27,7 @@ function chore(name: string, details: Partial<Chore>): Chore {
     urgency: null,
     overdue: false,
     description: null,
+    items: [],
     dormant: false,
     finished: false,
     canSkip: details.kind === 'Recurring',
@@ -298,6 +299,48 @@ test('a Description that becomes cut off when the row narrows gets Show more the
   act(() => resized.forEach((callback) => callback()))
 
   expect(screen.getByRole('button', { name: 'Show more' })).toBeInTheDocument()
+})
+
+const bathroom = chore('Clean the bathroom', {
+  ...laundry,
+  name: 'Clean the bathroom',
+  id: 12,
+  items: [
+    { id: 1, name: 'Sink', description: null, ticked: true },
+    { id: 2, name: 'Toilet', description: 'Blue cleaner, leave it 10 minutes', ticked: false },
+  ],
+})
+
+test('a folded row shows how many Items are ticked, once one is', async () => {
+  const untouched = chore('Clean the kitchen', { ...laundry, name: 'Clean the kitchen', id: 13, items: [{ id: 3, name: 'Hob', description: null, ticked: false }] })
+  stubApi({ '/api/session': 204, '/api/chores': [bathroom, untouched] })
+  renderOverview()
+
+  expect(await screen.findByRole('button', { name: /^Clean the bathroom/ })).toHaveTextContent('1 of 2 items')
+  expect(screen.getByRole('button', { name: /^Clean the kitchen/ })).not.toHaveTextContent('items')
+})
+
+test('an unfolded row lists its Items to tick, and an Item shows its Description when tapped', async () => {
+  const fetch = stubApi({
+    '/api/session': 204,
+    '/api/chores': [bathroom],
+    '/api/chores/12/items/2': (init) => Response.json({ ...bathroom, items: bathroom.items.map((item) => ({ ...item, ticked: init?.method === 'PUT' })) }),
+  })
+  renderOverview()
+  await userEvent.click(await screen.findByRole('button', { name: /^Clean the bathroom/, expanded: false }))
+
+  expect(screen.getByRole('checkbox', { name: 'Sink' })).toBeChecked()
+  const toilet = screen.getByRole('checkbox', { name: 'Toilet' })
+  expect(toilet).not.toBeChecked()
+  expect(screen.queryByText('Blue cleaner, leave it 10 minutes')).not.toBeInTheDocument()
+
+  await userEvent.click(screen.getByRole('button', { name: 'Toilet', expanded: false }))
+  expect(screen.getByText('Blue cleaner, leave it 10 minutes')).toBeVisible()
+
+  await userEvent.click(toilet)
+  await expect.poll(() => fetch.mock.calls.find(([url]) => String(url) === '/api/chores/12/items/2')?.[1]?.body).toBe(
+    JSON.stringify({ ticked: true }),
+  )
 })
 
 test('tapping an expanded row again folds its actions away', async () => {
