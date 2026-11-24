@@ -21,7 +21,7 @@ Default vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-
 
 ### UI SDK
 
-Before using ui-sdk, follow the `ui-sdk` skill if it's installed, and read `web/node_modules/@ui-sdk/react/docs/llms.txt`. To build a new component, also search `web/node_modules/@ui-sdk/react/docs/core.md` by heading, and read `rendering.md` next to it.
+Before using ui-sdk, follow the `ui-sdk` skill if it's installed, and read `web/node_modules/@ui-sdk/react/docs/llms.txt`. To build a new component, also search `web/node_modules/@ui-sdk/react/docs/core.md` by heading, and read `rendering.md` next to it. Where the skill says to drop JSDoc and most comments, keep this repo's style: its JSDoc and why-comments stay.
 
 ### Domain docs
 
