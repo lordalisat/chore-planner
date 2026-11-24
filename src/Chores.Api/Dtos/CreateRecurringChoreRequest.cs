@@ -28,7 +28,7 @@ public sealed record CreateRecurringChoreRequest(
         string name = errors.CheckName(Name, takenNames);
         errors.CheckArea(AreaId, area);
         errors.CheckDescription(Description);
-        List<Item>? items = errors.CheckItems(Items, _ => null);
+        List<Func<Item>>? items = errors.CheckItems(Items, _ => null);
         (Interval? interval, PreferredDay? preferredDay, Season? season) = errors.CheckSchedule(Interval, PreferredDay, Season);
         // Result only builds the Chore when nothing was wrong, so the Interval is there
         return new Result<RecurringChore>(errors, () =>
@@ -42,7 +42,7 @@ public sealed record CreateRecurringChoreRequest(
                 Area = area,
                 Description = Description,
             };
-            chore.SetItems(items!);
+            chore.SetItems([.. items!.Select(build => build())]);
             if (LastDone is { } lastDone)
             {
                 chore.Complete(lastDone);

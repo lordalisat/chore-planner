@@ -22,7 +22,7 @@ public sealed record CreateOneOffChoreRequest(
         string name = errors.CheckName(Name, takenNames);
         errors.CheckArea(AreaId, area);
         errors.CheckDescription(Description);
-        List<Item>? items = errors.CheckItems(Items, _ => null);
+        List<Func<Item>>? items = errors.CheckItems(Items, _ => null);
         return new Result<OneOffChore>(errors, () =>
         {
             var chore = new OneOffChore(name, createdOn)
@@ -33,7 +33,7 @@ public sealed record CreateOneOffChoreRequest(
                 Area = area,
                 Description = Description,
             };
-            chore.SetItems(items!);
+            chore.SetItems([.. items!.Select(build => build())]);
             return chore;
         });
     }

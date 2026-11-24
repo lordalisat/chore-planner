@@ -240,8 +240,11 @@ function Items({ chore }: { chore: Chore }) {
   const tick = useMutation({
     mutationFn: ({ itemId, ticked }: { itemId: number; ticked: boolean }) =>
       api('/api/chores/{id}/items/{itemId}', 'put', { ticked }, { id: chore.id, itemId }),
-    // Someone may have edited the Chore since; the list shows what is there now
-    onError: () => toast.error(unreachableMessage),
+    // Gone when someone removed the Item since; the list then shows what is there now
+    onError: (error) =>
+      error instanceof ApiError && error.status === 404
+        ? toast.info(`${chore.name} changed since; here it is as it is now.`)
+        : toast.error(unreachableMessage),
     onSettled: () => queryClient.invalidateQueries({ queryKey: choresQuery.queryKey }),
   })
 

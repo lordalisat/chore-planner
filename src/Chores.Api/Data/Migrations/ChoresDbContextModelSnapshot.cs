@@ -187,6 +187,9 @@ namespace Chores.Api.Data.Migrations
                                 .IsRequired()
                                 .HasColumnType("TEXT");
 
+                            b1.Property<int>("Position")
+                                .HasColumnType("INTEGER");
+
                             b1.Property<bool>("Ticked")
                                 .HasColumnType("INTEGER");
 

@@ -35,13 +35,14 @@ public sealed class ChoresDbContext(DbContextOptions<ChoresDbContext> options) :
                 completion.HasKey("Id");
             });
             chore.Navigation(c => c.Completions).UsePropertyAccessMode(PropertyAccessMode.Field);
-            // An edit replaces the Items with new rows in the household's order, so the key keeps that order
+            // An edit changes kept Items in place, so they keep their key; Position keeps the household's order
             chore.OwnsMany(c => c.Items, item =>
             {
                 item.ToTable("Items");
                 item.Property<int>("Id");
                 item.HasKey("Id");
                 item.Property(i => i.Ticked);
+                item.Property<int>("Position");
             });
             chore.Navigation(c => c.Items).UsePropertyAccessMode(PropertyAccessMode.Field);
         });

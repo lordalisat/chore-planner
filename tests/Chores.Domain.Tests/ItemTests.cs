@@ -70,6 +70,22 @@ public class ItemTests
     }
 
     [Fact]
+    public void A_changed_and_moved_Item_stays_the_same_Item_with_its_tick()
+    {
+        RecurringChore chore = Bathroom("Sink", "Toilet");
+        Item sink = chore.Items[0];
+        sink.Tick();
+
+        sink.Change("Sink and taps", "Descaler");
+        chore.SetItems([chore.Items[1], sink, new Item("Floor")]);
+
+        Assert.Equal(["Toilet", "Sink and taps", "Floor"], chore.Items.Select(i => i.Name));
+        Assert.Same(sink, chore.Items[1]);
+        Assert.True(sink.Ticked);
+        Assert.Equal("Descaler", sink.Description);
+    }
+
+    [Fact]
     public void Ticking_records_no_Completion()
     {
         RecurringChore chore = Bathroom("Sink", "Toilet");

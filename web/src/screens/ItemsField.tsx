@@ -1,16 +1,14 @@
+import { limits } from '../chores.ts'
 import { TextAreaField } from '../ui/TextAreaField.tsx'
 import { TextField } from '../ui/TextField.tsx'
 
 /** One of a Chore's Items as the form holds it; `id` is set for an Item the Chore has, so it keeps its tick. */
-export type ItemDraft = { key: number; id: number | null; name: string; description: string }
+export type ItemDraft = { key: string; id: number | null; name: string; description: string }
 
-// As the API's Chore.MaxItems
-const maxItems = 20
-
-let nextKey = 0
 /** A draft for each of a Chore's Items, or for a new, empty one. */
 export const itemDraft = (item?: { id: number; name: string; description: string | null }): ItemDraft => ({
-  key: nextKey++,
+  // Only tells drafts apart in the list; crypto.randomUUID would need HTTPS, which a home network may not have
+  key: Math.random().toString(36).slice(2),
   id: item?.id ?? null,
   name: item?.name ?? '',
   description: item?.description ?? '',
@@ -18,7 +16,7 @@ export const itemDraft = (item?: { id: number; name: string; description: string
 
 /** A Chore's Items: each with a Name and an optional Description, in an order the household sets. */
 export function ItemsField({ items, onItemsChange, error }: { items: ItemDraft[]; onItemsChange: (items: ItemDraft[]) => void; error?: string }) {
-  const change = (key: number, fields: Partial<ItemDraft>) => onItemsChange(items.map((item) => (item.key === key ? { ...item, ...fields } : item)))
+  const change = (key: string, fields: Partial<ItemDraft>) => onItemsChange(items.map((item) => (item.key === key ? { ...item, ...fields } : item)))
   const move = (index: number, by: number) => {
     const moved = [...items]
     ;[moved[index], moved[index + by]] = [moved[index + by]!, moved[index]!]
@@ -33,7 +31,13 @@ export function ItemsField({ items, onItemsChange, error }: { items: ItemDraft[]
         return (
           <div key={item.key} className="flex flex-col gap-2 rounded-lg border border-black/10 bg-white/60 p-2">
             <div className="flex items-end gap-1">
-              <TextField label={`Item ${index + 1}`} value={item.name} onValueChange={(name) => change(item.key, { name })} className="flex-1" />
+              <TextField
+                label={`Item ${index + 1}`}
+                value={item.name}
+                onValueChange={(name) => change(item.key, { name })}
+                maxLength={limits.itemName}
+                className="flex-1"
+              />
               <ItemButton label={`Move ${named} up`} disabled={index === 0} onClick={() => move(index, -1)}>
                 ↑
               </ItemButton>
@@ -50,13 +54,13 @@ export function ItemsField({ items, onItemsChange, error }: { items: ItemDraft[]
               placeholder="Description (optional)"
               value={item.description}
               onValueChange={(description) => change(item.key, { description })}
-              maxLength={2000}
+              maxLength={limits.description}
             />
           </div>
         )
       })}
       {error && <p className="text-sm text-red-700">{error}</p>}
-      {items.length < maxItems && (
+      {items.length < limits.items && (
         <button
           type="button"
           onClick={() => onItemsChange([...items, itemDraft()])}

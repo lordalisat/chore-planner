@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Chores.Api.Data.Migrations
 {
     [DbContext(typeof(ChoresDbContext))]
-    [Migration("20261123150424_ChoreItems")]
+    [Migration("20261124080554_ChoreItems")]
     partial class ChoreItems
     {
         /// <inheritdoc />
@@ -189,6 +189,9 @@ namespace Chores.Api.Data.Migrations
                             b1.Property<string>("Name")
                                 .IsRequired()
                                 .HasColumnType("TEXT");
+
+                            b1.Property<int>("Position")
+                                .HasColumnType("INTEGER");
 
                             b1.Property<bool>("Ticked")
                                 .HasColumnType("INTEGER");

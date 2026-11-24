@@ -41,34 +41,36 @@ public static class FieldChecks
     }
 
     /// <summary>
-    /// The Items a request gives, in its order, or null and what is wrong at "items". An Item given with the id of one the
-    /// Chore has keeps that one's tick.
+    /// How to build the Items a request gives, in its order, or null and what is wrong at "items". An Item given with the
+    /// id of one the Chore has changes that one, so it stays the same Item with its tick; nothing changes until built.
     /// </summary>
     /// <param name="existing">The Chore's Item with an id, if it has one.</param>
-    public static List<Item>? CheckItems(this List<FieldError> errors, IReadOnlyList<ItemRequest>? requested, Func<int, Item?> existing)
+    public static List<Func<Item>>? CheckItems(this List<FieldError> errors, IReadOnlyList<ItemRequest>? requested, Func<int, Item?> existing)
     {
-        try
+        List<ItemRequest> given = [.. requested ?? []];
+        // Missing when the JSON leaves the name out, whatever its type says
+        List<string> names = [.. given.Select(item => item.Name?.Trim() ?? "")];
+        string? problem =
+            given.Count > Chore.MaxItems ? $"A Chore holds at most {Chore.MaxItems} Items."
+            : names.Any(name => name.Length == 0) ? "Every Item needs a name."
+            : names.FirstOrDefault(name => name.Length > Item.NameMaxLength) is not null ? $"An Item's name holds at most {Item.NameMaxLength} characters."
+            : given.Any(item => item.Description?.Trim().Length > Chore.DescriptionMaxLength) ? $"An Item's Description holds at most {Chore.DescriptionMaxLength} characters."
+            : names.GroupBy(name => name, StringComparer.CurrentCultureIgnoreCase).FirstOrDefault(same => same.Count() > 1) is { } twice ? $"Two Items are called {twice.Key}."
+            : null;
+        if (problem is not null)
         {
-            List<Item> items = [];
-            foreach (ItemRequest given in requested ?? [])
-            {
-                // Missing when the JSON leaves the name out, whatever its type says
-                var item = new Item(given.Name ?? "", given.Description);
-                if (given.Id is { } id && existing(id) is { Ticked: true })
-                {
-                    item.Tick();
-                }
-                items.Add(item);
-            }
-            Chore.EnsureAllowed(items);
-            return items;
-        }
-        catch (ArgumentException exception)
-        {
-            // The Domain says which rule an Item broke, in words for the household
-            errors.Add(new FieldError("items", exception.Message));
+            errors.Add(new FieldError("items", problem));
             return null;
         }
+        return [.. given.Select(item => (Func<Item>)(() =>
+        {
+            if (item.Id is { } id && existing(id) is { } kept)
+            {
+                kept.Change(item.Name, item.Description);
+                return kept;
+            }
+            return new Item(item.Name, item.Description);
+        }))];
     }
 
     /// <summary>Adds at "areaId" when the request names an Area that was not found.</summary>

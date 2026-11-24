@@ -9,27 +9,29 @@ public sealed class Item
     public const int NameMaxLength = 200;
 
     /// <param name="name">Trimmed; required, at most <see cref="NameMaxLength"/> characters.</param>
-    /// <param name="description">As a Chore's Description: trimmed, null when blank, at most 2,000 characters.</param>
-    public Item(string name, string? description = null)
-    {
-        Name = name.Trim();
-        if (Name.Length == 0)
-        {
-            // Messages without a parameter name: the API shows them to the household as they are
-            throw new ArgumentException("Every Item needs a name.");
-        }
-        if (Name.Length > NameMaxLength)
-        {
-            throw new ArgumentException($"An Item's name holds at most {NameMaxLength} characters.");
-        }
-        Description = Chore.DescriptionText(description);
-    }
+    /// <param name="description">As a Chore's Description, at most <see cref="Chore.DescriptionMaxLength"/> characters.</param>
+    public Item(string name, string? description = null) => Change(name, description);
 
-    public string Name { get; private set; }
+    public string Name { get; private set; } = "";
     public string? Description { get; private set; }
 
     /// <summary>Marked done while working on the Chore; records no Completion.</summary>
     public bool Ticked { get; private set; }
+
+    /// <summary>Where the Item stands in its Chore's list, which the Chore keeps.</summary>
+    internal int Position { get; set; }
+
+    /// <summary>A new Name and Description for the same Item, which keeps its tick.</summary>
+    public void Change(string name, string? description)
+    {
+        string trimmed = name.Trim();
+        if (trimmed.Length is 0 or > NameMaxLength)
+        {
+            throw new ArgumentException($"An Item's Name is 1 to {NameMaxLength} characters.", nameof(name));
+        }
+        Description = Chore.DescriptionText(description);
+        Name = trimmed;
+    }
 
     public void Tick() => Ticked = true;
     public void Untick() => Ticked = false;

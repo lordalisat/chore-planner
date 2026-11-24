@@ -29,7 +29,7 @@ public sealed record EditChoreRequest(
         string name = errors.CheckName(Name, takenNames);
         errors.CheckArea(AreaId, area);
         errors.CheckDescription(Description);
-        List<Item>? items = Items is null ? null : errors.CheckItems(Items, id => chore.Items.FirstOrDefault(item => idOf(item) == id));
+        List<Func<Item>>? items = Items is null ? null : errors.CheckItems(Items, id => chore.Items.FirstOrDefault(item => idOf(item) == id));
         (Interval? interval, PreferredDay? preferredDay, Season? season) = chore is RecurringChore
             ? errors.CheckSchedule(Interval, PreferredDay, Season)
             : default;
@@ -43,7 +43,7 @@ public sealed record EditChoreRequest(
             chore.Description = Description;
             if (items is not null)
             {
-                chore.SetItems(items);
+                chore.SetItems([.. items.Select(build => build())]);
             }
             // Which fields apply depends on the kind; the Domain has no use for a request's spare ones
             switch (chore)

@@ -140,14 +140,7 @@ public static class ChoreEndpoints
                 return TypedResults.NotFound();
             }
 
-            if (request.Ticked)
-            {
-                item.Tick();
-            }
-            else
-            {
-                item.Untick();
-            }
+            request.ApplyTo(item);
             await db.SaveChangesAsync();
             return TypedResults.Ok(ChoreDto.From(chore, db.IdOf, clock));
         });

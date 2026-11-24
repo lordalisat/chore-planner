@@ -105,6 +105,26 @@ public class ItemTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal([true, true, false], edited.GetProperty("items").EnumerateArray().Select(i => i.GetProperty("ticked").GetBoolean()));
         // And so it was saved, in that order
         Assert.Equal(["Desk", "Bed and pillows", "Window"], Names(await Fetched(id)));
+        // Kept Items keep their ids, so a device that saw them before the edit can still tick them
+        Assert.Equal([desk, bed], new[] { ItemId(edited, 0), ItemId(edited, 1) });
+        await Ok(_client.PutAsJsonAsync($"/api/chores/{id}/items/{bed}", new { ticked = false }, Ct));
+    }
+
+    [Fact]
+    public async Task Skipping_a_Recurring_Chore_unticks_its_Items_too()
+    {
+        JsonElement chore = await Created("/api/chores/recurring", new
+        {
+            name = "Water the plants",
+            interval = new { count = 1, unit = "Week" },
+            items = new[] { new { name = "Ferns" } },
+        });
+        int id = chore.GetProperty("id").GetInt32();
+        await Ok(_client.PutAsJsonAsync($"/api/chores/{id}/items/{ItemId(chore, 0)}", new { ticked = true }, Ct));
+
+        (await _client.PostAsJsonAsync($"/api/chores/{id}/skip", new { dueDate = chore.GetProperty("dueDate").GetString() }, Ct)).EnsureSuccessStatusCode();
+
+        Assert.False((await Fetched(id)).GetProperty("items")[0].GetProperty("ticked").GetBoolean());
     }
 
     [Fact]

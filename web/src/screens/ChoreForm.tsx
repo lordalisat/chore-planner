@@ -6,6 +6,7 @@ import { areasQuery } from '../areas.ts'
 import {
   choresQuery,
   kindLabels,
+  limits,
   unitLabels,
   ordinalNames,
   toWeekdayInMonth,
@@ -49,8 +50,6 @@ const daysInMonth: Option<DayChoice>[] = [
   { value: 'WeekdayInMonth', label: 'A weekday in the month…' },
 ]
 const ordinals: Option<Ordinal>[] = ordinalNames.map((ordinal) => ({ value: ordinal, label: ordinal }))
-// As the API's Chore.DescriptionMaxLength; the API answers at the field if the two ever differ
-const descriptionMaxLength = 2000
 // A weekday in the month starts as the first Saturday
 const firstWeekdayInMonth = toWeekdayInMonth('First', 'Saturday')
 
@@ -182,7 +181,7 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
         label="Description"
         value={description}
         onValueChange={setDescription}
-        maxLength={descriptionMaxLength}
+        maxLength={limits.description}
         error={errors.description?.[0]}
       />
       <ItemsField items={items} onItemsChange={setItems} error={errors.items?.[0]} />

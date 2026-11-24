@@ -33,34 +33,32 @@ public abstract class Chore(string name, DateOnly createdOn)
     {
         string? trimmed = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         return trimmed?.Length > DescriptionMaxLength
-            ? throw new ArgumentException($"A Description holds at most {DescriptionMaxLength} characters.")
+            ? throw new ArgumentException($"A Description holds at most {DescriptionMaxLength} characters.", nameof(value))
             : trimmed;
     }
 
     /// <summary>What doing the Chore involves, in the household's order; ticked in any order.</summary>
-    public IReadOnlyList<Item> Items => _items;
+    public IReadOnlyList<Item> Items => [.. _items.OrderBy(item => item.Position)];
 
     /// <summary>
     /// Replaces the Items, in this order; at most <see cref="MaxItems"/>, no two with the same Name. A kept Item is passed
-    /// in again, so its tick stays with it.
+    /// in again, so it stays the same Item with its tick.
     /// </summary>
     public void SetItems(IReadOnlyList<Item> items)
     {
-        EnsureAllowed(items);
-        _items.Clear();
-        _items.AddRange(items);
-    }
-
-    /// <summary>Throws when a Chore can't have these Items: too many, or two with the same Name.</summary>
-    public static void EnsureAllowed(IReadOnlyList<Item> items)
-    {
         if (items.Count > MaxItems)
         {
-            throw new ArgumentException($"A Chore holds at most {MaxItems} Items.");
+            throw new ArgumentException($"A Chore holds at most {MaxItems} Items.", nameof(items));
         }
-        if (items.GroupBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase).FirstOrDefault(names => names.Count() > 1) is { } twice)
+        if (items.Select(item => item.Name).Distinct(StringComparer.CurrentCultureIgnoreCase).Count() < items.Count)
         {
-            throw new ArgumentException($"Two Items are called {twice.Key}.");
+            throw new ArgumentException("No two Items of a Chore can share a Name.", nameof(items));
+        }
+        _items.Clear();
+        for (int position = 0; position < items.Count; position++)
+        {
+            items[position].Position = position;
+            _items.Add(items[position]);
         }
     }
 

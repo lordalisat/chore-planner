@@ -19,6 +19,7 @@ namespace Chores.Api.Data.Migrations
                     Name = table.Column<string>(type: "TEXT", nullable: false),
                     Description = table.Column<string>(type: "TEXT", nullable: true),
                     Ticked = table.Column<bool>(type: "INTEGER", nullable: false),
+                    Position = table.Column<int>(type: "INTEGER", nullable: false),
                     ChoreId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
