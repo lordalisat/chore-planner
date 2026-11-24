@@ -1,0 +1,75 @@
+#!/bin/sh
+# Runs the app from this checkout for a hand test or a review: the API on a fresh throwaway database filled by ./seed,
+# and Vite with the front end as it is now. Returns once both answer; they keep running in the devcontainer.
+#   ./serve         start, from the host; refuses while 5080/5173 answer, whoever serves them
+#   ./serve stop    stop what ./serve started from this checkout, and remove its database
+set -e
+cd "$(dirname "$0")"
+[ $# -le 1 ] || { echo "serve: one option at most (none, or stop)" >&2; exit 1; }
+
+# What ./serve starts carries this in its environment, so stop finds exactly that: not ./check's vitest, not a
+# dotnet run of the user's own in the same folder
+tag="CHORES_SERVE=$(pwd -P)"
+state=data/serve
+up() { curl -s -o /dev/null --max-time 2 "$1"; }
+
+stop_mine() {
+  # Other users' processes can't be read, which is fine: ./serve's run as this one
+  pids=$(./dev sh -c 'for p in /proc/[0-9]*; do
+    cat "$p/environ" 2>/dev/null | tr "\0" "\n" | grep -qxF "$1" && echo "${p#/proc/}"
+  done; true' serve "$tag")
+  # Some may be gone already, such as a child that ended with its parent
+  [ -z "$pids" ] || ./dev kill $pids 2>/dev/null || true
+  [ ! -f "$state/database" ] || { ./dev rm -rf "$(dirname "$(cat "$state/database")")"; rm -f "$state/database"; }
+}
+
+case "$1" in
+  "") ;;
+  stop)
+    # Nothing serving and no database left: no need to start the devcontainer to find that out
+    if ! up localhost:5080/api/health && ! up localhost:5173/ && [ ! -f "$state/database" ]; then
+      echo "nothing to stop"
+      exit 0
+    fi
+    stop_mine
+    for _ in $(seq 1 10); do
+      up localhost:5080/api/health || up localhost:5173/ || { echo "stopped"; exit 0; }
+      sleep 1
+    done
+    echo "serve: still answering on 5080 or 5173; another checkout may be serving" >&2
+    exit 1 ;;
+  *) echo "serve: unknown option $1 (use no option, or stop)" >&2; exit 1 ;;
+esac
+
+if up localhost:5080/api/health || up localhost:5173/; then
+  echo "serve: ports 5080/5173 are taken; ./serve stop in the checkout that serves, or ask whose they are" >&2
+  exit 1
+fi
+# A start that fails part-way leaves nothing running
+fail() {
+  echo "serve: $1" >&2
+  stop_mine
+  exit 1
+}
+
+[ -d web/node_modules ] || ./dev npm ci --prefix web >/dev/null
+mkdir -p "$state"
+database="/tmp/serve-$(date +%s)/chores.db"
+echo "$database" > "$state/database"
+nohup ./dev env "$tag" "Database__Path=$database" dotnet run --project src/Chores.Api --launch-profile http > "$state/api.log" 2>&1 &
+nohup ./dev env "$tag" npm run dev --prefix web > "$state/vite.log" 2>&1 &
+
+for _ in $(seq 1 90); do
+  up localhost:5080/api/health && break
+  sleep 2
+done
+up localhost:5080/api/health || fail "the API didn't start; see $state/api.log"
+./seed >/dev/null || fail "./seed failed"
+for _ in $(seq 1 30); do
+  up localhost:5173/ && break
+  sleep 1
+done
+up localhost:5173/ || fail "Vite didn't start; see $state/vite.log"
+
+echo "Serving on http://localhost:5173 (password: chores), seeded, database $database in the devcontainer."
+echo "Logs: $state/api.log, $state/vite.log. Stop with ./serve stop."

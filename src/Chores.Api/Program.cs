@@ -41,7 +41,8 @@ builder.Services.AddSingleton(TimeProvider.System);
 // A file under data/ by default, the directory a Docker volume mounts on
 string databasePath = Path.GetFullPath(builder.Configuration["Database:Path"] ?? "data/chores.db");
 // The build runs this app to write openapi.json, from the project directory; keep its database and cookie keys out of the repo
-if (Assembly.GetEntryAssembly()?.GetName().Name == "GetDocument.Insider")
+bool writingOpenApiOnly = Assembly.GetEntryAssembly()?.GetName().Name == "GetDocument.Insider";
+if (writingOpenApiOnly)
 {
     databasePath = Path.Combine(Path.GetTempPath(), "chores-openapi", "chores.db");
 }
@@ -58,8 +59,11 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 WebApplication app = builder.Build();
 
 Directory.CreateDirectory(Path.GetDirectoryName(databasePath)!);
-using (IServiceScope scope = app.Services.CreateScope())
+// Writing openapi.json needs no database; migrating one there would fail whenever the model has changed and its
+// migration isn't added yet, which is exactly when `dotnet ef migrations add` builds the app
+if (!writingOpenApiOnly)
 {
+    using IServiceScope scope = app.Services.CreateScope();
     scope.ServiceProvider.GetRequiredService<ChoresDbContext>().Database.Migrate();
 }
 

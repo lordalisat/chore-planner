@@ -31,6 +31,7 @@ Install the Dev Containers extension, open the repo and run "Dev Containers: Reo
 
 ```sh
 ./check                                    # everything a PR must pass: build, style, tests, web lint/types/tests (CI runs it too)
+./serve                                    # the app on a fresh, seeded database for a hand test (./serve stop to end); from the host
 ./seed                                     # needs the API running on an empty database: adds Areas and a Chore in every state
 dotnet build                               # API, Domain and tests (Chores.slnx)
 dotnet test                                # all test projects
@@ -45,7 +46,7 @@ npm run api --prefix web                   # TypeScript types in web/src/api/sch
 
 Building the API writes its OpenAPI document to `src/Chores.Api/openapi.json`. After changing an endpoint, build, then run `npm run api` and commit both files, so API changes show up as diffs. `npm run api` runs `openapi-typescript` through `npx`, pinned together with TypeScript 5, because it needs TypeScript 5 while the project uses TypeScript 7.
 
-In the front end only `web/src/ui/` imports the UI SDK (`@ui-sdk/*`); screens use those wrappers. The SDK is in beta, so its versions in `package.json` are pinned exactly.
+In the front end only `web/src/ui/` imports the UI SDK (`@ui-sdk/*`); screens use those wrappers. The SDK is in beta, so its versions in `package.json` are pinned exactly. Its `Input` doesn't focus on `autoFocus` once the page is up, and a dialog picks its first focus by `[data-autofocus]`: focus a field that appears later from an effect.
 
 In Development the household password is `chores` and the API key is `dev-api-key` (see `src/Chores.Api/appsettings.Development.json`). The login cookie is marked secure, which browsers accept over plain HTTP only on `localhost`.
 

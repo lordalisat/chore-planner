@@ -6,37 +6,14 @@ import { afterEach, expect, test, vi } from 'vitest'
 import App from '../App.tsx'
 import type { Chore } from '../chores.ts'
 import { createAppRouter } from '../router.tsx'
-import { stubApi } from '../test-api.ts'
+import { choreFixture, stubApi } from '../test-api.ts'
 
 /** A row's Chore, from its Done button: "Mark Laundry done". */
 const rowName = (row: HTMLElement) =>
   within(row).getByRole('button', { name: /^Mark .* done$/ }).getAttribute('aria-label')?.replace(/^Mark (.*) done$/, '$1')
 
-function chore(name: string, details: Partial<Chore>): Chore {
-  return {
-    id: name.length,
-    kind: 'OneOff',
-    name,
-    importance: 'Normal',
-    effort: null,
-    area: null,
-    interval: null,
-    preferredDay: null,
-    season: null,
-    dueDate: null,
-    urgency: null,
-    overdue: false,
-    description: null,
-    items: [],
-    dormant: false,
-    finished: false,
-    canSkip: details.kind === 'Recurring',
-    lastDone: null,
-    completionCount: 0,
-    archivedOn: null,
-    ...details,
-  }
-}
+// The name given wins over one spread in from another Chore
+const chore = (name: string, overrides: Partial<Chore>): Chore => choreFixture({ id: name.length, ...overrides, name })
 
 const laundry = chore('Laundry', {
   id: 7,
