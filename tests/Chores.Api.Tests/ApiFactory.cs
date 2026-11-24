@@ -5,7 +5,11 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Chores.Api.Tests;
 
-/// <summary>Runs the API against a throwaway web root standing in for the built front end, and a throwaway database.</summary>
+/// <summary>
+/// Runs the API against a throwaway web root standing in for the built front end, and a throwaway database. One
+/// factory serves a whole test class (IClassFixture), so its tests share that database: give every Chore or Area a
+/// Name no other test in the class uses, or a create answers 400 for the taken Name.
+/// </summary>
 public sealed class ApiFactory : WebApplicationFactory<Program>
 {
     public const string ApiKey = "test-api-key";

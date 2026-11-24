@@ -6,30 +6,22 @@ import { expect, test } from 'vitest'
 import App from '../App.tsx'
 import type { Chore } from '../chores.ts'
 import { createAppRouter } from '../router.tsx'
-import { stubApi } from '../test-api.ts'
+import { choreFixture, stubApi } from '../test-api.ts'
 
-const laundry: Chore = {
+const laundry = choreFixture({
   id: 7,
   kind: 'Recurring',
   name: 'Laundry',
   importance: 'High',
   effort: 30,
-  area: null,
   interval: { count: 1, unit: 'Week' },
   preferredDay: 'Tuesday',
   season: { fromMonth: 4, toMonth: 10 },
   dueDate: '2027-03-16',
   urgency: 0.5,
-  overdue: false,
-  description: null,
-  items: [],
-  dormant: false,
-  finished: false,
-  canSkip: true,
   lastDone: '2027-03-09',
   completionCount: 1,
-  archivedOn: null,
-}
+})
 
 const tap: Chore = {
   ...laundry,

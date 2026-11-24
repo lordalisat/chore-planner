@@ -3,32 +3,22 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
 import type { Chore } from '../chores.ts'
-import { stubApi } from '../test-api.ts'
+import { choreFixture, stubApi } from '../test-api.ts'
 import { Toasts } from '../ui/Toasts.tsx'
 import { DeleteChore } from './DeleteChore.tsx'
 
-const laundry: Chore = {
+const laundry = choreFixture({
   id: 7,
   kind: 'Recurring',
   name: 'Laundry',
-  importance: 'Normal',
   effort: 30,
-  area: null,
   interval: { count: 1, unit: 'Week' },
   preferredDay: 'Tuesday',
-  season: null,
   dueDate: '2027-03-16',
   urgency: 0,
-  overdue: false,
-  description: null,
-  items: [],
-  dormant: false,
-  finished: false,
-  canSkip: true,
   lastDone: '2027-03-09',
   completionCount: 3,
-  archivedOn: null,
-}
+})
 const fresh: Chore = { ...laundry, id: 8, name: 'Clean the oven', lastDone: null, completionCount: 0 }
 
 function renderDelete(chore: Chore) {

@@ -6,33 +6,9 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import App from '../App.tsx'
 import type { Chore } from '../chores.ts'
 import { createAppRouter } from '../router.tsx'
-import { stubApi } from '../test-api.ts'
+import { choreFixture, stubApi } from '../test-api.ts'
 
-function chore(id: number, name: string, details: Partial<Chore> = {}): Chore {
-  return {
-    id,
-    kind: 'OneOff',
-    name,
-    importance: 'Normal',
-    effort: null,
-    area: null,
-    interval: null,
-    preferredDay: null,
-    season: null,
-    dueDate: null,
-    urgency: null,
-    overdue: false,
-    description: null,
-    items: [],
-    dormant: false,
-    finished: false,
-    canSkip: details.kind === 'Recurring',
-    lastDone: null,
-    completionCount: 0,
-    archivedOn: null,
-    ...details,
-  }
-}
+const chore = (id: number, name: string, details: Partial<Chore> = {}): Chore => choreFixture({ ...details, id, name })
 
 const laundry = chore(1, 'Laundry', {
   kind: 'Recurring',
