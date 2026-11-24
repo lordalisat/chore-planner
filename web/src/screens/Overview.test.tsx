@@ -13,7 +13,7 @@ const rowName = (row: HTMLElement) =>
   within(row).getByRole('button', { name: /^Mark .* done$/ }).getAttribute('aria-label')?.replace(/^Mark (.*) done$/, '$1')
 
 // The name given wins over one spread in from another Chore
-const chore = (name: string, details: Partial<Chore>): Chore => choreFixture({ id: name.length, ...details, name })
+const chore = (name: string, overrides: Partial<Chore>): Chore => choreFixture({ id: name.length, ...overrides, name })
 
 const laundry = chore('Laundry', {
   id: 7,

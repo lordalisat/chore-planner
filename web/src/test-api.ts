@@ -1,5 +1,5 @@
-import type { Chore } from './chores.ts'
 import { vi } from 'vitest'
+import type { Chore } from './chores.ts'
 
 /** How the stubbed API answers a path: a status, a JSON body with 200, a full Response, or no server at all. */
 export type Answer = number | 'unreachable' | Response | ((init: RequestInit | undefined) => Response) | object
@@ -22,7 +22,7 @@ export function stubApi(answers: Record<string, Answer>) {
  * A Chore as the API sends it, with every field at its plain default: a One-off with no Due Date, nothing ticked, not
  * Archived. Tests give only what they are about; a new field on the API's Chore goes here, once.
  */
-export function choreFixture(details: Partial<Chore> & Pick<Chore, 'id' | 'name'>): Chore {
+export function choreFixture(overrides: Partial<Chore> & Pick<Chore, 'id' | 'name'>): Chore {
   return {
     kind: 'OneOff',
     importance: 'Normal',
@@ -38,10 +38,10 @@ export function choreFixture(details: Partial<Chore> & Pick<Chore, 'id' | 'name'
     items: [],
     dormant: false,
     finished: false,
-    canSkip: details.kind === 'Recurring',
+    canSkip: overrides.kind === 'Recurring',
     lastDone: null,
     completionCount: 0,
     archivedOn: null,
-    ...details,
+    ...overrides,
   }
 }

@@ -8,7 +8,7 @@ import type { Chore } from '../chores.ts'
 import { createAppRouter } from '../router.tsx'
 import { choreFixture, stubApi } from '../test-api.ts'
 
-const chore = (id: number, name: string, details: Partial<Chore> = {}): Chore => choreFixture({ ...details, id, name })
+const chore = (id: number, name: string, overrides: Partial<Chore> = {}): Chore => choreFixture({ ...overrides, id, name })
 
 const laundry = chore(1, 'Laundry', {
   kind: 'Recurring',
