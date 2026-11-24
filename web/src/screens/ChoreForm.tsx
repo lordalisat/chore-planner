@@ -17,6 +17,7 @@ import {
   type PreferredDay,
   type Unit,
 } from '../chores.ts'
+import { Button } from '../ui/Button.tsx'
 import { DateField } from '../ui/DateField.tsx'
 import { NumberField } from '../ui/NumberField.tsx'
 import { scrollToTop } from '../ui/scrollToTop.ts'
@@ -260,22 +261,21 @@ export function ChoreForm({ chore, onDone }: { chore?: Chore; onDone: () => void
         <DateField label="Last done" value={lastDone} onValueChange={setLastDone} error={errors.lastDone?.[0]} />
       )}
       <div className="flex flex-wrap gap-2">
-        <button
+        <Button
           type="submit"
           disabled={save.isPending}
           className="flex-1 rounded-lg bg-brand px-4 py-2 font-semibold text-white hover:bg-brand/90 disabled:opacity-60"
         >
           Save
-        </button>
+        </Button>
         {!chore && (
-          <button
-            type="button"
+          <Button
             disabled={save.isPending}
             onClick={(event) => submit(event, true)}
             className="flex-1 rounded-lg border border-brand px-4 py-2 font-semibold text-brand hover:bg-brand/5 disabled:opacity-60"
           >
             Save and add another
-          </button>
+          </Button>
         )}
       </div>
     </form>

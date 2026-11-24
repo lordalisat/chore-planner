@@ -52,7 +52,7 @@ test('Edit on an expanded Overview row opens the Chore filled in', async () => {
   stubApi({ '/api/session': 204, '/api/chores': [laundry], '/api/chores/7': laundry })
   const router = renderAt('/')
 
-  await userEvent.click(await screen.findByRole('button', { name: /^Laundry/, expanded: false }))
+  await userEvent.click(await screen.findByRole('button', { name: /^Open Laundry/, expanded: false }))
   await userEvent.click(await screen.findByRole('button', { name: 'Edit' }))
 
   expect(await screen.findByRole('textbox', { name: 'Name' })).toHaveValue('Laundry')

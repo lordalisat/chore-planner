@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { api } from '../api/client.ts'
 import { choreQuery, choresQuery, type Chore } from '../chores.ts'
+import { Button } from '../ui/Button.tsx'
 import { ConfirmDialog } from '../ui/ConfirmDialog.tsx'
 import { toast } from '../ui/toast.ts'
 import { unreachableMessage } from './Unreachable.tsx'
@@ -40,20 +41,20 @@ export function DeleteChore({ chore, onDeleted }: { chore: Chore; onDeleted: () 
 
   return (
     <>
-      <button
-        type="button"
+      <Button
         disabled={remove.isPending}
         onClick={() => (chore.completionCount > 0 ? remove.mutate() : setConfirming(true))}
         className="rounded-lg px-4 py-2 font-semibold text-red-700 hover:bg-red-700/5 disabled:opacity-60"
       >
         Delete
-      </button>
+      </Button>
       <ConfirmDialog
         open={confirming}
         onOpenChange={setConfirming}
         title={`Delete ${chore.name}?`}
         description="It has never been done, so it is removed for good and can't be brought back."
         confirmLabel="Delete for good"
+        consequence={`Deletes ${chore.name} for good`}
         onConfirm={() => remove.mutate()}
       />
     </>

@@ -7,13 +7,17 @@ import {
   AlertDialogTitle,
 } from '@ui-sdk/react/alert-dialog'
 
-/** Asks before something that can't be undone; `onConfirm` runs when the person agrees, then it closes. */
+/**
+ * Asks before something that can't be undone; `onConfirm` runs when the person agrees, then it closes. `consequence` says
+ * what agreeing does, for an agent to ask the person before it agrees for them.
+ */
 export function ConfirmDialog({
   open,
   onOpenChange,
   title,
   description,
   confirmLabel,
+  consequence,
   onConfirm,
 }: {
   open: boolean
@@ -21,6 +25,7 @@ export function ConfirmDialog({
   title: string
   description: string
   confirmLabel: string
+  consequence: string
   onConfirm: () => void
 }) {
   return (
@@ -31,7 +36,12 @@ export function ConfirmDialog({
         <AlertDialogDescription className="mt-2 text-ink/80">{description}</AlertDialogDescription>
         <div className="mt-6 flex justify-end gap-2">
           <AlertDialogClose className="rounded-lg px-4 py-2 font-semibold hover:bg-black/5">Cancel</AlertDialogClose>
-          <AlertDialogClose action={onConfirm} className="rounded-lg bg-red-700 px-4 py-2 font-semibold text-white hover:bg-red-800">
+          <AlertDialogClose
+            value="confirm"
+            data-agent-confirm={consequence}
+            action={onConfirm}
+            className="rounded-lg bg-red-700 px-4 py-2 font-semibold text-white hover:bg-red-800"
+          >
             {confirmLabel}
           </AlertDialogClose>
         </div>

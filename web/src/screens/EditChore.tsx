@@ -3,6 +3,7 @@ import { getRouteApi, Link, useNavigate, useRouter } from '@tanstack/react-route
 import { choreQuery, type Chore } from '../chores.ts'
 import { ChoreForm } from './ChoreForm.tsx'
 import { DeleteChore } from './DeleteChore.tsx'
+import { Button } from '../ui/Button.tsx'
 
 const route = getRouteApi('/authenticated/chores/$id')
 
@@ -22,9 +23,9 @@ export function EditChore() {
   return (
     <section className="mx-auto flex max-w-lg flex-col gap-4">
       <div className="flex items-center gap-2">
-        <button type="button" onClick={leave} className="-ml-2 rounded-lg px-2 py-1 font-medium text-brand hover:bg-brand/10">
+        <Button onClick={leave} className="-ml-2 rounded-lg px-2 py-1 font-medium text-brand hover:bg-brand/10">
           <span aria-hidden>← </span>Back
-        </button>
+        </Button>
         <h1 className="text-xl font-semibold text-brand">Edit Chore</h1>
       </div>
       <ChoreEditor chore={chore} onDone={leave} />
@@ -49,9 +50,7 @@ export function ChoreNotFound() {
   return (
     <p className="py-12 text-center text-ink/70">
       That Chore is gone.{' '}
-      <Link to="/" className="font-semibold text-brand underline">
-        Back to the Overview
-      </Link>
+      <Button render={<Link to="/" className="font-semibold text-brand underline" />}>Back to the Overview</Button>
     </p>
   )
 }
