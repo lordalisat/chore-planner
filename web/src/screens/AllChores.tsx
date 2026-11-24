@@ -151,7 +151,7 @@ function ActiveChores() {
                 <span className="flex-1 font-medium">{chore.name}</span> <Marks chore={chore} />{' '}
                 {chore.dueDate && !chore.finished && <span className="text-sm text-ink/70">{relativeDate(chore.dueDate, now)}</span>}
               </span>{' '}
-              <span className="text-sm text-ink/60">
+              <span className="text-sm text-ink/70">
                 {[chore.area?.name, kindName(chore), schedule(chore), seasonName(chore)].filter(Boolean).join(' · ')}
               </span>
             </ChoreLink>
@@ -265,7 +265,7 @@ function ArchivedChores() {
           <li key={chore.id} className="flex items-center gap-3 rounded-lg bg-white px-4 py-3 shadow-sm">
             <span className="flex flex-1 flex-col gap-0.5">
               <span className="font-medium">{chore.name}</span>
-              <span className="text-sm text-ink/60">
+              <span className="text-sm text-ink/70">
                 {[chore.area?.name, chore.archivedOn && `Archived ${longDate(chore.archivedOn)}`].filter(Boolean).join(' · ')}
               </span>
             </span>

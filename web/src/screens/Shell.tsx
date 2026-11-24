@@ -57,7 +57,7 @@ export function Shell() {
                   <Link
                     to={link.to}
                     activeOptions={{ exact: link.exact ?? false }}
-                    className="rounded-lg px-3 py-2 hover:bg-white/10 data-[status=active]:bg-white/20"
+                    className="rounded-lg px-3 py-2 hover:bg-white/10 data-[status=active]:bg-black/20 data-[status=active]:underline data-[status=active]:decoration-2 data-[status=active]:underline-offset-6"
                   />
                 }
               >
@@ -67,7 +67,7 @@ export function Shell() {
             <Button onClick={newChore} className="rounded-lg bg-cream px-3 py-2 font-semibold text-brand hover:bg-white">
               New Chore
             </Button>
-            <Button onClick={() => logout.mutate()} className="ml-2 px-2 py-2 text-sm text-white/70 hover:text-white hover:underline">
+            <Button onClick={() => logout.mutate()} className="ml-2 px-2 py-2 text-sm text-white/85 hover:text-white hover:underline">
               Log out
             </Button>
           </nav>

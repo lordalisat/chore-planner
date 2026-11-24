@@ -54,13 +54,13 @@ export function Overview() {
       {now.length === 0 && anytime.length === 0 && <p className="py-6 text-center text-ink/70">Nothing needs doing yet.</p>}
       {anytime.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-ink/60">Anytime</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-ink/70">Anytime</h2>
           {list(anytime)}
         </section>
       )}
       {later.length > 0 && (
         <Collapsible render={<section />} aria-labelledby="later" className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-ink/60">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-ink/70">
             <CollapsibleTrigger id="later" className="group flex items-center gap-1 uppercase hover:text-ink">
               <span aria-hidden className="inline-block transition-transform group-data-open:rotate-90">
                 ›
@@ -68,7 +68,7 @@ export function Overview() {
               Later ({later.length})
             </CollapsibleTrigger>
           </h2>
-          <CollapsiblePanel className="opacity-75">{list(later)}</CollapsiblePanel>
+          <CollapsiblePanel>{list(later)}</CollapsiblePanel>
         </Collapsible>
       )}
       <Dialog open={doneOn !== null} onOpenChange={(open) => !open && setDoneOn(null)} title={`When was ${doneOn?.name ?? ''} done?`}>
@@ -170,7 +170,7 @@ function ChoreRow({ chore, today, open, onOpenChange, onClose, onDone, onDoneOn,
             {/* A verb of its own, so naming the Chore alone can't also mean its Done button */}
             <span className="sr-only">Open</span>{' '}
             <span className="flex-1 truncate font-medium">{chore.name}</span>{' '}
-            {details && <span className="text-sm text-ink/60">{details}</span>}
+            {details && <span className="text-sm text-ink/70">{details}</span>}
           </span>
           {/* Flex shows none of these spaces; they keep the words apart in the button's name */}{' '}
           {(chore.dueDate || ticked > 0) && (
@@ -284,7 +284,7 @@ function Items({ chore }: { chore: Chore }) {
                 <span className="sr-only">Description of</span>{' '}
                 <span className={tickedName(item.ticked)}>{item.name}</span>
                 {/* Outside the struck-through Name, so a ticked Item still shows it has a Description */}
-                <span aria-hidden className="rounded bg-black/5 px-1.5 text-xs text-ink/60">
+                <span aria-hidden className="rounded bg-black/5 px-1.5 text-xs text-ink/70">
                   {shown === item.id ? 'less' : 'more'}
                 </span>
               </CollapsibleTrigger>
@@ -298,11 +298,11 @@ function Items({ chore }: { chore: Chore }) {
 }
 
 // A ticked Item reads as done
-const tickedName = (ticked: boolean) => (ticked ? 'text-ink/50 line-through' : '')
+const tickedName = (ticked: boolean) => (ticked ? 'text-ink/70 line-through' : '')
 
 function RowAction({ onClick, children }: { onClick: () => void; children: string }) {
   return (
-    <Button onClick={onClick} className="min-h-11 rounded-lg border border-brand/30 px-4 text-sm font-medium text-brand hover:bg-brand/10">
+    <Button onClick={onClick} className="min-h-11 rounded-lg border border-brand/80 px-4 text-sm font-medium text-brand hover:bg-brand/10">
       {children}
     </Button>
   )

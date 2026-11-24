@@ -104,7 +104,7 @@ export function ItemsField({ items, onItemsChange, error }: { items: ItemDraft[]
       {items.length < limits.items && (
         <Button
           onClick={add}
-          className="min-h-11 self-start rounded-lg border border-brand/30 px-4 text-sm font-medium text-brand hover:bg-brand/10"
+          className="min-h-11 self-start rounded-lg border border-brand/80 px-4 text-sm font-medium text-brand hover:bg-brand/10"
         >
           Add item
         </Button>

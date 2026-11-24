@@ -19,7 +19,7 @@ export function TextField({ label, error, className, ...input }: TextFieldProps)
         {...input}
         // React's autoFocus renders no attribute; a dialog looks for this one to pick its first focus
         data-autofocus={input.autoFocus ? '' : undefined}
-        className="rounded-lg border border-black/20 bg-white px-3 py-2 focus:outline-2 focus:outline-brand data-invalid:border-red-700"
+        className="rounded-lg border border-black/45 bg-white px-3 py-2 focus:outline-2 focus:outline-brand data-invalid:border-red-700"
       />
       {error && (
         <FieldError match className="text-sm text-red-700">

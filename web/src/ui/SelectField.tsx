@@ -43,8 +43,8 @@ export function SelectField<T extends string>({
         onValueChange={(next) => onValueChange(next === null || next === none ? null : (next as T))}
         placeholder={placeholder}
       >
-        <SelectTrigger className="group flex cursor-pointer items-center gap-2 rounded-lg border border-black/20 bg-white px-3 py-2 text-left hover:border-black/40 focus:outline-2 focus:outline-brand data-invalid:border-red-700">
-          <SelectValue className="flex-1 truncate group-data-placeholder:text-ink/50" />
+        <SelectTrigger className="group flex cursor-pointer items-center gap-2 rounded-lg border border-black/45 bg-white px-3 py-2 text-left hover:border-black/60 focus:outline-2 focus:outline-brand data-invalid:border-red-700">
+          <SelectValue className="flex-1 truncate group-data-placeholder:text-ink/65" />
           <ChevronIcon />
         </SelectTrigger>
         {/* As wide as the field it opens from, and no taller than the room below it */}

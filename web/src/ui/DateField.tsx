@@ -32,7 +32,7 @@ export function DateField({
       <FieldLabel className="text-sm font-medium">{label}</FieldLabel>
       {/* English, day first */}
       <DatePicker value={value} onValueChange={(next) => onValueChange(next as string | null)} weekStartsOn={1} locale="en-GB">
-        <div className="flex items-center gap-1 rounded-lg border border-black/20 bg-white px-3 py-1 focus-within:outline-2 focus-within:outline-brand data-invalid:border-red-700">
+        <div className="flex items-center gap-1 rounded-lg border border-black/45 bg-white px-3 py-1 focus-within:outline-2 focus-within:outline-brand data-invalid:border-red-700">
           <DatePickerInput className="flex-1 py-1 outline-none" />
           <DatePickerClear aria-label="Clear date" className="rounded-md px-2 text-lg data-empty:hidden hover:bg-black/5">
             ×
@@ -49,7 +49,7 @@ export function DateField({
           </div>
           <CalendarGrid className="border-collapse">
             <CalendarWeekdays>
-              {(index) => <CalendarWeekday index={index} className="size-10 text-xs font-medium text-ink/60" />}
+              {(index) => <CalendarWeekday index={index} className="size-10 text-xs font-medium text-ink/70" />}
             </CalendarWeekdays>
             <CalendarWeeks>
               {(cell) => (
