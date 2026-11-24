@@ -259,13 +259,16 @@ function Items({ chore }: { chore: Chore }) {
                 type="button"
                 aria-expanded={shown === item.id}
                 onClick={() => setShown(shown === item.id ? null : item.id)}
-                className={`min-h-11 flex-1 text-left text-sm ${item.ticked ? 'text-ink/50 line-through' : ''}`}
+                className="flex min-h-11 flex-1 items-center gap-2 text-left text-sm"
               >
-                {item.name}
-                <span aria-hidden className="ml-1 text-ink/40">{shown === item.id ? '▾' : '▸'}</span>
+                <span className={tickedName(item.ticked)}>{item.name}</span>
+                {/* Outside the struck-through Name, so a ticked Item still shows it has a Description */}
+                <span aria-hidden className="rounded bg-black/5 px-1.5 text-xs text-ink/60">
+                  {shown === item.id ? 'less' : 'more'}
+                </span>
               </button>
             ) : (
-              <span className={`flex-1 text-sm ${item.ticked ? 'text-ink/50 line-through' : ''}`}>{item.name}</span>
+              <span className={`flex-1 text-sm ${tickedName(item.ticked)}`}>{item.name}</span>
             )}
           </div>
           {item.description && shown === item.id && (
@@ -276,6 +279,9 @@ function Items({ chore }: { chore: Chore }) {
     </ul>
   )
 }
+
+// A ticked Item reads as done
+const tickedName = (ticked: boolean) => (ticked ? 'text-ink/50 line-through' : '')
 
 function RowAction({ onClick, children }: { onClick: () => void; children: string }) {
   return (

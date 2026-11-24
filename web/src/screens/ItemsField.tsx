@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { limits } from '../chores.ts'
 import { TextAreaField } from '../ui/TextAreaField.tsx'
 import { TextField } from '../ui/TextField.tsx'
@@ -16,20 +17,44 @@ export const itemDraft = (item?: { id: number; name: string; description: string
 
 /** A Chore's Items: each with a Name and an optional Description, in an order the household sets. */
 export function ItemsField({ items, onItemsChange, error }: { items: ItemDraft[]; onItemsChange: (items: ItemDraft[]) => void; error?: string }) {
+  // A new Item gets the cursor; an Item's Description field shows once it has text or someone asks for it
+  const [added, setAdded] = useState<string | null>(null)
+  const [describing, setDescribing] = useState<string[]>([])
+  const errorLine = useRef<HTMLParagraphElement>(null)
+  const list = useRef<HTMLFieldSetElement>(null)
+  useEffect(() => {
+    if (error) errorLine.current?.scrollIntoView({ block: 'nearest' })
+  }, [error])
+  // Once on screen: the new Item's Name, or the Description field just asked for
+  const focus = (key: string, field: 'input' | 'textarea') =>
+    list.current?.querySelector<HTMLElement>(`[data-item="${key}"] ${field}`)?.focus()
+  useEffect(() => {
+    if (added) focus(added, 'input')
+  }, [added])
+  const lastDescribing = describing.at(-1)
+  useEffect(() => {
+    if (lastDescribing) focus(lastDescribing, 'textarea')
+  }, [lastDescribing])
+
   const change = (key: string, fields: Partial<ItemDraft>) => onItemsChange(items.map((item) => (item.key === key ? { ...item, ...fields } : item)))
   const move = (index: number, by: number) => {
     const moved = [...items]
     ;[moved[index], moved[index + by]] = [moved[index + by]!, moved[index]!]
     onItemsChange(moved)
   }
+  const add = () => {
+    const draft = itemDraft()
+    setAdded(draft.key)
+    onItemsChange([...items, draft])
+  }
 
   return (
-    <fieldset className="flex flex-col gap-2">
+    <fieldset ref={list} className="flex flex-col gap-2">
       <legend className="mb-1 text-sm font-medium">Items</legend>
       {items.map((item, index) => {
         const named = item.name.trim() || `item ${index + 1}`
         return (
-          <div key={item.key} className="flex flex-col gap-2 rounded-lg border border-black/10 bg-white/60 p-2">
+          <div key={item.key} data-item={item.key} className="flex flex-col gap-1 rounded-lg border border-black/10 bg-white/60 p-2">
             <div className="flex items-end gap-1">
               <TextField
                 label={`Item ${index + 1}`}
@@ -44,26 +69,42 @@ export function ItemsField({ items, onItemsChange, error }: { items: ItemDraft[]
               <ItemButton label={`Move ${named} down`} disabled={index === items.length - 1} onClick={() => move(index, 1)}>
                 ↓
               </ItemButton>
+              {/* Not ×, which closes the dialog the form may be in */}
               <ItemButton label={`Remove ${named}`} onClick={() => onItemsChange(items.filter((other) => other.key !== item.key))}>
-                ×
+                −
               </ItemButton>
             </div>
-            <TextAreaField
-              label={`Item ${index + 1} description`}
-              hideLabel
-              placeholder="Description (optional)"
-              value={item.description}
-              onValueChange={(description) => change(item.key, { description })}
-              maxLength={limits.description}
-            />
+            {item.description || describing.includes(item.key) ? (
+              <TextAreaField
+                label={`Item ${index + 1} description`}
+                hideLabel
+                placeholder="Description (optional)"
+                value={item.description}
+                onValueChange={(description) => change(item.key, { description })}
+                maxLength={limits.description}
+              />
+            ) : (
+              <button
+                type="button"
+                aria-label={`Add description to ${named}`}
+                onClick={() => setDescribing([...describing, item.key])}
+                className="-my-1 min-h-11 self-start px-1 text-sm text-brand hover:underline"
+              >
+                Add description
+              </button>
+            )}
           </div>
         )
       })}
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && (
+        <p ref={errorLine} className="text-sm text-red-700">
+          {error}
+        </p>
+      )}
       {items.length < limits.items && (
         <button
           type="button"
-          onClick={() => onItemsChange([...items, itemDraft()])}
+          onClick={add}
           className="min-h-11 self-start rounded-lg border border-brand/30 px-4 text-sm font-medium text-brand hover:bg-brand/10"
         >
           Add item

@@ -165,11 +165,15 @@ test('Items are added, moved and removed, sent in that order, and Save and add a
   renderForm()
   await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Clean the bathroom')
 
+  // Add item puts the cursor in the new Item's Name
   for (const name of ['Sink', 'Toilet', 'Mirror']) {
     await userEvent.click(screen.getByRole('button', { name: 'Add item' }))
-    await userEvent.type(screen.getAllByRole('textbox', { name: /^Item \d+$/ }).at(-1)!, name)
+    await userEvent.keyboard(name)
   }
-  await userEvent.type(screen.getByRole('textbox', { name: 'Item 2 description' }), 'Blue cleaner')
+  // A Description field only once asked for
+  expect(screen.queryByRole('textbox', { name: 'Item 2 description' })).not.toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Add description to Toilet' }))
+  await userEvent.keyboard('Blue cleaner')
   await userEvent.click(screen.getByRole('button', { name: 'Move Mirror up' }))
   await userEvent.click(screen.getByRole('button', { name: 'Remove Sink' }))
   await userEvent.click(screen.getByRole('button', { name: 'Save and add another' }))
