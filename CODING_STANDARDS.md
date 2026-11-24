@@ -16,6 +16,10 @@ A domain concept that will gain kinds (a ticket, spec or `.scratch/` file hints 
 - A request DTO validates itself and returns a `Result<T>`: it collects a local `List<FieldError>` (`errors.Try(field, message, build)` wraps throwing Domain constructors) and ends in `return new Result<T>(errors, () => build)`. It doesn't take an error collection to fill. Facts from the database (taken Names) come in as arguments.
 - Endpoints stay thin: load, `if (result.Value is not { } x) return result.ToProblem();`, save, answer.
 
+## Agent tests
+
+`web/src/agent.test.tsx` drives every screen through the ui-sdk agent bridge. A change that adds a screen, a dialog or something a screen exists to do (add, postpone, restore, delete) adds the names of its controls to an `expectNamed` there and one agent step per such action; anything behind `data-agent-confirm` is refused first, then runs once approved.
+
 ## Seed data
 
 A change that adds a state a screen can show (a new kind of Preferred Day, a new Overview section, a new mark on a row) adds a Chore in that state to `./seed`, so every later review gets it in one step.

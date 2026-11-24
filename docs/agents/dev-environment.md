@@ -16,7 +16,7 @@ Green tests have never caught a layout, navigation or empty-state bug in this re
 The recipe, for both, and for a hand test the user asks for:
 
 1. `./serve` starts the API on a fresh throwaway database filled by `./seed` (Areas and a Chore in every state, dated from today) and Vite, and returns once both answer. It refuses while ports 5080/5173 are taken by another checkout; ask the user before stopping theirs.
-2. Open <http://localhost:5173> with agent-browser and log in with password `chores`. Port 5080 serves the last *built* front end, not your change. For a state the seed lacks, call the API with the header `X-Api-Key: dev-api-key`; request shapes are in `src/Chores.Api/openapi.json`.
+2. Open <http://localhost:5173> with agent-browser and log in with password `chores`. Port 5080 serves the last *built* front end, not your change. For a state the seed lacks, call the API with the header `X-Api-Key: dev-api-key`; request shapes are in `src/Chores.Api/openapi.json`. To run JavaScript in the page, write it to a file and the command `agent-browser eval --stdin < <file>` to a script, then run the script: the guard refuses a command line containing `eval`.
 3. `./serve stop` when done; the logs are in `data/serve/`.
 
 ## After a PR merges

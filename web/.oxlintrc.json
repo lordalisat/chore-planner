@@ -6,13 +6,17 @@
     "react/only-export-components": ["warn", { "allowConstantExport": true }],
     "no-restricted-imports": [
       "error",
-      { "patterns": [{ "group": ["@ui-sdk/*"], "message": "Screens use the wrappers in src/ui/; only src/ui/ imports the UI SDK." }] }
+      { "patterns": [{ "group": ["@ui-sdk/**"], "message": "Screens use the wrappers in src/ui/; only src/ui/ imports the UI SDK." }] }
+    ],
+    "react/forbid-elements": [
+      "error",
+      { "forbid": [{ "element": "button", "message": "Use Button from src/ui/Button.tsx: a ui-sdk agent can't see or press a plain <button>." }] }
     ]
   },
   "overrides": [
     {
       "files": ["src/ui/**"],
-      "rules": { "no-restricted-imports": "off" }
+      "rules": { "no-restricted-imports": "off", "react/forbid-elements": "off" }
     }
   ]
 }
