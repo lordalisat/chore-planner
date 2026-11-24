@@ -3,6 +3,7 @@ import { useRouter, useSearch } from '@tanstack/react-router'
 import { useState, type FormEvent } from 'react'
 import { api, isUnauthorized } from '../api/client.ts'
 import { sessionQuery } from '../session.ts'
+import { Button } from '../ui/Button.tsx'
 import { TextField } from '../ui/TextField.tsx'
 import { unreachableMessage } from './Unreachable.tsx'
 
@@ -37,13 +38,13 @@ export function Login() {
           value={password}
           onValueChange={setPassword}
         />
-        <button
+        <Button
           type="submit"
           disabled={login.isPending}
           className="rounded-lg bg-brand px-4 py-2 font-semibold text-white hover:bg-brand/90 disabled:opacity-60"
         >
           Log in
-        </button>
+        </Button>
         {login.error && (
           <p role="alert" className="text-red-700">
             {isUnauthorized(login.error) ? 'That password is not right.' : unreachableMessage}

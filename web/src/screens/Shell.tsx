@@ -3,6 +3,7 @@ import { Link, Outlet, useNavigate, useRouter, useRouterState } from '@tanstack/
 import { useEffect, useState } from 'react'
 import { api } from '../api/client.ts'
 import { sessionQuery } from '../session.ts'
+import { Button } from '../ui/Button.tsx'
 import { Dialog } from '../ui/Dialog.tsx'
 import { Menu } from '../ui/Menu.tsx'
 import { toast } from '../ui/toast.ts'
@@ -47,26 +48,28 @@ export function Shell() {
       <header className="bg-brand text-white">
         {/* One width on every screen, so the navigation stays put; only the content below narrows */}
         <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-2">
-          <Link to="/" className="py-2 text-lg font-semibold">
-            Chores
-          </Link>
+          <Button render={<Link to="/" className="py-2 text-lg font-semibold" />}>Chores</Button>
           <nav className="ml-auto hidden items-center gap-2 md:flex">
             {navLinks.map((link) => (
-              <Link
+              <Button
                 key={link.label}
-                to={link.to}
-                activeOptions={{ exact: link.exact ?? false }}
-                className="rounded-lg px-3 py-2 hover:bg-white/10 data-[status=active]:bg-white/20"
+                render={
+                  <Link
+                    to={link.to}
+                    activeOptions={{ exact: link.exact ?? false }}
+                    className="rounded-lg px-3 py-2 hover:bg-white/10 data-[status=active]:bg-black/20 data-[status=active]:underline data-[status=active]:decoration-2 data-[status=active]:underline-offset-6"
+                  />
+                }
               >
                 {link.label}
-              </Link>
+              </Button>
             ))}
-            <button type="button" onClick={newChore} className="rounded-lg bg-cream px-3 py-2 font-semibold text-brand hover:bg-white">
+            <Button onClick={newChore} className="rounded-lg bg-cream px-3 py-2 font-semibold text-brand hover:bg-white">
               New Chore
-            </button>
-            <button type="button" onClick={() => logout.mutate()} className="ml-2 px-2 py-2 text-sm text-white/70 hover:text-white hover:underline">
+            </Button>
+            <Button onClick={() => logout.mutate()} className="ml-2 px-2 py-2 text-sm text-white/85 hover:text-white hover:underline">
               Log out
-            </button>
+            </Button>
           </nav>
           <div className="ml-auto md:hidden">
             <Menu
@@ -89,14 +92,13 @@ export function Shell() {
         <Outlet />
       </main>
       {!form && (
-        <button
-          type="button"
+        <Button
           aria-label="New Chore"
           onClick={newChore}
           className="fixed right-4 bottom-6 flex size-14 items-center justify-center rounded-full bg-brand text-3xl text-white shadow-lg md:hidden"
         >
           +
-        </button>
+        </Button>
       )}
       <Dialog open={creating} onOpenChange={setCreating} title="New Chore">
         {/* Mounted only while open, so each new Chore starts from an empty form */}

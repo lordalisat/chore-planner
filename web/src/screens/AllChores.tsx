@@ -4,6 +4,8 @@ import { useState, type ReactNode } from 'react'
 import { api, ApiError } from '../api/client.ts'
 import { archivedChoresQuery, choresQuery, kindLabels, preferredDayName, unitLabels, type Chore, type Unit } from '../chores.ts'
 import { longDate, monthNames, relativeDate, today } from '../dates.ts'
+import { Button } from '../ui/Button.tsx'
+import { RowButton } from '../ui/RowButton.tsx'
 import { toast } from '../ui/toast.ts'
 import { fromLg, useMediaQuery } from '../ui/useMediaQuery.ts'
 import { ChoreForm } from './ChoreForm.tsx'
@@ -88,12 +90,12 @@ export function AllChores() {
           <h1 className="flex-1 text-xl font-semibold text-brand">All Chores</h1>
           <nav aria-label="Filter" className="flex gap-1 rounded-xl bg-white p-1 shadow-sm">
             {/* The router marks the current filter; Active must say it has no archived, or it would match the Archived URL too */}
-            <Link to="/chores" search={{ archived: undefined }} activeOptions={{ explicitUndefined: true }} className={filterClass}>
+            <Button
+              render={<Link to="/chores" search={{ archived: undefined }} activeOptions={{ explicitUndefined: true }} className={filterClass} />}
+            >
               Active
-            </Link>
-            <Link to="/chores" search={{ archived: true }} className={filterClass}>
-              Archived
-            </Link>
+            </Button>
+            <Button render={<Link to="/chores" search={{ archived: true }} className={filterClass} />}>Archived</Button>
           </nav>
         </div>
         {archived ? <ArchivedChores /> : <ActiveChores />}
@@ -114,9 +116,9 @@ function ChorePanel({ chore: id }: { chore: number | 'new' }) {
     <aside className="flex flex-col gap-4 lg:fixed lg:top-18 lg:right-4 lg:z-10 lg:max-h-[calc(100dvh-5.5rem)] lg:w-md lg:overflow-y-auto lg:rounded-2xl lg:bg-white lg:p-6 lg:shadow-xl">
       <div className="flex items-center">
         <h2 className="flex-1 text-xl font-semibold text-brand">{id === 'new' ? 'New Chore' : 'Edit Chore'}</h2>
-        <Link to="/chores" aria-label="Close" className="rounded-lg px-3 py-1 text-2xl leading-none hover:bg-black/5">
+        <Button render={<Link to="/chores" aria-label="Close" className="rounded-lg px-3 py-1 text-2xl leading-none hover:bg-black/5" />}>
           ×
-        </Link>
+        </Button>
       </div>
       {id === 'new' ? (
         <ChoreForm key="new" onDone={close} />
@@ -145,11 +147,11 @@ function ActiveChores() {
           <li key={chore.id}>
             <ChoreLink chore={chore} className="flex flex-col gap-0.5 rounded-lg bg-white px-4 py-3 shadow-sm hover:shadow-md">
               <span className="flex items-baseline gap-2">
-                <span className="flex-1 font-medium">{chore.name}</span>
-                <Marks chore={chore} />
+                {/* Flex shows none of these spaces; they keep the words apart in the link's name */}
+                <span className="flex-1 font-medium">{chore.name}</span> <Marks chore={chore} />{' '}
                 {chore.dueDate && !chore.finished && <span className="text-sm text-ink/70">{relativeDate(chore.dueDate, now)}</span>}
-              </span>
-              <span className="text-sm text-ink/60">
+              </span>{' '}
+              <span className="text-sm text-ink/70">
                 {[chore.area?.name, kindName(chore), schedule(chore), seasonName(chore)].filter(Boolean).join(' · ')}
               </span>
             </ChoreLink>
@@ -163,8 +165,7 @@ function ActiveChores() {
               const active = sort.column === column
               return (
                 <th key={column} aria-sort={active ? (sort.descending ? 'descending' : 'ascending') : undefined} className="font-semibold">
-                  <button
-                    type="button"
+                  <Button
                     onClick={() => setSort({ column, descending: active ? !sort.descending : highestFirst.includes(column) })}
                     className="w-full px-3 py-2 text-left whitespace-nowrap hover:text-brand"
                   >
@@ -173,7 +174,7 @@ function ActiveChores() {
                     <span aria-hidden="true" className="inline-block w-4 text-center">
                       {active ? (sort.descending ? '↓' : '↑') : ''}
                     </span>
-                  </button>
+                  </Button>
                 </th>
               )
             })}
@@ -183,14 +184,12 @@ function ActiveChores() {
           {sorted.map((chore) => (
             <tr
               key={chore.id}
-              // The row is what opens the Chore, by mouse or by Enter once tabbed to
-              tabIndex={0}
+              // The row is what a mouse opens the Chore by; its Name is the button for the keyboard and an agent
               onClick={() => openChore(chore.id)}
-              onKeyDown={(event) => event.key === 'Enter' && openChore(chore.id)}
-              className="cursor-pointer border-b border-black/5 last:border-0 hover:bg-brand/5 focus-visible:bg-brand/5 focus-visible:outline-2 focus-visible:outline-brand"
+              className="cursor-pointer border-b border-black/5 last:border-0 hover:bg-brand/5 has-focus-visible:bg-brand/5"
             >
               <td className="px-3 py-2">
-                <span className="font-medium">{chore.name}</span>{' '}
+                <RowButton onClick={() => openChore(chore.id)}>{chore.name}</RowButton>{' '}
                 <Marks chore={chore} />
               </td>
               <td className="px-3 py-2">{chore.area?.name}</td>
@@ -220,15 +219,12 @@ function useOpenChore() {
 
 /** A link opening a Chore where {@link useOpenChore} would. */
 function ChoreLink({ chore, className, children }: { chore: Chore; className: string; children: ReactNode }) {
-  return useMediaQuery(fromLg) ? (
-    <Link to="/chores" search={{ chore: chore.id }} className={className}>
-      {children}
-    </Link>
+  const link = useMediaQuery(fromLg) ? (
+    <Link to="/chores" search={{ chore: chore.id }} className={className} />
   ) : (
-    <Link to="/chores/$id" params={{ id: chore.id }} className={className}>
-      {children}
-    </Link>
+    <Link to="/chores/$id" params={{ id: chore.id }} className={className} />
   )
+  return <Button render={link}>{children}</Button>
 }
 
 function Marks({ chore }: { chore: Chore }) {
@@ -253,14 +249,13 @@ function ArchivedChores() {
   if (chores.length === 0) return <p className="py-12 text-center text-ink/70">Nothing is Archived.</p>
   const sorted = [...chores].sort((a, b) => a.name.localeCompare(b.name))
   const restoreButton = (chore: Chore) => (
-    <button
-      type="button"
+    <Button
       disabled={restore.isPending}
       onClick={() => restore.mutate(chore)}
       className="rounded-lg border border-brand px-3 py-1 font-semibold text-brand hover:bg-brand/5 disabled:opacity-60"
     >
       Restore
-    </button>
+    </Button>
   )
   return (
     <>
@@ -270,7 +265,7 @@ function ArchivedChores() {
           <li key={chore.id} className="flex items-center gap-3 rounded-lg bg-white px-4 py-3 shadow-sm">
             <span className="flex flex-1 flex-col gap-0.5">
               <span className="font-medium">{chore.name}</span>
-              <span className="text-sm text-ink/60">
+              <span className="text-sm text-ink/70">
                 {[chore.area?.name, chore.archivedOn && `Archived ${longDate(chore.archivedOn)}`].filter(Boolean).join(' · ')}
               </span>
             </span>

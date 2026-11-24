@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { limits } from '../chores.ts'
+import { Button } from '../ui/Button.tsx'
 import { TextAreaField } from '../ui/TextAreaField.tsx'
 import { TextField } from '../ui/TextField.tsx'
 
@@ -84,14 +85,13 @@ export function ItemsField({ items, onItemsChange, error }: { items: ItemDraft[]
                 maxLength={limits.description}
               />
             ) : (
-              <button
-                type="button"
+              <Button
                 aria-label={`Add description to ${named}`}
                 onClick={() => setDescribing([...describing, item.key])}
                 className="-my-1 min-h-11 self-start px-1 text-sm text-brand hover:underline"
               >
                 Add description
-              </button>
+              </Button>
             )}
           </div>
         )
@@ -102,13 +102,12 @@ export function ItemsField({ items, onItemsChange, error }: { items: ItemDraft[]
         </p>
       )}
       {items.length < limits.items && (
-        <button
-          type="button"
+        <Button
           onClick={add}
-          className="min-h-11 self-start rounded-lg border border-brand/30 px-4 text-sm font-medium text-brand hover:bg-brand/10"
+          className="min-h-11 self-start rounded-lg border border-brand/80 px-4 text-sm font-medium text-brand hover:bg-brand/10"
         >
           Add item
-        </button>
+        </Button>
       )}
     </fieldset>
   )
@@ -116,14 +115,13 @@ export function ItemsField({ items, onItemsChange, error }: { items: ItemDraft[]
 
 function ItemButton({ label, disabled, onClick, children }: { label: string; disabled?: boolean; onClick: () => void; children: string }) {
   return (
-    <button
-      type="button"
+    <Button
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
       className="grid size-11 shrink-0 place-items-center rounded-lg text-lg text-brand hover:bg-brand/10 disabled:opacity-30"
     >
       {children}
-    </button>
+    </Button>
   )
 }

@@ -20,7 +20,7 @@ export function SegmentedField<T extends string>({
       <SegmentedControl<T>
         value={value}
         onValueChange={(next) => next !== null && onValueChange(next)}
-        className="flex rounded-lg border border-black/20 bg-white p-1"
+        className="flex rounded-lg border border-black/45 bg-white p-1"
       >
         {options.map((option) => (
           <SegmentedControlItem

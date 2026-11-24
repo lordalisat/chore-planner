@@ -63,7 +63,7 @@ const names = (t: HTMLElement) =>
   within(t)
     .getAllByRole('row')
     .slice(1)
-    .map((row) => within(row).getAllByRole('cell')[0]!.querySelector('span')?.textContent)
+    .map((row) => within(row).getAllByRole('cell')[0]!.querySelector('button')?.textContent)
 
 test('All Chores is in the top navigation', async () => {
   stubApi({ '/api/session': 204, '/api/chores': [laundry] })
@@ -224,7 +224,7 @@ test('a row opens its Chore from the keyboard too', async () => {
   stubApi({ '/api/session': 204, '/api/chores': [laundry, lawn] })
   const router = renderAt('/chores')
 
-  within(await table()).getByRole('row', { name: /Mow the lawn/ }).focus()
+  within(await table()).getByRole('button', { name: 'Mow the lawn' }).focus()
   await userEvent.keyboard('{Enter}')
 
   await expect.poll(() => router.state.location.search).toEqual({ chore: lawn.id })

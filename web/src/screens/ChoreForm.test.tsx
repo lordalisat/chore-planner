@@ -3,12 +3,14 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test } from 'vitest'
 import { stubApi } from '../test-api.ts'
+import { Toasts } from '../ui/Toasts.tsx'
 import { ChoreForm } from './ChoreForm.tsx'
 
 function renderForm() {
   render(
     <QueryClientProvider client={new QueryClient()}>
       <ChoreForm onDone={() => {}} />
+      <Toasts />
     </QueryClientProvider>,
   )
 }
@@ -147,6 +149,7 @@ test('Save and add another scrolls back to the top of what the form scrolls in',
         <h2>New Chore</h2>
         <ChoreForm onDone={() => {}} />
       </div>
+      <Toasts />
     </QueryClientProvider>,
   )
   const scroller = screen.getByTestId('scroller')

@@ -3,10 +3,21 @@ import { cleanup } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
 import { toast } from './ui/toast.ts'
 
-// The UI SDK's popups (dialog, select, date picker) use the popover API, which jsdom lacks
-HTMLElement.prototype.showPopover ??= function () {}
-HTMLElement.prototype.hidePopover ??= function () {}
-Element.prototype.getAnimations ??= () => []
+declare global {
+  var __UI_SDK_STRICT__: boolean | undefined
+}
+// The UI SDK's development warnings fail the test that caused them
+globalThis.__UI_SDK_STRICT__ = true
+
+// What the UI SDK needs that jsdom lacks, or has without the parts that matter, so assigned rather than kept
+HTMLElement.prototype.showPopover = function () {}
+HTMLElement.prototype.hidePopover = function () {}
+Element.prototype.getAnimations = () => []
+Element.prototype.scrollIntoView = function () {}
+Element.prototype.checkVisibility = () => true
+Element.prototype.getClientRects = () => [] as unknown as DOMRectList
+document.elementFromPoint = () => null
+document.elementsFromPoint = () => []
 // Toasts measure themselves to stack, with an observer jsdom lacks
 globalThis.ResizeObserver ??= class {
   observe() {}

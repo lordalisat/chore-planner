@@ -3,8 +3,10 @@ import { useState, type FormEvent } from 'react'
 import { api, ApiError, type FieldErrors } from '../api/client.ts'
 import { areasQuery, type Area } from '../areas.ts'
 import { choresQuery } from '../chores.ts'
+import { Button } from '../ui/Button.tsx'
 import { ConfirmDialog } from '../ui/ConfirmDialog.tsx'
 import { Dialog } from '../ui/Dialog.tsx'
+import { RowButton } from '../ui/RowButton.tsx'
 import { SelectField, type Option } from '../ui/SelectField.tsx'
 import { TextField } from '../ui/TextField.tsx'
 import { toast } from '../ui/toast.ts'
@@ -21,13 +23,12 @@ export function Areas() {
     <section className="flex flex-col gap-4">
       <div className="flex items-center">
         <h1 className="flex-1 text-xl font-semibold text-brand">Areas</h1>
-        <button
-          type="button"
+        <Button
           onClick={() => setEditing(null)}
           className="rounded-lg bg-brand px-4 py-2 font-semibold text-white hover:bg-brand/90"
         >
           New Area
-        </button>
+        </Button>
       </div>
       {areas.length === 0 ? (
         <p className="py-12 text-center text-ink/70">No Areas yet. Add one, such as the kitchen or the garden.</p>
@@ -44,13 +45,13 @@ export function Areas() {
             {areas.map((area) => (
               <tr
                 key={area.id}
-                // The row is what opens the Area, by mouse or by Enter once tabbed to
-                tabIndex={0}
+                // The row is what a mouse opens the Area by; its Name is the button for the keyboard and an agent
                 onClick={() => setEditing(area)}
-                onKeyDown={(event) => event.key === 'Enter' && setEditing(area)}
-                className="cursor-pointer border-b border-black/5 last:border-0 hover:bg-brand/5 focus-visible:bg-brand/5 focus-visible:outline-2 focus-visible:outline-brand"
+                className="cursor-pointer border-b border-black/5 last:border-0 hover:bg-brand/5 has-focus-visible:bg-brand/5"
               >
-                <td className="px-3 py-3 font-medium">{area.name}</td>
+                <td className="px-3 py-3">
+                  <RowButton onClick={() => setEditing(area)}>{area.name}</RowButton>
+                </td>
                 <td className="px-3 py-3">{nameOf(area.parentId)}</td>
                 <td className="px-3 py-3 text-right">{area.choreCount}</td>
               </tr>
@@ -119,39 +120,41 @@ function AreaForm({ area, areas, onDone }: { area?: Area; areas: Area[]; onDone:
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-4">
-      <TextField label="Name" autoFocus value={name} onValueChange={setName} error={errors.name?.[0]} />
-      <SelectField label="Inside" options={parents} value={parent} onValueChange={(next) => setParent(next ?? noParent)} error={errors.parentId?.[0]} />
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="submit"
-          disabled={save.isPending}
-          className="flex-1 rounded-lg bg-brand px-4 py-2 font-semibold text-white hover:bg-brand/90 disabled:opacity-60"
-        >
-          Save
-        </button>
-        {area && (
-          <button
-            type="button"
-            disabled={remove.isPending}
-            onClick={() => setConfirming(true)}
-            className="rounded-lg px-4 py-2 font-semibold text-red-700 hover:bg-red-700/5 disabled:opacity-60"
+    <>
+      <form onSubmit={submit} className="flex flex-col gap-4">
+        <TextField label="Name" autoFocus value={name} onValueChange={setName} error={errors.name?.[0]} />
+        <SelectField label="Inside" options={parents} value={parent} onValueChange={(next) => setParent(next ?? noParent)} error={errors.parentId?.[0]} />
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="submit"
+            disabled={save.isPending}
+            className="flex-1 rounded-lg bg-brand px-4 py-2 font-semibold text-white hover:bg-brand/90 disabled:opacity-60"
           >
-            Delete
-          </button>
-        )}
-      </div>
+            Save
+          </Button>
+          {area && (
+            <Button
+              disabled={remove.isPending}
+              onClick={() => setConfirming(true)}
+              className="rounded-lg px-4 py-2 font-semibold text-red-700 hover:bg-red-700/5 disabled:opacity-60"
+            >
+              Delete
+            </Button>
+          )}
+        </div>
+      </form>
       {area && (
         <ConfirmDialog
           open={confirming}
           onOpenChange={setConfirming}
           title={`Delete ${area.name}?`}
           description={`${usedBy(area)} They stay, without an Area, and Areas inside it move to the top.`}
-          confirmLabel="Delete"
+          confirmLabel="Delete for good"
+          consequence={`Deletes the Area ${area.name}; its Chores lose their Area`}
           onConfirm={() => remove.mutate(area.id)}
         />
       )}
-    </form>
+    </>
   )
 }
 

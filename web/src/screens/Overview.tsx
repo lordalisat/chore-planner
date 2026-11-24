@@ -4,6 +4,8 @@ import { useLayoutEffect, useRef, useState, type FormEvent } from 'react'
 import { api, ApiError } from '../api/client.ts'
 import { choresQuery, urgencyBand, type Chore, type UrgencyBand } from '../chores.ts'
 import { relativeDate, shortDate, today } from '../dates.ts'
+import { Button } from '../ui/Button.tsx'
+import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from '../ui/Collapsible.tsx'
 import { DateField } from '../ui/DateField.tsx'
 import { Dialog } from '../ui/Dialog.tsx'
 import { TickBox } from '../ui/TickBox.tsx'
@@ -30,7 +32,6 @@ export function Overview() {
   const now = shown.filter((chore) => chore.dueDate && chore.urgency)
   const anytime = shown.filter((chore) => !chore.dueDate)
   const later = shown.filter((chore) => chore.dueDate && !chore.urgency)
-  const [showLater, setShowLater] = useState(false)
 
   if (shown.length === 0) {
     return <p className="py-12 text-center text-ink/70">Nothing to do yet. Add a Chore to get started.</p>
@@ -53,22 +54,22 @@ export function Overview() {
       {now.length === 0 && anytime.length === 0 && <p className="py-6 text-center text-ink/70">Nothing needs doing yet.</p>}
       {anytime.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-ink/60">Anytime</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-ink/70">Anytime</h2>
           {list(anytime)}
         </section>
       )}
       {later.length > 0 && (
-        <section aria-labelledby="later" className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-ink/60">
-            <button id="later" type="button" aria-expanded={showLater} onClick={() => setShowLater(!showLater)} className="flex items-center gap-1 uppercase hover:text-ink">
-              <span aria-hidden className={`inline-block transition-transform ${showLater ? 'rotate-90' : ''}`}>
+        <Collapsible render={<section />} aria-labelledby="later" className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-ink/70">
+            <CollapsibleTrigger id="later" className="group flex items-center gap-1 uppercase hover:text-ink">
+              <span aria-hidden className="inline-block transition-transform group-data-open:rotate-90">
                 ›
               </span>
               Later ({later.length})
-            </button>
+            </CollapsibleTrigger>
           </h2>
-          {showLater && <div className="opacity-75">{list(later)}</div>}
-        </section>
+          <CollapsiblePanel>{list(later)}</CollapsiblePanel>
+        </Collapsible>
       )}
       <Dialog open={doneOn !== null} onOpenChange={(open) => !open && setDoneOn(null)} title={`When was ${doneOn?.name ?? ''} done?`}>
         {/* Mounted only while open, so each starts on today */}
@@ -118,7 +119,7 @@ function ChoreList({ chores, today, expanded, onExpand, ...actions }: ListProps)
           chore={chore}
           today={today}
           open={expanded === chore.id}
-          onToggle={() => onExpand(expanded === chore.id ? null : chore.id)}
+          onOpenChange={(open) => onExpand(open ? chore.id : null)}
           onClose={() => onExpand(null)}
           {...actions}
         />
@@ -135,9 +136,9 @@ const bandBorder: Record<UrgencyBand, string> = {
   pressing: 'border-red-700',
 }
 
-type RowProps = { chore: Chore; today: string; open: boolean; onToggle: () => void; onClose: () => void } & RowActions
+type RowProps = { chore: Chore; today: string; open: boolean; onOpenChange: (open: boolean) => void; onClose: () => void } & RowActions
 
-function ChoreRow({ chore, today, open, onToggle, onClose, onDone, onDoneOn, onSkip, onPostpone }: RowProps) {
+function ChoreRow({ chore, today, open, onOpenChange, onClose, onDone, onDoneOn, onSkip, onPostpone }: RowProps) {
   const navigate = useNavigate()
   const band = urgencyBand(chore.urgency)
   const details = [chore.area?.name, chore.effort != null ? `${chore.effort} min` : null].filter(Boolean).join(' · ')
@@ -148,21 +149,30 @@ function ChoreRow({ chore, today, open, onToggle, onClose, onDone, onDoneOn, onS
     action(chore)
   }
   return (
-    <li data-urgency={band} className={`rounded-lg border-l-4 bg-white shadow-sm ${bandBorder[band]}`}>
+    <Collapsible
+      render={<li />}
+      open={open}
+      onOpenChange={onOpenChange}
+      data-urgency={band}
+      className={`rounded-lg border-l-4 bg-white shadow-sm ${bandBorder[band]}`}
+    >
       <div className="flex items-center gap-1 py-1 pr-3 pl-1">
         {/* A 44px target around the small round check, so a thumb finds it */}
-        <button type="button" aria-label={`Mark ${chore.name} done`} onClick={act(onDone)} className="group grid size-11 shrink-0 place-items-center">
+        <Button aria-label={`Mark ${chore.name} done`} onClick={act(onDone)} className="group grid size-11 shrink-0 place-items-center">
           <span className="grid size-7 place-items-center rounded-full border-2 border-brand text-brand group-hover:bg-brand group-hover:text-white">
             <svg viewBox="0 0 16 16" aria-hidden className="size-4 opacity-0 group-hover:opacity-100">
               <path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </span>
-        </button>
-        <button type="button" aria-expanded={open} onClick={onToggle} className="flex min-h-11 min-w-0 flex-1 flex-col justify-center text-left">
+        </Button>
+        <CollapsibleTrigger className="flex min-h-11 min-w-0 flex-1 flex-col justify-center text-left">
           <span className="flex w-full items-baseline gap-3">
-            <span className="flex-1 truncate font-medium">{chore.name}</span>
-            {details && <span className="text-sm text-ink/60">{details}</span>}
+            {/* A verb of its own, so naming the Chore alone can't also mean its Done button */}
+            <span className="sr-only">Open</span>{' '}
+            <span className="flex-1 truncate font-medium">{chore.name}</span>{' '}
+            {details && <span className="text-sm text-ink/70">{details}</span>}
           </span>
+          {/* Flex shows none of these spaces; they keep the words apart in the button's name */}{' '}
           {(chore.dueDate || ticked > 0) && (
             <span className="text-sm text-ink/70">
               {chore.dueDate && (
@@ -172,11 +182,11 @@ function ChoreRow({ chore, today, open, onToggle, onClose, onDone, onDoneOn, onS
               {ticked > 0 && `${ticked} of ${chore.items.length} items`}
             </span>
           )}
-        </button>
+        </CollapsibleTrigger>
       </div>
-      {open && chore.description && <Description text={chore.description} />}
-      {open && chore.items.length > 0 && <Items chore={chore} />}
-      {open && (
+      <CollapsiblePanel>
+        {chore.description && <Description text={chore.description} />}
+        {chore.items.length > 0 && <Items chore={chore} />}
         <div className="flex flex-wrap gap-2 border-t border-black/5 px-3 py-2">
           <RowAction onClick={act(onDoneOn)}>Done on…</RowAction>
           {/* Only a Recurring Chore has a next Due Date to move on to */}
@@ -184,8 +194,8 @@ function ChoreRow({ chore, today, open, onToggle, onClose, onDone, onDoneOn, onS
           <RowAction onClick={act(onPostpone)}>Postpone…</RowAction>
           <RowAction onClick={() => void navigate({ to: '/chores/$id', params: { id: chore.id } })}>Edit</RowAction>
         </div>
-      )}
-    </li>
+      </CollapsiblePanel>
+    </Collapsible>
   )
 }
 
@@ -218,16 +228,16 @@ function Description({ text }: { text: string }) {
       <p ref={paragraph} className={`text-sm whitespace-pre-line text-ink/80 ${whole ? '' : 'line-clamp-3'}`}>
         {text}
       </p>
+      {/* A Button, not a Collapsible: the text is always in view, only unclamped */}
       {cutOff && (
-        <button
-          type="button"
+        <Button
           aria-expanded={whole}
           onClick={() => setWhole(!whole)}
           // A 44px tap target that overlaps the padding around it, so it doesn't push the row apart
           className="-mx-2 -my-2 min-h-11 px-2 text-sm font-medium text-brand hover:underline"
         >
           {whole ? 'Show less' : 'Show more'}
-        </button>
+        </Button>
       )}
     </div>
   )
@@ -250,44 +260,52 @@ function Items({ chore }: { chore: Chore }) {
 
   return (
     <ul className="flex flex-col border-t border-black/5 px-1 py-1">
-      {chore.items.map((item) => (
-        <li key={item.id} className="flex flex-col">
-          <div className="flex items-center gap-1">
-            <TickBox label={item.name} checked={item.ticked} onCheckedChange={(ticked) => tick.mutate({ itemId: item.id, ticked })} />
-            {item.description ? (
-              <button
-                type="button"
-                aria-expanded={shown === item.id}
-                onClick={() => setShown(shown === item.id ? null : item.id)}
-                className="flex min-h-11 flex-1 items-center gap-2 text-left text-sm"
-              >
+      {chore.items.map((item) => {
+        const box = <TickBox label={item.name} checked={item.ticked} onCheckedChange={(ticked) => tick.mutate({ itemId: item.id, ticked })} />
+        if (!item.description) {
+          return (
+            <li key={item.id} className="flex items-center gap-1">
+              {box}
+              <span className={`flex-1 text-sm ${tickedName(item.ticked)}`}>{item.name}</span>
+            </li>
+          )
+        }
+        return (
+          <Collapsible
+            key={item.id}
+            render={<li />}
+            open={shown === item.id}
+            onOpenChange={(open) => setShown(open ? item.id : null)}
+            className="flex flex-col"
+          >
+            <div className="flex items-center gap-1">
+              {box}
+              <CollapsibleTrigger className="flex min-h-11 flex-1 items-center gap-2 text-left text-sm">
+                {/* Named apart from the Item's tick box, which has the bare Name */}
+                <span className="sr-only">Description of</span>{' '}
                 <span className={tickedName(item.ticked)}>{item.name}</span>
                 {/* Outside the struck-through Name, so a ticked Item still shows it has a Description */}
-                <span aria-hidden className="rounded bg-black/5 px-1.5 text-xs text-ink/60">
+                <span aria-hidden className="rounded bg-black/5 px-1.5 text-xs text-ink/70">
                   {shown === item.id ? 'less' : 'more'}
                 </span>
-              </button>
-            ) : (
-              <span className={`flex-1 text-sm ${tickedName(item.ticked)}`}>{item.name}</span>
-            )}
-          </div>
-          {item.description && shown === item.id && (
-            <p className="pb-2 pl-12 pr-3 text-sm whitespace-pre-line text-ink/80">{item.description}</p>
-          )}
-        </li>
-      ))}
+              </CollapsibleTrigger>
+            </div>
+            <CollapsiblePanel className="pb-2 pl-12 pr-3 text-sm whitespace-pre-line text-ink/80">{item.description}</CollapsiblePanel>
+          </Collapsible>
+        )
+      })}
     </ul>
   )
 }
 
 // A ticked Item reads as done
-const tickedName = (ticked: boolean) => (ticked ? 'text-ink/50 line-through' : '')
+const tickedName = (ticked: boolean) => (ticked ? 'text-ink/70 line-through' : '')
 
 function RowAction({ onClick, children }: { onClick: () => void; children: string }) {
   return (
-    <button type="button" onClick={onClick} className="min-h-11 rounded-lg border border-brand/30 px-4 text-sm font-medium text-brand hover:bg-brand/10">
+    <Button onClick={onClick} className="min-h-11 rounded-lg border border-brand/80 px-4 text-sm font-medium text-brand hover:bg-brand/10">
       {children}
-    </button>
+    </Button>
   )
 }
 
@@ -320,9 +338,9 @@ function DateForm({ label, initial, missing, field, save, onDone }: DateFormProp
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
       <DateField label={label} value={date} onValueChange={setDate} error={error} />
-      <button type="submit" className="rounded-lg bg-brand px-4 py-2 font-semibold text-white hover:bg-brand/90">
+      <Button type="submit" className="rounded-lg bg-brand px-4 py-2 font-semibold text-white hover:bg-brand/90">
         Save
-      </button>
+      </Button>
     </form>
   )
 }

@@ -51,7 +51,8 @@ test('clicking anywhere on an Area\'s row opens it', async () => {
   await userEvent.click(within(row).getAllByRole('cell')[2]!)
 
   expect(await screen.findByRole('textbox', { name: 'Name' })).toHaveValue('Kitchen')
-  expect(within(row).queryByRole('button')).not.toBeInTheDocument()
+  // The row is what a mouse aims for; its only button is its Name, for the keyboard and an agent
+  expect(within(row).getAllByRole('button').map((button) => button.textContent)).toEqual(['Kitchen'])
 })
 
 test('a new Area is made inside the picked parent', async () => {
@@ -122,7 +123,7 @@ test('deleting an Area first says how many Chores use it', async () => {
   const confirm = await screen.findByRole('alertdialog')
   expect(confirm).toHaveTextContent('2 Chores use Kitchen')
   expect(sent(fetch, 'DELETE')).toEqual([])
-  await userEvent.click(within(confirm).getByRole('button', { name: 'Delete' }))
+  await userEvent.click(within(confirm).getByRole('button', { name: 'Delete for good' }))
 
   await expect.poll(() => sent(fetch, 'DELETE')).toEqual([{ path: '/api/areas/3', body: undefined }])
 })

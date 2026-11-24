@@ -25,7 +25,7 @@ export function TextAreaField({ label, hideLabel, error, className, ...textarea 
         submitShortcut="mod+enter"
         rows={2}
         {...textarea}
-        className="min-h-18 rounded-lg border border-black/20 bg-white px-3 py-2 focus:outline-2 focus:outline-brand data-invalid:border-red-700"
+        className="min-h-18 rounded-lg border border-black/45 bg-white px-3 py-2 focus:outline-2 focus:outline-brand data-invalid:border-red-700"
       />
       {error && (
         <FieldError match className="text-sm text-red-700">
